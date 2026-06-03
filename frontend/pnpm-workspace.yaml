@@ -1,7 +1,0 @@
-packages:
-  - '.' # root (shared tooling)
-  - 'src' # frontend package (in-place, no file duplication)
-  - 'supabase/functions/server' # backend package (edge functions)
-allowBuilds:
-  '@tailwindcss/oxide': true
-  esbuild: true

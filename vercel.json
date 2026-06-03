@@ -1,6 +1,6 @@
 {
-  "buildCommand": "npm install --legacy-peer-deps && npm run build",
-  "installCommand": "npm install --legacy-peer-deps",
+  "buildCommand": "npm install --legacy-peer-deps --ignore-scripts=false && npm run build",
+  "installCommand": "npm install --legacy-peer-deps --ignore-scripts=false",
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [

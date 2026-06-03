@@ -151,6 +151,28 @@ export interface Transaction {
   status: string;
 }
 
+// ─── Pinjaman Mikro ─────────────────────────────────────────────────────────
+export interface Loan {
+  id: string;
+  studentId: string;
+  amount: number;
+  purpose: string;
+  status: "Menunggu" | "Disetujui" | "Ditolak" | "Lunas";
+  appliedAt: string;
+  approvedAt: string | null;
+  installmentCount: number;
+}
+
+export interface LoanInstallment {
+  id: string;
+  loanId: string;
+  month: string;
+  amount: number;
+  status: "Belum Bayar" | "Lunas";
+  dueDate: string;
+  paidAt: string | null;
+}
+
 // ─── Storage Keys ─────────────────────────────────────────────────────────────
 const KEYS = {
   STUDENTS: "edufin_students",
@@ -163,6 +185,8 @@ const KEYS = {
   TRANSACTIONS: "edufin_transactions",
   SCHOLARSHIPS: "edufin_scholarships",
   SCHOLARSHIP_RECIPIENTS: "edufin_scholarship_recipients",
+  LOANS: "edufin_loans",
+  LOAN_INSTALLMENTS: "edufin_loan_installments",
 };
 
 // ─── Helper Functions ─────────────────────────────────────────────────────────
@@ -258,16 +282,16 @@ export class Database {
   }
 
   // Installments
-  static getInstallments(): Installment[] {
+  static getSPPInstallments(): Installment[] {
     return getFromStorage<Installment>(KEYS.INSTALLMENTS);
   }
 
-  static getInstallmentsByStudentId(studentId: string): Installment[] {
-    return this.getInstallments().filter((i) => i.studentId === studentId);
+  static getSPPInstallmentsByStudentId(studentId: string): Installment[] {
+    return this.getSPPInstallments().filter((i) => i.studentId === studentId);
   }
 
-  static saveInstallment(installment: Installment): void {
-    const installments = this.getInstallments();
+  static saveSPPInstallment(installment: Installment): void {
+    const installments = this.getSPPInstallments();
     const index = installments.findIndex((i) => i.id === installment.id);
     if (index >= 0) {
       installments[index] = installment;
@@ -406,15 +430,16 @@ export class Database {
     saveToStorage(KEYS.STUDENTS,      this.getStudents().filter((s) => s.id !== id));
     saveToStorage(KEYS.BILLS,         this.getBills().filter((b) => b.studentId !== id));
     saveToStorage(KEYS.PAYMENTS,      this.getPayments().filter((p) => p.studentId !== id));
-    saveToStorage(KEYS.INSTALLMENTS,  this.getInstallments().filter((i) => i.studentId !== id));
+    saveToStorage(KEYS.INSTALLMENTS,  this.getSPPInstallments().filter((i) => i.studentId !== id));
     saveToStorage(KEYS.TRANSACTIONS,  this.getTransactions().filter((t) => t.userId !== id));
     saveToStorage(KEYS.SCHOLARSHIP_RECIPIENTS, this.getScholarshipRecipients().filter((r) => r.studentId !== id));
+    saveToStorage(KEYS.LOANS,         this.getLoans().filter((l) => l.studentId !== id));
   }
 
   static deleteBill(id: string): void {
     // Cascading delete: hapus installments & payments terkait tagihan ini
     saveToStorage(KEYS.BILLS,         this.getBills().filter((b) => b.id !== id));
-    saveToStorage(KEYS.INSTALLMENTS,  this.getInstallments().filter((i) => i.billId !== id));
+    saveToStorage(KEYS.INSTALLMENTS,  this.getSPPInstallments().filter((i) => i.billId !== id));
     saveToStorage(KEYS.PAYMENTS,      this.getPayments().filter((p) => p.billId !== id));
   }
 
@@ -434,6 +459,46 @@ export class Database {
 
   static deleteTransaction(id: string): void {
     saveToStorage(KEYS.TRANSACTIONS, this.getTransactions().filter((t) => t.id !== id));
+  }
+
+  // ─── Pinjaman Mikro ──────────────────────────────────────────────────────────
+  static getLoans(): Loan[] {
+    return getFromStorage<Loan>(KEYS.LOANS);
+  }
+
+  static getLoansByStudentId(studentId: string): Loan[] {
+    return this.getLoans().filter((l) => l.studentId === studentId);
+  }
+
+  static getLoanById(id: string): Loan | undefined {
+    return this.getLoans().find((l) => l.id === id);
+  }
+
+  static saveLoan(loan: Loan): void {
+    const loans = this.getLoans();
+    const idx = loans.findIndex((l) => l.id === loan.id);
+    if (idx >= 0) loans[idx] = loan; else loans.push(loan);
+    saveToStorage(KEYS.LOANS, loans);
+  }
+
+  static deleteLoan(id: string): void {
+    saveToStorage(KEYS.LOANS, this.getLoans().filter((l) => l.id !== id));
+    saveToStorage(KEYS.LOAN_INSTALLMENTS, this.getLoanInstallments().filter((i) => i.loanId !== id));
+  }
+
+  static getLoanInstallments(): LoanInstallment[] {
+    return getFromStorage<LoanInstallment>(KEYS.LOAN_INSTALLMENTS);
+  }
+
+  static getInstallmentsByLoanId(loanId: string): LoanInstallment[] {
+    return this.getLoanInstallments().filter((i) => i.loanId === loanId);
+  }
+
+  static saveInstallment(installment: LoanInstallment): void {
+    const list = this.getLoanInstallments();
+    const idx = list.findIndex((i) => i.id === installment.id);
+    if (idx >= 0) list[idx] = installment; else list.push(installment);
+    saveToStorage(KEYS.LOAN_INSTALLMENTS, list);
   }
 
   // Derived: aggregate donors from donations

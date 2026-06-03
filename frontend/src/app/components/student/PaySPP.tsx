@@ -47,7 +47,6 @@ function loadMidtransSnap(): Promise<void> {
   });
 }
 
-/** Call backend to create Midtrans transaction and get snap_token */
 async function createMidtransTransaction(
   billIds: number[],
   amount: number,
@@ -55,13 +54,13 @@ async function createMidtransTransaction(
   customerEmail: string
 ): Promise<{ snapToken: string; orderId: string }> {
   const orderId = `BILL-${billIds.join("-")}-${Date.now()}`;
-  const serverBase = SUPABASE_URL
-    ? `${SUPABASE_URL}/functions/v1/make-server-87d0698a`
-    : "";
+  // Di lingkungan produksi (Vercel), kita cukup memanggil endpoint /api
+  // yang akan dilayani oleh Vercel Serverless Functions.
+  const serverBase = "/api/midtrans-create-transaction";
 
   if (!serverBase) throw new Error("Server URL tidak tersedia.");
 
-  const response = await fetch(`${serverBase}/midtrans/create-transaction`, {
+  const response = await fetch(serverBase, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

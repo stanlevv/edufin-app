@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
+const SESSION_KEY = "edufin_session";
+
 export type UserRole = "siswa" | "sekolah" | "donatur";
 
 export interface User {

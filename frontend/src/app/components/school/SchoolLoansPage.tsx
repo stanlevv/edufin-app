@@ -25,6 +25,8 @@ type Loan = {
   };
 };
 
+import { SchoolDesktopLayout } from "./SchoolDesktopLayout";
+
 export function SchoolLoansPage() {
   const [loans, setLoans] = useState<Loan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,8 +51,6 @@ export function SchoolLoansPage() {
     if (error) {
       console.error("Error fetching loans:", error);
     } else {
-      // Supabase join sometimes returns array or object depending on relation
-      // The schema has students(user_id) -> users(id). 
       setLoans(data as any || []);
     }
     setLoading(false);
@@ -72,9 +72,6 @@ export function SchoolLoansPage() {
     } else {
       alert("Pinjaman disetujui!");
       fetchLoans();
-      
-      // Catatan: Jika ingin membuat installments otomatis, bisa ditambahkan 
-      // edge function Supabase trigger, atau di sisi client secara berurutan di sini.
     }
   };
 
@@ -125,8 +122,9 @@ export function SchoolLoansPage() {
   });
 
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-8">
+    <SchoolDesktopLayout>
+      <div className="p-8">
+        <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Pinjaman Mikro</h1>
           <p className="text-gray-500">Kelola persetujuan pinjaman dari siswa.</p>
@@ -258,7 +256,8 @@ export function SchoolLoansPage() {
             </tbody>
           </table>
         </div>
+        </div>
       </div>
-    </div>
+    </SchoolDesktopLayout>
   );
 }

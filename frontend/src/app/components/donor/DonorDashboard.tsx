@@ -9,64 +9,7 @@ function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
 }
 
-const CAMPAIGNS = [
-  {
-    id: 1,
-    title: "Beasiswa Siswa Berprestasi SDN 3 Malang",
-    target: 15000000,
-    collected: 11200000,
-    image: "https://images.unsplash.com/photo-1758316289766-d483969b7f90?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400",
-    school: "SDN 3 Malang",
-    location: "Malang",
-    category: "Beasiswa",
-    verified: true,
-    donors: 124,
-    daysLeft: 12,
-    urgent: false,
-  },
-  {
-    id: 2,
-    title: "Renovasi Lab Komputer SMP Negeri 5 Batu",
-    target: 25000000,
-    collected: 18500000,
-    image: "https://images.unsplash.com/photo-1551161001-5c4184cc4317?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400",
-    school: "SMPN 5 Batu",
-    location: "Batu",
-    category: "Fasilitas",
-    verified: true,
-    donors: 89,
-    daysLeft: 25,
-    urgent: false,
-  },
-  {
-    id: 3,
-    title: "Dana Buku & Alat Tulis Siswa Kurang Mampu",
-    target: 8000000,
-    collected: 6100000,
-    image: "https://images.unsplash.com/photo-1752920299180-e8fd9276c202?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400",
-    school: "SMA Negeri 2 Kepanjen",
-    location: "Malang",
-    category: "Perlengkapan",
-    verified: false,
-    donors: 67,
-    daysLeft: 8,
-    urgent: true,
-  },
-  {
-    id: 4,
-    title: "Bantuan Biaya Ujian Siswa Tidak Mampu",
-    target: 5000000,
-    collected: 3200000,
-    image: "https://images.unsplash.com/photo-1569173675610-42c361a86e37?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400",
-    school: "MAN 1 Malang",
-    location: "Malang",
-    category: "Ujian",
-    verified: true,
-    donors: 45,
-    daysLeft: 18,
-    urgent: false,
-  },
-];
+
 
 const CATEGORIES = ["Semua", "Beasiswa", "Fasilitas", "Perlengkapan", "Ujian"];
 

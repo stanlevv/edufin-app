@@ -426,12 +426,16 @@ export class Database {
 
   // Delete operations
   static deleteStudent(id: string): void {
+    const student = this.getStudentById(id);
     // Cascading delete: hapus semua data terkait siswa
     saveToStorage(KEYS.STUDENTS,      this.getStudents().filter((s) => s.id !== id));
     saveToStorage(KEYS.BILLS,         this.getBills().filter((b) => b.studentId !== id));
     saveToStorage(KEYS.PAYMENTS,      this.getPayments().filter((p) => p.studentId !== id));
     saveToStorage(KEYS.INSTALLMENTS,  this.getSPPInstallments().filter((i) => i.studentId !== id));
-    saveToStorage(KEYS.TRANSACTIONS,  this.getTransactions().filter((t) => t.userId !== id));
+    if (student) {
+      saveToStorage(KEYS.TRANSACTIONS,  this.getTransactions().filter((t) => t.userId !== student.userId));
+      saveToStorage(KEYS.NOTIFICATIONS, this.getNotifications().filter((n) => n.userId !== student.userId));
+    }
     saveToStorage(KEYS.SCHOLARSHIP_RECIPIENTS, this.getScholarshipRecipients().filter((r) => r.studentId !== id));
     saveToStorage(KEYS.LOANS,         this.getLoans().filter((l) => l.studentId !== id));
   }

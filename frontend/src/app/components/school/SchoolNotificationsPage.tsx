@@ -16,42 +16,7 @@ interface Notification {
   total: number;
 }
 
-const INITIAL_NOTIFICATIONS: Notification[] = [
-  {
-    id: 1,
-    title: "Pengumuman Libur Hari Raya",
-    message: "Sekolah akan libur pada tanggal 1-7 Juni 2025 untuk Hari Raya Idul Fitri. Kegiatan belajar mengajar akan dimulai kembali pada 8 Juni 2025.",
-    type: "info",
-    target: "all",
-    createdAt: "2025-05-28 10:00",
-    sentBy: "Admin SDN 3 Malang",
-    read: 45,
-    total: 50,
-  },
-  {
-    id: 2,
-    title: "Peringatan: Pembayaran SPP Bulan Mei",
-    message: "Batas akhir pembayaran SPP bulan Mei adalah tanggal 31 Mei 2025. Mohon segera lakukan pembayaran untuk menghindari denda keterlambatan.",
-    type: "warning",
-    target: "all",
-    createdAt: "2025-05-25 14:30",
-    sentBy: "Admin SDN 3 Malang",
-    read: 38,
-    total: 50,
-  },
-  {
-    id: 3,
-    title: "Ujian Tengah Semester Kelas XII",
-    message: "Ujian Tengah Semester untuk kelas XII akan dilaksanakan mulai 10-15 Juni 2025. Harap siswa mempersiapkan diri dengan baik.",
-    type: "urgent",
-    target: "class",
-    targetValue: "XII",
-    createdAt: "2025-05-20 09:00",
-    sentBy: "Admin SDN 3 Malang",
-    read: 15,
-    total: 15,
-  },
-];
+const INITIAL_NOTIFICATIONS: Notification[] = [];
 
 const TYPE_CONFIG = {
   info: { label: "Info", color: "#1677FF", bg: "#EEF4FF", icon: Bell },

@@ -3,11 +3,11 @@ import { useNavigate, useParams } from "react-router";
 import { ArrowLeft, Heart, Share2, CheckCircle, Users, Sparkles, Lightbulb, School, MapPin, Clock, Smartphone, Building2, CreditCard, Check } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { Database } from "../../data/database";
+import { FeedUpdateForm } from "../shared/FeedUpdateForm";
 
 function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
 }
-
 
 const DONATION_PRESETS = [10000, 25000, 50000, 100000, 250000, 500000];
 
@@ -22,6 +22,11 @@ export function CampaignDetail() {
   const [paymentMethod, setPaymentMethod] = useState("");
   const [step, setStep] = useState<"detail" | "donate" | "success">("detail");
   const [liked, setLiked] = useState(false);
+  const [showUpdateForm, setShowUpdateForm] = useState(false);
+
+  // Cek apakah user adalah pembuat kampanye ini
+  const studentData = user?.role === "student" ? Database.getStudentByUserId(user.id) : null;
+  const isOwner = (user?.role === "school") || (user?.role === "student" && studentData?.id === campaign?.studentId);
 
   if (!campaign) {
     return (
@@ -244,7 +249,12 @@ export function CampaignDetail() {
               style={{ background: "rgba(255,255,255,0.9)" }}>
               <Heart size={18} color={liked ? "#F95654" : "#595959"} fill={liked ? "#F95654" : "none"} />
             </button>
-            <button className="w-10 h-10 rounded-full flex items-center justify-center"
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText(window.location.href);
+                alert("Link kampanye berhasil disalin!");
+              }}
+              className="w-10 h-10 rounded-full flex items-center justify-center"
               style={{ background: "rgba(255,255,255,0.9)" }}>
               <Share2 size={18} color="#595959" />
             </button>
@@ -316,24 +326,76 @@ export function CampaignDetail() {
           </div>
 
           {/* Updates */}
-          {campaign.updates.length > 0 && (
-            <div>
-              <p style={{ fontWeight: 700, color: "#242424", marginBottom: "10px" }}>Update Terbaru</p>
-              <div className="space-y-3">
+          <div className="mb-5">
+            <div className="flex items-center justify-between mb-4">
+              <p style={{ fontWeight: 700, color: "#242424" }}>Update Transparansi</p>
+              {isOwner && (
+                <button
+                  onClick={() => setShowUpdateForm(true)}
+                  className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition-colors"
+                >
+                  + Tambah Update
+                </button>
+              )}
+            </div>
+
+            {campaign.updates.length > 0 ? (
+              <div className="space-y-4">
                 {campaign.updates.map((u: any, i: number) => (
-                  <div key={i} className="flex gap-3 p-3 rounded-2xl" style={{ background: "#EEF4FF" }}>
+                  <div key={i} className="flex gap-3 p-4 rounded-2xl border border-slate-100 shadow-sm bg-white">
                     <div className="w-1.5 flex-shrink-0 rounded-full" style={{ background: "#1677FF" }} />
-                    <div>
-                      <p style={{ color: "#8C8C8C", fontSize: "0.75rem" }}>{u.date}</p>
-                      <p style={{ color: "#242424", fontSize: "0.85rem" }}>{u.text}</p>
+                    <div className="flex-1">
+                      <p style={{ color: "#8C8C8C", fontSize: "0.75rem", marginBottom: "4px" }}>{u.date}</p>
+                      <p style={{ color: "#242424", fontSize: "0.85rem", lineHeight: "1.5" }}>{u.text}</p>
+                      {u.image && (
+                        <div className="mt-3 rounded-xl overflow-hidden border border-slate-100">
+                          <img src={u.image} alt="Bukti Transparansi" className="w-full h-auto max-h-48 object-cover" />
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="p-4 rounded-2xl bg-slate-50 text-center text-slate-500 text-sm">
+                Belum ada update transparansi
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      {showUpdateForm && (
+        <FeedUpdateForm
+          campaignId={campaign.id}
+          onClose={() => setShowUpdateForm(false)}
+          onSuccess={(newUpdate) => {
+            const updated = { ...campaign, updates: [newUpdate, ...campaign.updates] };
+            Database.saveCampaign(updated);
+
+            // Task V2-09: Notify all donors
+            const donors = Database.getDonationsByCampaignId(campaign.id);
+            const uniqueDonorIds = Array.from(new Set(donors.map(d => d.donorId)));
+            uniqueDonorIds.forEach(donorId => {
+              // Jika user bukan guest
+              if (donorId !== "guest") {
+                Database.saveNotification({
+                  id: `notif-${Date.now()}-${donorId}`,
+                  userId: donorId,
+                  title: `Update Kampanye: ${campaign.title}`,
+                  message: newUpdate.text.substring(0, 50) + "...",
+                  type: "campaign",
+                  read: false,
+                  createdAt: new Date().toISOString(),
+                });
+              }
+            });
+
+            // Trigger re-render
+            window.location.reload(); 
+          }}
+        />
+      )}
 
       {/* Sticky Bottom — sits above BottomNav (bottom-16 ≈ 64px) */}
       <div

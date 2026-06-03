@@ -5,15 +5,7 @@ import { formatRupiah, STUDENT_STYLES } from "../../styles/studentStyles";
 import { useAuth } from "../../context/AuthContext";
 import { Database, Transaction } from "../../data/database";
 
-const HISTORY = [
-  { id: 1, type: "out", title: "Pembayaran SPP", desc: "April 2025 · QRIS", amount: 725000, date: "10 Apr 2025", category: "SPP", status: "Berhasil" },
-  { id: 2, type: "out", title: "Cicilan SPP (2/3)", desc: "Maret 2025 · Transfer Bank BCA", amount: 200000, date: "8 Apr 2025", category: "Cicilan" },
-  { id: 3, type: "out", title: "Donasi Kampanye", desc: "Beasiswa Siswa Berprestasi SDN 3", amount: 100000, date: "5 Apr 2025", category: "Donasi", status: "Berhasil" },
-  { id: 4, type: "out", title: "Pembayaran SPP", desc: "Maret 2025 · Virtual Account", amount: 600000, date: "12 Mar 2025", category: "SPP", status: "Berhasil" },
-  { id: 5, type: "out", title: "Cicilan SPP (1/3)", desc: "Maret 2025 · QRIS GoPay", amount: 200000, date: "10 Mar 2025", category: "Cicilan" },
-  { id: 6, type: "out", title: "Donasi Kampanye", desc: "Renovasi Lab Komputer SMPN 5", amount: 250000, date: "2 Mar 2025", category: "Donasi", status: "Berhasil" },
-  { id: 7, type: "out", title: "Pembayaran SPP", desc: "Februari 2025 · QRIS", amount: 600000, date: "15 Feb 2025", category: "SPP", status: "Berhasil" },
-];
+
 
 const CATS = ["Semua", "SPP", "Cicilan", "Donasi"];
 

@@ -55,11 +55,13 @@ function AppLayoutInner() {
   const { user } = useAuth();
   const location = useLocation();
 
+  const isSchoolAdmin = user?.role === "sekolah";
+
   const showNav =
     !!user &&
     !NO_NAV_PATHS.includes(location.pathname) &&
+    !isSchoolAdmin &&
     (location.pathname.startsWith("/student") ||
-      location.pathname.startsWith("/school") ||
       location.pathname.startsWith("/donor"));
 
   const role =
@@ -69,14 +71,11 @@ function AppLayoutInner() {
       ? "donatur"
       : "siswa";
 
-  const isSchoolAdmin = user?.role === "sekolah";
-
   // Desktop layout for school admin, mobile for others
   if (isSchoolAdmin) {
     return (
-      <div className="min-h-screen" style={{ background: "#F5F7FA", paddingBottom: showNav ? "120px" : "0" }}>
+      <div className="min-h-screen" style={{ background: "#F5F7FA" }}>
         <Outlet />
-        {showNav && <BottomNav role={role} />}
       </div>
     );
   }

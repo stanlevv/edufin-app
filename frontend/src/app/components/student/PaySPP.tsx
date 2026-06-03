@@ -260,6 +260,7 @@ export function PaySPP() {
           </div>
 
           <button
+            onClick={() => window.print()}
             className="w-full mt-4 py-3.5 rounded-2xl flex items-center justify-center gap-2"
             style={{ background: "#F5F7FA", color: "#1677FF", fontWeight: 600 }}
           >

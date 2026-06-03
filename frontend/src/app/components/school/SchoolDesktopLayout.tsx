@@ -1,13 +1,14 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router";
-import { Home, FileText, DollarSign, History, Settings, LogOut, Bell, User, Users, Receipt, Megaphone, Heart, ShieldCheck, GraduationCap } from "lucide-react";
+import { Home, FileText, DollarSign, History, Settings, LogOut, Bell, User, Users, Receipt, Megaphone, Heart, ShieldCheck, GraduationCap, LayoutDashboard, CreditCard } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { NotificationDropdown } from "../shared/NotificationDropdown";
 
 const NAV_ITEMS = [
-  { path: "/school", icon: Home, label: "Dashboard" },
-  { path: "/school/students", icon: Users, label: "Data Siswa" },
+  { path: "/school", icon: LayoutDashboard, label: "Dashboard" },
+  { path: "/school/students", icon: Users, label: "Siswa" },
   { path: "/school/bills", icon: FileText, label: "Tagihan" },
+  { path: "/school/loans", icon: CreditCard, label: "Pinjaman" },
   { path: "/school/scholarships", icon: GraduationCap, label: "Beasiswa" },
   { path: "/school/campaigns", icon: Megaphone, label: "Kampanye" },
   { path: "/school/donors", icon: Heart, label: "Donatur" },

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { ArrowLeft, Upload, CheckCircle, Clock, XCircle, ChevronRight, Lightbulb, AlertCircle } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { Database, Loan, LoanInstallment } from "../../data/database";
+import { Database, LoanInstallment } from "../../data/database";
+import { supabase } from "../../lib/supabase";
 
 function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
@@ -25,94 +26,125 @@ export function LoanPage() {
   const [purpose, setPurpose] = useState("");
   const [period, setPeriod] = useState("3");
   const [step, setStep] = useState<"form" | "submitted">("form");
-  const [activeLoan, setActiveLoan] = useState<Loan | null>(null);
-  const [installments, setInstallments] = useState<LoanInstallment[]>([]);
+  const [activeLoan, setActiveLoan] = useState<any>(null);
+  const [installments, setInstallments] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // File upload state (S-ERR-10)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const fetchActiveLoan = async () => {
+    if (!user) return;
+    try {
+      const { data: studentData } = await supabase
+        .from("students")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+        
+      if (studentData) {
+        const { data: loans } = await supabase
+          .from("micro_loans")
+          .select("*")
+          .eq("student_id", studentData.id)
+          .order("created_at", { ascending: false });
+          
+        if (loans && loans.length > 0) {
+          const active = loans.find(l => l.status === "pending" || l.status === "approved");
+          setActiveLoan(active ?? null);
+          
+          if (active && active.status === "approved") {
+            // Jika ada tabel installments di Supabase kita ambil dari sana,
+            // Tapi untuk demo ini, kita hitung preview cicilan secara statis:
+            const insts = [];
+            for (let i = 0; i < active.tenor_months; i++) {
+              insts.push({
+                id: `inst-${i}`,
+                month: `Bulan ke-${i+1}`,
+                amount: Math.ceil(active.requested_amount / active.tenor_months),
+                status: "Belum Bayar"
+              });
+            }
+            setInstallments(insts);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching loan:", err);
+    }
+  };
 
   useEffect(() => {
-    if (!user) return;
-    const student = Database.getStudentByUserId(user.id);
-    if (!student) return;
-    // Ambil pinjaman aktif (status Disetujui atau Menunggu)
-    const loans = Database.getLoansByStudentId(student.id);
-    const active = loans.find((l) => l.status === "Disetujui" || l.status === "Menunggu");
-    setActiveLoan(active ?? null);
-    if (active) {
-      setInstallments(Database.getInstallmentsByLoanId(active.id));
-    }
+    fetchActiveLoan();
   }, [user, step]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!amount || !purpose || !user) return;
-    const student = Database.getStudentByUserId(user.id);
-    if (!student) return;
-    const loanAmount = parseInt(amount);
-    const periods = parseInt(period);
-
-    // Simpan pinjaman baru ke database
-    const loanId = `PJM-${Date.now()}`;
-    const MONTHS_ID = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
-    const now = new Date();
-
-    const newLoan: Loan = {
-      id: loanId,
-      studentId: student.id,
-      amount: loanAmount,
-      purpose,
-      status: "Menunggu",
-      appliedAt: now.toISOString(),
-      approvedAt: null,
-      installmentCount: periods,
-    };
-    Database.saveLoan(newLoan);
-
-    // Buat jadwal cicilan
-    for (let i = 0; i < periods; i++) {
-      const dueDate = new Date(now);
-      dueDate.setMonth(dueDate.getMonth() + i + 1);
-      const monthName = MONTHS_ID[dueDate.getMonth()];
-      const installment: LoanInstallment = {
-        id: `INST-${loanId}-${i + 1}`,
-        loanId,
-        month: `${monthName} ${dueDate.getFullYear()}`,
-        amount: Math.ceil(loanAmount / periods),
-        status: "Belum Bayar",
-        dueDate: dueDate.toISOString(),
-        paidAt: null,
-      };
-      Database.saveInstallment(installment);
+    setIsLoading(true);
+    
+    try {
+      // Pastikan ada student record di Supabase
+      let { data: studentData } = await supabase
+        .from("students")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+        
+      if (!studentData) {
+        // Auto-create student record
+        const { data: newStudent, error: createError } = await supabase
+          .from("students")
+          .insert({
+            user_id: user.id,
+            nisn: user.nisn || `NISN-${Date.now().toString().slice(-6)}`,
+            school: user.school || "Sekolah Demo",
+            class: user.class || "10",
+            parent_name: user.parentName || "Orang Tua",
+            spp_amount: 500000
+          })
+          .select()
+          .single();
+          
+        if (createError) throw createError;
+        studentData = newStudent;
+      }
+      
+      const { error } = await supabase
+        .from("micro_loans")
+        .insert({
+          student_id: studentData.id,
+          requested_amount: parseInt(amount),
+          purpose,
+          tenor_months: parseInt(period),
+          status: "pending"
+        });
+        
+      if (error) throw error;
+      
+      setStep("submitted");
+    } catch (err: any) {
+      alert("Gagal mengajukan pinjaman: " + err.message);
+    } finally {
+      setIsLoading(false);
     }
-
-    // Kirim notifikasi ke siswa
-    Database.saveNotification({
-      id: `notif-loan-${Date.now()}`,
-      userId: user.id,
-      title: "Pengajuan Pinjaman Dikirim",
-      message: `Pengajuan pinjaman ${formatRupiah(loanAmount)} untuk "${purpose}" sedang diproses. Estimasi 1-2 hari kerja.`,
-      type: "system",
-      read: false,
-      createdAt: new Date().toISOString(),
-    });
-
-    setStep("submitted");
   };
 
   // Status badge helper
   const statusBadge = (status: string) => {
-    const map: Record<string, { bg: string; color: string; icon: React.ReactNode }> = {
-      "Disetujui": { bg: "#F6FFED", color: "#52C41A", icon: <CheckCircle size={14} color="#52C41A" /> },
-      "Menunggu":  { bg: "#FFF7E6", color: "#FD9A16", icon: <Clock size={14} color="#FD9A16" /> },
-      "Ditolak":   { bg: "#FFF2F0", color: "#F95654", icon: <XCircle size={14} color="#F95654" /> },
+    const map: Record<string, { bg: string; color: string; icon: React.ReactNode; label: string }> = {
+      "approved": { bg: "#F6FFED", color: "#52C41A", icon: <CheckCircle size={14} color="#52C41A" />, label: "Disetujui" },
+      "pending":  { bg: "#FFF7E6", color: "#FD9A16", icon: <Clock size={14} color="#FD9A16" />, label: "Menunggu" },
+      "rejected": { bg: "#FFF2F0", color: "#F95654", icon: <XCircle size={14} color="#F95654" />, label: "Ditolak" },
     };
-    const s = map[status] ?? map["Menunggu"];
+    const s = map[status] ?? map["pending"];
     return (
       <div className="flex items-center gap-1.5 px-3 py-1 rounded-full" style={{ background: s.bg }}>
         {s.icon}
-        <span style={{ color: s.color, fontSize: "0.78rem", fontWeight: 600 }}>{status}</span>
+        <span style={{ color: s.color, fontSize: "0.78rem", fontWeight: 600 }}>{s.label}</span>
       </div>
     );
   };
 
-  // Sisa tagihan: cicilan yang belum dibayar
   const remainingAmount = installments
     .filter((i) => i.status === "Belum Bayar")
     .reduce((s, i) => s + i.amount, 0);
@@ -158,7 +190,7 @@ export function LoanPage() {
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <p style={{ color: "#8C8C8C", fontSize: "0.78rem" }}>ID Pinjaman</p>
-                      <p style={{ fontWeight: 700, color: "#242424", fontSize: "0.9rem" }}>{activeLoan.id}</p>
+                      <p style={{ fontWeight: 700, color: "#242424", fontSize: "0.9rem" }}>{activeLoan.id.split("-")[0].toUpperCase()}</p>
                     </div>
                     {statusBadge(activeLoan.status)}
                   </div>
@@ -168,7 +200,7 @@ export function LoanPage() {
                   <div className="grid grid-cols-2 gap-3 mb-4">
                     <div className="rounded-xl p-3" style={{ background: "#EEF4FF" }}>
                       <p style={{ color: "#8C8C8C", fontSize: "0.75rem" }}>Jumlah Pinjaman</p>
-                      <p style={{ fontWeight: 800, color: "#1677FF", fontSize: "1rem" }}>{formatRupiah(activeLoan.amount)}</p>
+                      <p style={{ fontWeight: 800, color: "#1677FF", fontSize: "1rem" }}>{formatRupiah(activeLoan.requested_amount)}</p>
                     </div>
                     <div className="rounded-xl p-3" style={{ background: "#FFF7E6" }}>
                       <p style={{ color: "#8C8C8C", fontSize: "0.75rem" }}>Sisa Tagihan</p>
@@ -183,7 +215,7 @@ export function LoanPage() {
                   <div className="flex justify-between">
                     <span style={{ color: "#8C8C8C", fontSize: "0.82rem" }}>Tanggal Pengajuan</span>
                     <span style={{ fontWeight: 600, color: "#242424", fontSize: "0.82rem" }}>
-                      {new Date(activeLoan.appliedAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
+                      {new Date(activeLoan.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
                     </span>
                   </div>
                 </div>
@@ -191,7 +223,7 @@ export function LoanPage() {
                 {/* Installments */}
                 <p style={{ fontWeight: 700, color: "#242424", marginBottom: "12px" }}>Jadwal Cicilan</p>
                 <div className="space-y-3">
-                  {installments.length === 0 && (
+                  {activeLoan.status !== "approved" && (
                     <p style={{ color: "#8C8C8C", textAlign: "center", padding: "16px 0" }}>
                       Jadwal cicilan akan tersedia setelah pinjaman disetujui
                     </p>
@@ -276,10 +308,10 @@ export function LoanPage() {
                   </div>
                 </div>
                 <button
-                  onClick={() => navigate("/student")}
+                  onClick={() => { setStep("form"); setTab("active"); fetchActiveLoan(); }}
                   className="w-full py-4 rounded-2xl text-white"
                   style={{ background: "linear-gradient(135deg, #1677FF, #108EE9)", fontWeight: 700 }}>
-                  Kembali ke Beranda
+                  Lihat Status Pinjaman
                 </button>
               </div>
             ) : (
@@ -392,30 +424,42 @@ export function LoanPage() {
                   </div>
                 )}
 
-                {/* Upload */}
+                {/* Upload (Fixing S-ERR-10) */}
                 <div>
                   <label style={{ fontSize: "0.9rem", fontWeight: 600, color: "#242424", display: "block", marginBottom: "8px" }}>
                     Dokumen Pendukung
                   </label>
-                  <div className="rounded-2xl p-5 flex flex-col items-center justify-center"
+                  <label className="rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer transition-all hover:bg-gray-50"
                     style={{ border: "2px dashed #D9D9D9", background: "#FAFAFA" }}>
-                    <Upload size={28} color="#BFBFBF" />
-                    <p style={{ color: "#8C8C8C", fontSize: "0.85rem", marginTop: "8px", textAlign: "center" }}>
-                      Unggah kartu pelajar atau tagihan sekolah
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          setSelectedFile(e.target.files[0]);
+                        }
+                      }}
+                      accept="image/*,.pdf"
+                    />
+                    <Upload size={28} color={selectedFile ? "#1677FF" : "#BFBFBF"} />
+                    <p style={{ color: selectedFile ? "#1677FF" : "#8C8C8C", fontSize: "0.85rem", marginTop: "8px", textAlign: "center", fontWeight: selectedFile ? 600 : 400 }}>
+                      {selectedFile ? selectedFile.name : "Unggah kartu pelajar atau tagihan sekolah"}
                     </p>
-                    <button className="mt-3 px-4 py-2 rounded-xl"
-                      style={{ background: "#EEF4FF", color: "#1677FF", fontSize: "0.82rem", fontWeight: 600 }}>
-                      Pilih File
-                    </button>
-                  </div>
+                    {!selectedFile && (
+                      <div className="mt-3 px-4 py-2 rounded-xl"
+                        style={{ background: "#EEF4FF", color: "#1677FF", fontSize: "0.82rem", fontWeight: 600 }}>
+                        Pilih File
+                      </div>
+                    )}
+                  </label>
                 </div>
 
                 <button
                   onClick={handleSubmit}
-                  disabled={!amount || !purpose}
-                  className="w-full py-4 rounded-2xl text-white disabled:opacity-50"
+                  disabled={!amount || !purpose || isLoading}
+                  className="w-full py-4 rounded-2xl text-white disabled:opacity-50 flex items-center justify-center gap-2"
                   style={{ background: "linear-gradient(135deg, #1677FF, #108EE9)", fontWeight: 700, fontSize: "1rem" }}>
-                  Ajukan Pinjaman
+                  {isLoading ? "Memproses..." : "Ajukan Pinjaman"}
                 </button>
               </div>
             )}

@@ -1,0 +1,16 @@
+{
+  "name": "@edufin/backend",
+  "version": "1.0.0",
+  "description": "EDUFIN Backend - Supabase Edge Functions (Deno runtime)",
+  "private": true,
+  "scripts": {
+    "deploy": "supabase functions deploy server",
+    "serve": "supabase functions serve server --env-file .env.local"
+  },
+  "devDependencies": {},
+  "notes": {
+    "runtime": "Deno (managed by Supabase)",
+    "deploy": "Run via Supabase CLI: supabase functions deploy server",
+    "env": "Set environment variables in Supabase dashboard or .env.local for local dev"
+  }
+}

@@ -1,0 +1,223 @@
+<mxfile host="app.diagrams.net" modified="2026-04-09T00:00:00.000Z" agent="Claude Code" version="21.6.5" etag="ERD-EDUFIN-v1">
+  <diagram name="ERD EDUFIN Database" id="erd-edufin">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="EDUFIN - Entity Relationship Diagram" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="320" y="20" width="530" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Table: users -->
+        <mxCell id="users" value="&lt;div style=&quot;box-sizing:border-box;width:100%;background:#1677FF;padding:2px;&quot;&gt;&lt;font color=&quot;#ffffff&quot;&gt;&lt;b&gt;users&lt;/b&gt;&lt;/font&gt;&lt;/div&gt;&lt;div style=&quot;box-sizing:border-box;width:100%;background:#ffffff;padding:2px;&quot;&gt;&lt;table style=&quot;width:100%;font-size:1em;&quot; cellpadding=&quot;2&quot; cellspacing=&quot;0&quot;&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;PK&lt;/td&gt;&lt;td&gt;&lt;b&gt;id&lt;/b&gt; UUID&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;email TEXT&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;password_hash TEXT&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;role TEXT&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;name TEXT&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;phone TEXT&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;avatar_url TEXT&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;metadata JSONB&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;&lt;/div&gt;" style="verticalAlign=top;align=left;overflow=fill;html=1;rounded=0;shadow=1;comic=0;labelBackgroundColor=none;strokeWidth=2;fontFamily=Verdana;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="200" height="180" as="geometry" />
+        </mxCell>
+
+        <!-- Table: students -->
+        <mxCell id="students" value="&lt;div style=&quot;box-sizing:border-box;width:100%;background:#1677FF;padding:2px;&quot;&gt;&lt;font color=&quot;#ffffff&quot;&gt;&lt;b&gt;students&lt;/b&gt;&lt;/font&gt;&lt;/div&gt;&lt;div style=&quot;box-sizing:border-box;width:100%;background:#ffffff;padding:2px;&quot;&gt;&lt;table style=&quot;width:100%;font-size:1em;&quot; cellpadding=&quot;2&quot; cellspacing=&quot;0&quot;&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;PK&lt;/td&gt;&lt;td&gt;&lt;b&gt;id&lt;/b&gt; UUID&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;FK&lt;/td&gt;&lt;td&gt;parent_id UUID&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;nisn TEXT&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;name TEXT&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;class TEXT&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;grade_level INT&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;enrollment_year INT&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;status TEXT&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;&lt;/div&gt;" style="verticalAlign=top;align=left;overflow=fill;html=1;rounded=0;shadow=1;comic=0;labelBackgroundColor=none;strokeWidth=2;fontFamily=Verdana;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="320" y="100" width="200" height="180" as="geometry" />
+        </mxCell>
+
+        <!-- Table: bills -->
+        <mxCell id="bills" value="&lt;div style=&quot;box-sizing:border-box;width:100%;background:#1677FF;padding:2px;&quot;&gt;&lt;font color=&quot;#ffffff&quot;&gt;&lt;b&gt;bills&lt;/b&gt;&lt;/font&gt;&lt;/div&gt;&lt;div style=&quot;box-sizing:border-box;width:100%;background:#ffffff;padding:2px;&quot;&gt;&lt;table style=&quot;width:100%;font-size:1em;&quot; cellpadding=&quot;2&quot; cellspacing=&quot;0&quot;&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;PK&lt;/td&gt;&lt;td&gt;&lt;b&gt;id&lt;/b&gt; UUID&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;FK&lt;/td&gt;&lt;td&gt;student_id UUID&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;month_year DATE&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;amount NUMERIC&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;breakdown JSONB&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;due_date DATE&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;status TEXT&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;payment_method TEXT&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;&lt;/div&gt;" style="verticalAlign=top;align=left;overflow=fill;html=1;rounded=0;shadow=1;comic=0;labelBackgroundColor=none;strokeWidth=2;fontFamily=Verdana;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="600" y="100" width="200" height="180" as="geometry" />
+        </mxCell>
+
+        <!-- Table: payments -->
+        <mxCell id="payments" value="&lt;div style=&quot;box-sizing:border-box;width:100%;background:#1677FF;padding:2px;&quot;&gt;&lt;font color=&quot;#ffffff&quot;&gt;&lt;b&gt;payments&lt;/b&gt;&lt;/font&gt;&lt;/div&gt;&lt;div style=&quot;box-sizing:border-box;width:100%;background:#ffffff;padding:2px;&quot;&gt;&lt;table style=&quot;width:100%;font-size:1em;&quot; cellpadding=&quot;2&quot; cellspacing=&quot;0&quot;&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;PK&lt;/td&gt;&lt;td&gt;&lt;b&gt;id&lt;/b&gt; UUID&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;FK&lt;/td&gt;&lt;td&gt;bill_id UUID&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;FK&lt;/td&gt;&lt;td&gt;user_id UUID&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;amount NUMERIC&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;payment_type TEXT&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;installment_plan JSONB&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;status TEXT&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;gateway_ref TEXT&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;&lt;/div&gt;" style="verticalAlign=top;align=left;overflow=fill;html=1;rounded=0;shadow=1;comic=0;labelBackgroundColor=none;strokeWidth=2;fontFamily=Verdana;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="880" y="100" width="220" height="180" as="geometry" />
+        </mxCell>
+
+        <!-- Table: campaigns -->
+        <mxCell id="campaigns" value="&lt;div style=&quot;box-sizing:border-box;width:100%;background:#52C41A;padding:2px;&quot;&gt;&lt;font color=&quot;#ffffff&quot;&gt;&lt;b&gt;campaigns&lt;/b&gt;&lt;/font&gt;&lt;/div&gt;&lt;div style=&quot;box-sizing:border-box;width:100%;background:#ffffff;padding:2px;&quot;&gt;&lt;table style=&quot;width:100%;font-size:1em;&quot; cellpadding=&quot;2&quot; cellspacing=&quot;0&quot;&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;PK&lt;/td&gt;&lt;td&gt;&lt;b&gt;id&lt;/b&gt; UUID&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;title TEXT&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;description TEXT&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;target_amount NUMERIC&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;collected_amount NUMERIC&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;start_date DATE&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;end_date DATE&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;status TEXT&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;FK&lt;/td&gt;&lt;td&gt;student_id UUID&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;&lt;/div&gt;" style="verticalAlign=top;align=left;overflow=fill;html=1;rounded=0;shadow=1;comic=0;labelBackgroundColor=none;strokeWidth=2;fontFamily=Verdana;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="40" y="360" width="220" height="200" as="geometry" />
+        </mxCell>
+
+        <!-- Table: donations -->
+        <mxCell id="donations" value="&lt;div style=&quot;box-sizing:border-box;width:100%;background:#52C41A;padding:2px;&quot;&gt;&lt;font color=&quot;#ffffff&quot;&gt;&lt;b&gt;donations&lt;/b&gt;&lt;/font&gt;&lt;/div&gt;&lt;div style=&quot;box-sizing:border-box;width:100%;background:#ffffff;padding:2px;&quot;&gt;&lt;table style=&quot;width:100%;font-size:1em;&quot; cellpadding=&quot;2&quot; cellspacing=&quot;0&quot;&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;PK&lt;/td&gt;&lt;td&gt;&lt;b&gt;id&lt;/b&gt; UUID&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;FK&lt;/td&gt;&lt;td&gt;campaign_id UUID&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;FK&lt;/td&gt;&lt;td&gt;donor_id UUID&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;amount NUMERIC&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;message TEXT&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;is_anonymous BOOLEAN&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;status TEXT&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;&lt;/div&gt;" style="verticalAlign=top;align=left;overflow=fill;html=1;rounded=0;shadow=1;comic=0;labelBackgroundColor=none;strokeWidth=2;fontFamily=Verdana;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="320" y="360" width="200" height="160" as="geometry" />
+        </mxCell>
+
+        <!-- Table: aid_requests -->
+        <mxCell id="aid_requests" value="&lt;div style=&quot;box-sizing:border-box;width:100%;background:#FD9A16;padding:2px;&quot;&gt;&lt;font color=&quot;#ffffff&quot;&gt;&lt;b&gt;aid_requests&lt;/b&gt;&lt;/font&gt;&lt;/div&gt;&lt;div style=&quot;box-sizing:border-box;width:100%;background:#ffffff;padding:2px;&quot;&gt;&lt;table style=&quot;width:100%;font-size:1em;&quot; cellpadding=&quot;2&quot; cellspacing=&quot;0&quot;&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;PK&lt;/td&gt;&lt;td&gt;&lt;b&gt;id&lt;/b&gt; UUID&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;FK&lt;/td&gt;&lt;td&gt;student_id UUID&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;FK&lt;/td&gt;&lt;td&gt;parent_id UUID&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;FK&lt;/td&gt;&lt;td&gt;bill_id UUID&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;reason TEXT&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;requested_amount NUMERIC&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;approved_amount NUMERIC&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;status TEXT&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;&lt;/div&gt;" style="verticalAlign=top;align=left;overflow=fill;html=1;rounded=0;shadow=1;comic=0;labelBackgroundColor=none;strokeWidth=2;fontFamily=Verdana;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="600" y="360" width="220" height="180" as="geometry" />
+        </mxCell>
+
+        <!-- Table: support_tickets -->
+        <mxCell id="support_tickets" value="&lt;div style=&quot;box-sizing:border-box;width:100%;background:#722ED1;padding:2px;&quot;&gt;&lt;font color=&quot;#ffffff&quot;&gt;&lt;b&gt;support_tickets&lt;/b&gt;&lt;/font&gt;&lt;/div&gt;&lt;div style=&quot;box-sizing:border-box;width:100%;background:#ffffff;padding:2px;&quot;&gt;&lt;table style=&quot;width:100%;font-size:1em;&quot; cellpadding=&quot;2&quot; cellspacing=&quot;0&quot;&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;PK&lt;/td&gt;&lt;td&gt;&lt;b&gt;id&lt;/b&gt; UUID&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;FK&lt;/td&gt;&lt;td&gt;user_id UUID&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;subject TEXT&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;category TEXT&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;description TEXT&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;status TEXT&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;&lt;/div&gt;" style="verticalAlign=top;align=left;overflow=fill;html=1;rounded=0;shadow=1;comic=0;labelBackgroundColor=none;strokeWidth=2;fontFamily=Verdana;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="880" y="360" width="220" height="140" as="geometry" />
+        </mxCell>
+
+        <!-- Relationships -->
+
+        <!-- users -> students (1:N) -->
+        <mxCell id="rel_users_students" value="" style="endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;endSize=8;startSize=8;html=1;entryX=0;entryY=0.5;exitX=1;exitY=0.25;strokeWidth=2;strokeColor=#1677FF;" edge="1" parent="1" source="users" target="students">
+          <mxGeometry width="100" height="100" relative="1" as="geometry">
+            <mxPoint x="240" y="145" as="sourcePoint" />
+            <mxPoint x="320" y="145" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rel_users_students_label" value="has" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontColor=#1677FF;fontStyle=1" vertex="1" connectable="0" parent="rel_users_students">
+          <mxGeometry x="-0.1" y="1" relative="1" as="geometry">
+            <mxPoint x="5" y="-9" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- students -> bills (1:N) -->
+        <mxCell id="rel_students_bills" value="" style="endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;endSize=8;startSize=8;html=1;entryX=0;entryY=0.25;exitX=1;exitY=0.25;strokeWidth=2;strokeColor=#1677FF;" edge="1" parent="1" source="students" target="bills">
+          <mxGeometry width="100" height="100" relative="1" as="geometry">
+            <mxPoint x="520" y="145" as="sourcePoint" />
+            <mxPoint x="600" y="145" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rel_students_bills_label" value="receives" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontColor=#1677FF;fontStyle=1" vertex="1" connectable="0" parent="rel_students_bills">
+          <mxGeometry x="-0.1" y="1" relative="1" as="geometry">
+            <mxPoint x="5" y="-9" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- bills -> payments (1:N) -->
+        <mxCell id="rel_bills_payments" value="" style="endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;endSize=8;startSize=8;html=1;entryX=0;entryY=0.25;exitX=1;exitY=0.25;strokeWidth=2;strokeColor=#1677FF;" edge="1" parent="1" source="bills" target="payments">
+          <mxGeometry width="100" height="100" relative="1" as="geometry">
+            <mxPoint x="800" y="145" as="sourcePoint" />
+            <mxPoint x="880" y="145" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rel_bills_payments_label" value="paid_by" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontColor=#1677FF;fontStyle=1" vertex="1" connectable="0" parent="rel_bills_payments">
+          <mxGeometry x="-0.1" y="1" relative="1" as="geometry">
+            <mxPoint x="5" y="-9" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- users -> payments (1:N) -->
+        <mxCell id="rel_users_payments" value="" style="endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;endSize=8;startSize=8;html=1;exitX=0.5;exitY=0;entryX=0.5;entryY=1;strokeWidth=2;strokeColor=#8C8C8C;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="users" target="payments">
+          <mxGeometry width="100" height="100" relative="1" as="geometry">
+            <mxPoint x="140" y="100" as="sourcePoint" />
+            <mxPoint x="990" y="80" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="140" y="60" />
+              <mxPoint x="990" y="60" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rel_users_payments_label" value="makes" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontColor=#8C8C8C;fontStyle=1" vertex="1" connectable="0" parent="rel_users_payments">
+          <mxGeometry x="-0.1" y="1" relative="1" as="geometry">
+            <mxPoint x="0" y="-9" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- campaigns -> donations (1:N) -->
+        <mxCell id="rel_campaigns_donations" value="" style="endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;endSize=8;startSize=8;html=1;entryX=0;entryY=0.5;exitX=1;exitY=0.5;strokeWidth=2;strokeColor=#52C41A;" edge="1" parent="1" source="campaigns" target="donations">
+          <mxGeometry width="100" height="100" relative="1" as="geometry">
+            <mxPoint x="260" y="460" as="sourcePoint" />
+            <mxPoint x="320" y="440" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rel_campaigns_donations_label" value="receives" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontColor=#52C41A;fontStyle=1" vertex="1" connectable="0" parent="rel_campaigns_donations">
+          <mxGeometry x="-0.1" y="1" relative="1" as="geometry">
+            <mxPoint x="5" y="-9" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- users -> donations (1:N) -->
+        <mxCell id="rel_users_donations" value="" style="endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;endSize=8;startSize=8;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeWidth=2;strokeColor=#52C41A;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="users" target="donations">
+          <mxGeometry width="100" height="100" relative="1" as="geometry">
+            <mxPoint x="140" y="280" as="sourcePoint" />
+            <mxPoint x="420" y="360" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="140" y="320" />
+              <mxPoint x="420" y="320" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rel_users_donations_label" value="donates" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontColor=#52C41A;fontStyle=1" vertex="1" connectable="0" parent="rel_users_donations">
+          <mxGeometry x="-0.1" y="1" relative="1" as="geometry">
+            <mxPoint x="0" y="-9" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- students -> aid_requests (1:N) -->
+        <mxCell id="rel_students_aid" value="" style="endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;endSize=8;startSize=8;html=1;exitX=1;exitY=0.75;entryX=0;entryY=0.25;strokeWidth=2;strokeColor=#FD9A16;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="students" target="aid_requests">
+          <mxGeometry width="100" height="100" relative="1" as="geometry">
+            <mxPoint x="520" y="235" as="sourcePoint" />
+            <mxPoint x="600" y="390" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="560" y="235" />
+              <mxPoint x="560" y="390" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rel_students_aid_label" value="requests" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontColor=#FD9A16;fontStyle=1" vertex="1" connectable="0" parent="rel_students_aid">
+          <mxGeometry x="-0.1" y="1" relative="1" as="geometry">
+            <mxPoint x="10" y="-9" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- bills -> aid_requests (1:N) -->
+        <mxCell id="rel_bills_aid" value="" style="endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;endSize=8;startSize=8;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeWidth=2;strokeColor=#FD9A16;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="bills" target="aid_requests">
+          <mxGeometry width="100" height="100" relative="1" as="geometry">
+            <mxPoint x="700" y="280" as="sourcePoint" />
+            <mxPoint x="710" y="360" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rel_bills_aid_label" value="aids" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontColor=#FD9A16;fontStyle=1" vertex="1" connectable="0" parent="rel_bills_aid">
+          <mxGeometry x="-0.1" y="1" relative="1" as="geometry">
+            <mxPoint x="0" y="-9" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- users -> support_tickets (1:N) -->
+        <mxCell id="rel_users_tickets" value="" style="endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;endSize=8;startSize=8;html=1;exitX=0.75;exitY=1;entryX=0.25;entryY=0;strokeWidth=2;strokeColor=#722ED1;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="users" target="support_tickets">
+          <mxGeometry width="100" height="100" relative="1" as="geometry">
+            <mxPoint x="190" y="280" as="sourcePoint" />
+            <mxPoint x="935" y="360" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="190" y="320" />
+              <mxPoint x="935" y="320" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rel_users_tickets_label" value="creates" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontColor=#722ED1;fontStyle=1" vertex="1" connectable="0" parent="rel_users_tickets">
+          <mxGeometry x="-0.1" y="1" relative="1" as="geometry">
+            <mxPoint x="0" y="-9" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Legend -->
+        <mxCell id="legend_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F7FA;strokeColor=#D9D9D9;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="40" y="600" width="1060" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_title" value="KETERANGAN" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="60" y="610" width="120" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_pk" value="PK = Primary Key" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="60" y="640" width="150" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_fk" value="FK = Foreign Key" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="60" y="665" width="150" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_blue" value="Biru = Modul SPP &amp; Pembayaran" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="250" y="640" width="250" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_green" value="Hijau = Modul Donasi Kampanye" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="250" y="665" width="250" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_orange" value="Orange = Modul Bantuan SPP" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="530" y="640" width="250" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_purple" value="Ungu = Modul Support IT" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="530" y="665" width="250" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_rel1" value="──&gt; (1:N) One to Many" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="810" y="640" width="250" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_db" value="Database: PostgreSQL (Supabase) | Total: 8 Tabel" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontStyle=2" vertex="1" parent="1">
+          <mxGeometry x="810" y="665" width="280" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

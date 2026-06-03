@@ -80,40 +80,7 @@ const DEMO_ACCOUNTS = [
 const SESSION_KEY = "edufin_session";
 const USERS_KEY = "edufin_users";
 
-// ─── Environment-based server config (no hardcoded credentials) ──────────────
-function getServerBase(): string {
-  // Read from environment variables (set in .env.local)
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-  if (supabaseUrl && supabaseUrl.includes("supabase.co")) {
-    return `${supabaseUrl}/functions/v1/make-server-87d0698a`;
-  }
-  // Fallback: construct from project ID env var
-  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID as string;
-  if (projectId) {
-    return `https://${projectId}.supabase.co/functions/v1/make-server-87d0698a`;
-  }
-  console.warn("[EDUFIN] VITE_SUPABASE_URL not set. API calls will fail. Check .env.local");
-  return "";
-}
-
-function getAnonKey(): string {
-  const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-  if (!key) {
-    console.warn("[EDUFIN] VITE_SUPABASE_ANON_KEY not set. Check .env.local");
-  }
-  return key || "";
-}
-
-async function apiFetch(path: string, body: object): Promise<Response> {
-  return fetch(`${getServerBase()}${path}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${getAnonKey()}`,
-    },
-    body: JSON.stringify(body),
-  });
-}
+import { supabase } from "../lib/supabase";
 
 // ─── Local storage helpers for fallback auth ──────────────────────────────────
 function getLocalUsers(): Array<{ email: string; password: string; user: User }> {
@@ -164,23 +131,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { success: false, message: "Email sudah terdaftar. Silakan masuk." };
     }
 
-    // Check local users
-    const localUsers = getLocalUsers();
-    if (localUsers.some((u) => u.email.toLowerCase() === payload.email.toLowerCase())) {
-      return { success: false, message: "Email sudah terdaftar. Silakan masuk." };
-    }
-
     try {
-      const res = await apiFetch("/auth/register", payload);
-      const data = await res.json();
-      if (!res.ok) {
-        console.error("[REGISTER] Server error:", data);
-        return { success: false, message: data.message || "Gagal mendaftar." };
+      const { data, error } = await supabase.auth.signUp({
+        email: payload.email,
+        password: payload.password,
+        options: {
+          data: {
+            name: payload.name,
+            role: payload.role,
+            nisn: payload.nisn,
+            school: payload.school,
+            class: payload.class,
+            parentName: payload.parentName,
+          },
+        },
+      });
+
+      if (error) {
+        console.error("[REGISTER] Supabase error:", error.message);
+        return { success: false, message: error.message };
       }
-      return { success: true, message: data.message || "Akun berhasil dibuat!" };
+
+      // Check local users for fallback (offline dev mode)
+      if (!data.user) {
+         throw new Error("Pendaftaran berhasil, tetapi data user tidak turun.");
+      }
+      return { success: true, message: "Akun berhasil dibuat! Silakan cek email jika diperlukan." };
     } catch (err) {
       console.error("[REGISTER] Network error:", err);
-
       // Fallback: save locally
       const newUser: User = {
         id: `local-${Date.now()}`,
@@ -194,7 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         parentName: payload.parentName,
       };
       saveLocalUser(payload.email, payload.password, newUser);
-      return { success: true, message: "Akun berhasil dibuat!" };
+      return { success: true, message: "Akun (Lokal) berhasil dibuat!" };
     }
   };
 
@@ -211,53 +189,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       );
       if (demo) {
         setUser(demo.user);
-        return { success: true, message: "Login berhasil!", role: demo.user.role };
+        return { success: true, message: "Login Demo berhasil!", role: demo.user.role };
       }
 
-      const demoEmailOnly = DEMO_ACCOUNTS.find(
-        (a) => a.email.toLowerCase() === email.toLowerCase()
-      );
-      if (demoEmailOnly) {
-        return { success: false, message: "Kata sandi salah. Coba lagi." };
-      }
-
-      // 2. Check local users
-      const localUsers = getLocalUsers();
-      const localUser = localUsers.find((u) => {
-        if (u.email.toLowerCase() !== email.toLowerCase()) return false;
-        if ((u as any)._hashed) {
-          // Compare against stored hash
-          const inputHash = btoa(email.toLowerCase() + ":" + password + ":edufin");
-          return u.password === inputHash;
-        }
-        return u.password === password; // legacy plain-text (will be migrated on next login)
-      });
-      if (localUser) {
-        setUser(localUser.user);
-        return { success: true, message: "Login berhasil!", role: localUser.user.role };
-      }
-
-      const localEmailOnly = localUsers.find(
-        (u) => u.email.toLowerCase() === email.toLowerCase()
-      );
-      if (localEmailOnly) {
-        return { success: false, message: "Kata sandi salah. Coba lagi." };
-      }
-
-      // 3. Server / database
+      // 2. Supabase Auth
       try {
-        const res = await apiFetch("/auth/login", { email, password });
-        const data = await res.json();
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
-        if (res.ok && data.success) {
-          setUser(data.user as User);
-          return { success: true, message: "Login berhasil!", role: data.user.role };
+        if (error) {
+          throw error;
         }
-        return { success: false, message: data.message || "Login gagal." };
-      } catch (networkErr) {
-        console.error("[LOGIN] Network error:", networkErr);
-        // If we get here, the user doesn't exist in demo or local, and we can't reach server
-        return { success: false, message: "Email atau kata sandi salah." };
+
+        if (data.user) {
+          const uData = data.user.user_metadata;
+          const supaUser: User = {
+             id: data.user.id,
+             email: data.user.email || email,
+             name: uData.name || "User",
+             role: uData.role as UserRole,
+             verified: true,
+             nisn: uData.nisn,
+             school: uData.school,
+             class: uData.class,
+             parentName: uData.parentName
+          };
+          setUser(supaUser);
+          return { success: true, message: "Login berhasil!", role: supaUser.role };
+        }
+        return { success: false, message: "Data pengguna tidak ditemukan." };
+      } catch (authErr: any) {
+         console.warn("[LOGIN] Supabase failed, trying local fallback:", authErr.message);
+         // 3. Fallback Check local users
+         const localUsers = getLocalUsers();
+         const localUser = localUsers.find((u) => {
+           if (u.email.toLowerCase() !== email.toLowerCase()) return false;
+           if ((u as any)._hashed) {
+             const inputHash = btoa(email.toLowerCase() + ":" + password + ":edufin");
+             return u.password === inputHash;
+           }
+           return u.password === password;
+         });
+
+         if (localUser) {
+           setUser(localUser.user);
+           return { success: true, message: "Login (Lokal) berhasil!", role: localUser.user.role };
+         }
+         return { success: false, message: "Email atau kata sandi salah." };
       }
     } catch (err) {
       console.error("[LOGIN] Error:", err);

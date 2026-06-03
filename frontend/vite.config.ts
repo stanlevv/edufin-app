@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import path from "path";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
+import { VitePWA } from "vite-plugin-pwa";
 
 function figmaAssetResolver() {
   return {
@@ -16,7 +17,36 @@ function figmaAssetResolver() {
 }
 
 export default defineConfig({
-  plugins: [figmaAssetResolver(), react(), tailwindcss()],
+  plugins: [
+    figmaAssetResolver(),
+    react(),
+    tailwindcss(),
+    VitePWA({
+      registerType: "autoUpdate",
+      includeAssets: ["favicon.ico", "apple-touch-icon.png", "mask-icon.svg"],
+      manifest: {
+        name: "EDUFIN - Platform Manajemen Keuangan Pendidikan",
+        short_name: "EDUFIN",
+        description: "Bayar SPP dan Berdonasi untuk Kas Sekolah secara Transparan",
+        theme_color: "#1d4ed8",
+        icons: [
+          {
+            src: "pwa-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+          },
+          {
+            src: "pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+          },
+        ],
+      },
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
+      },
+    }),
+  ],
   css: {
     postcss: {
       plugins: [],

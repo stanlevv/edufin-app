@@ -1,55 +1,64 @@
-# EDUFIN — Platform Manajemen Keuangan Sekolah
+# EDUFIN — Frontend
 
-Aplikasi fintech pendidikan untuk mengelola pembayaran SPP, pinjaman mikro, dan donasi kampanye sekolah.
-
-## Struktur Proyek
-
-```
-edufin-app/
-├── frontend/       ← React + Vite + Tailwind CSS v4
-│   ├── src/
-│   ├── index.html
-│   ├── vite.config.ts
-│   └── package.json
-│
-├── backend/        ← Supabase Edge Functions + PostgreSQL
-│   ├── supabase/
-│   ├── supabase-schema.sql
-│   └── database/
-│
-├── README.md
-└── .gitignore
-```
-
-## Aktor Sistem
-
-| Aktor | Role | Fitur Utama |
-|---|---|---|
-| 🏫 **Sekolah** | Admin | Kelola siswa, tagihan SPP, kampanye donasi, laporan keuangan |
-| 🎓 **Siswa** | Pelajar | Bayar SPP, pinjaman mikro, lihat kampanye |
-| ❤️ **Donatur** | Donatur | Donasi kampanye, riwayat donasi |
-
-## Quick Start
-
-### Frontend
-```bash
-cd frontend
-pnpm install
-pnpm run dev
-```
-
-### Backend
-```bash
-cd backend
-supabase functions serve server
-```
-
-## Dokumentasi
-- [Frontend README](./frontend/README.md)
-- [Backend README](./backend/README.md)
-- [Database Schema](./backend/supabase-schema.sql)
+Platform manajemen keuangan sekolah berbasis React + Vite + Tailwind CSS v4.
 
 ## Tech Stack
-- **Frontend**: React 18, Vite, Tailwind CSS v4, React Router v7
-- **Backend**: Supabase Edge Functions (Deno), PostgreSQL
-- **Auth**: Supabase Auth (+ localStorage fallback untuk demo)
+- React 18
+- Vite
+- Tailwind CSS v4
+- React Router v7
+- Recharts
+- Lucide React
+- Supabase JS Client
+
+## Cara Jalankan
+
+```bash
+# Install dependencies
+pnpm install
+
+# Jalankan dev server
+pnpm run dev
+
+# Build production
+pnpm run build
+```
+
+## Struktur Folder
+
+```
+frontend/
+├── src/
+│   ├── app/
+│   │   ├── components/
+│   │   │   ├── auth/        # Login, Register, ProtectedRoute
+│   │   │   ├── school/      # Dashboard & halaman admin sekolah
+│   │   │   ├── student/     # Dashboard & halaman siswa
+│   │   │   ├── donor/       # Dashboard & halaman donatur
+│   │   │   └── shared/      # Komponen bersama (BottomNav, AppLayout, dll)
+│   │   ├── context/         # AuthContext
+│   │   ├── data/            # Database class (localStorage)
+│   │   └── routes.tsx       # Routing utama
+│   ├── styles/              # CSS global
+│   └── main.tsx             # Entry point
+├── index.html
+├── vite.config.ts
+└── package.json
+```
+
+## Aktor & Role
+
+| Role | Path | Keterangan |
+|---|---|---|
+| `sekolah` | `/school` | Admin manajemen tagihan, kampanye, siswa |
+| `siswa` | `/student` | Bayar SPP, pinjaman, donasi |
+| `donatur` | `/donor` | Donasi kampanye, riwayat donasi |
+
+## Environment Variables
+
+Salin `.env.example` menjadi `.env.local` dan isi:
+
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_anon_key
+```

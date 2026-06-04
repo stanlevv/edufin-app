@@ -250,7 +250,7 @@ export function RegisterPage() {
         </div>
 
         <h2 className="text-white text-center mb-2" style={{ fontSize: "1.6rem", fontWeight: 900 }}>
-          {role === "siswa" ? "Akun Terdaftar!" : "Selamat Datang!"}
+          {role === "siswa" ? "Akun Terdaftar!" : "Pendaftaran Berhasil!"}
         </h2>
 
         {role === "siswa" ? (
@@ -258,7 +258,7 @@ export function RegisterPage() {
             <p className="text-center mb-2" style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.9rem" }}>
               Data siswa <strong style={{ color: "white" }}>{studentData?.name}</strong> berhasil dikaitkan
             </p>
-            <div className="w-full rounded-2xl p-4 mb-6 mt-2"
+            <div className="w-full rounded-2xl p-4 mb-4 mt-2"
               style={{ background: "rgba(255,255,255,0.18)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.3)" }}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl flex items-center justify-center"
@@ -273,15 +273,25 @@ export function RegisterPage() {
                 </div>
               </div>
             </div>
-            <p className="text-center mb-8" style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.82rem" }}>
-              Tautan verifikasi dikirim ke <strong style={{ color: "white" }}>{email}</strong>
-            </p>
           </>
         ) : (
-          <p className="text-center mb-8 mt-2" style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.88rem" }}>
-            Akun donatur kamu telah dibuat. Mulai temukan kampanye pendidikan yang ingin kamu dukung!
+          <p className="text-center mb-4 mt-2" style={{ color: "rgba(255,255,255,0.85)", fontSize: "0.95rem" }}>
+            Akun donatur kamu telah dibuat.
           </p>
         )}
+
+        {/* Email verification notice for ALL roles */}
+        <div className="w-full rounded-2xl p-4 mb-8"
+          style={{ background: "rgba(255,255,255,0.15)", border: "1.5px dashed rgba(255,255,255,0.5)" }}>
+          <p className="text-center" style={{ color: "white", fontWeight: 700, fontSize: "0.95rem", marginBottom: "4px" }}>
+            ✉️ Cek Konfirmasi Email
+          </p>
+          <p className="text-center" style={{ color: "rgba(255,255,255,0.85)", fontSize: "0.82rem", lineHeight: 1.5 }}>
+            Kami telah mengirimkan tautan konfirmasi ke <br/>
+            <strong style={{ color: "white", letterSpacing: "0.5px" }}>{email}</strong><br/>
+            Silakan verifikasi email Anda sebelum masuk.
+          </p>
+        </div>
 
         <button
           onClick={() => navigate("/login")}

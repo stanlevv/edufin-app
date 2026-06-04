@@ -320,7 +320,94 @@ export class Database {
     }
     return true;
   }
+
+  // ─── Registration Flow Methods ────────────────────────────────────────────
+
+  /** Cari siswa berdasarkan NISN (untuk langkah registrasi mandiri) */
+  static async findStudentByNISN(nisn: string): Promise<any | null> {
+    const { supabase } = await import('../../lib/supabase');
+    const { data, error } = await supabase
+      .from('students')
+      .select('*')
+      .eq('nisn', nisn)
+      .single();
+    if (error || !data) return null;
+    return {
+      id: data.id,
+      nisn: data.nisn,
+      name: data.name,
+      class: data.class,
+      parentName: data.parent_name,
+      address: data.address,
+      sppAmount: data.spp_amount,
+      registrationStatus: data.registration_status || 'data_only',
+      userId: data.user_id,
+    };
+  }
+
+  /** Siswa apply registrasi: update user_id, email, dan set status pending */
+  static async applyStudentRegistration(studentId: string, userId: string, email: string): Promise<boolean> {
+    const { supabase } = await import('../../lib/supabase');
+    const { error } = await supabase.from('students').update({
+      user_id: userId,
+      email: email,
+      registration_status: 'pending',
+      registered_at: new Date().toISOString(),
+    }).eq('id', studentId);
+    if (error) { console.error('Error applying registration:', error); return false; }
+    return true;
+  }
+
+  /** Admin konfirmasi siswa pending → active */
+  static async confirmStudentRegistration(studentId: string): Promise<boolean> {
+    const { supabase } = await import('../../lib/supabase');
+    const { error } = await supabase.from('students').update({
+      registration_status: 'active',
+      status: 'active',
+    }).eq('id', studentId);
+    if (error) { console.error('Error confirming student:', error); return false; }
+    return true;
+  }
+
+  /** Admin tolak siswa pending → kembalikan ke data_only, hapus user_id & email */
+  static async rejectStudentRegistration(studentId: string): Promise<boolean> {
+    const { supabase } = await import('../../lib/supabase');
+    const { error } = await supabase.from('students').update({
+      registration_status: 'data_only',
+      user_id: null,
+      email: null,
+      registered_at: null,
+    }).eq('id', studentId);
+    if (error) { console.error('Error rejecting student:', error); return false; }
+    return true;
+  }
+
+  /** Ambil semua siswa pending untuk admin */
+  static async fetchPendingStudentsSupabase(): Promise<any[]> {
+    const { supabase } = await import('../../lib/supabase');
+    const { data, error } = await supabase
+      .from('students')
+      .select('*')
+      .eq('registration_status', 'pending')
+      .order('registered_at', { ascending: false });
+    if (error) { console.error('Error fetching pending students:', error); return []; }
+    return (data || []).map((d: any) => ({
+      id: d.id,
+      userId: d.user_id || '',
+      nisn: d.nisn,
+      name: d.name,
+      email: d.email || '',
+      class: d.class,
+      parentName: d.parent_name,
+      address: d.address || '',
+      sppAmount: d.spp_amount,
+      status: d.status,
+      registrationStatus: d.registration_status,
+      registeredAt: d.registered_at,
+    }));
+  }
   // -------------------------------------------
+
 
   // Bills
   static getBills(): Bill[] {

@@ -7,36 +7,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
-// ─── Mock NISN Database ───────────────────────────────────────────────────────
-const NISN_DB: Record<string, {
-  name: string; school: string; class: string;
-  nisn: string; parentName: string; address: string;
-}> = {
-  "0012345678": {
-    name: "Budi Santoso",
-    school: "SDN 3 Malang",
-    class: "X IPA 1",
-    nisn: "0012345678",
-    parentName: "Hendra Santoso",
-    address: "Jl. Veteran No.12, Malang",
-  },
-  "0087654321": {
-    name: "Citra Dewi Rahayu",
-    school: "SMPN 5 Batu",
-    class: "VIII B",
-    nisn: "0087654321",
-    parentName: "Dewi Rahayu",
-    address: "Jl. Diponegoro No.45, Batu",
-  },
-  "0099887766": {
-    name: "Ahmad Rizki Pratama",
-    school: "SMA Negeri 2 Kepanjen",
-    class: "XII IPA 2",
-    nisn: "0099887766",
-    parentName: "Rizki Purnama",
-    address: "Jl. Pahlawan No.7, Kepanjen",
-  },
-};
+import { Database } from "../../data/database";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Role = "siswa" | "donatur";
@@ -129,7 +100,7 @@ export function RegisterPage() {
   const [nisn, setNisn] = useState("");
   const [nisnError, setNisnError] = useState("");
   const [nisnLoading, setNisnLoading] = useState(false);
-  const [studentData, setStudentData] = useState<typeof NISN_DB[string] | null>(null);
+  const [studentData, setStudentData] = useState<any | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -154,25 +125,31 @@ export function RegisterPage() {
     if (step === "password") { setStep("verify"); return; }
   };
 
-  // ── NISN Lookup ──
-  const handleNisnLookup = () => {
+  // ── NISN Lookup (real Supabase) ──
+  const handleNisnLookup = async () => {
     const clean = nisn.replace(/\s/g, "");
     if (clean.length < 10) { setNisnError("NISN harus 10 digit."); return; }
     setNisnLoading(true);
     setNisnError("");
-    setTimeout(() => {
-      const data = NISN_DB[clean];
-      if (data) {
-        setStudentData(data);
-        setStep("verify");
-      } else {
-        setNisnError("NISN tidak ditemukan. Pastikan NISN sesuai dengan kartu pelajar.");
-      }
-      setNisnLoading(false);
-    }, 1600);
+    const data = await Database.findStudentByNISN(clean);
+    setNisnLoading(false);
+    if (!data) {
+      setNisnError("NISN tidak ditemukan. Hubungi admin sekolah Anda.");
+      return;
+    }
+    if (data.registrationStatus === 'pending') {
+      setNisnError("NISN ini sudah terdaftar dan sedang menunggu konfirmasi admin.");
+      return;
+    }
+    if (data.registrationStatus === 'active') {
+      setNisnError("NISN ini sudah memiliki akun aktif. Silakan login.");
+      return;
+    }
+    setStudentData(data);
+    setStep("verify");
   };
 
-  // ── Password Submit ──
+  // ── Password Submit (siswa) — register + apply pending ──
   const handlePasswordSubmit = async () => {
     let ok = true;
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -186,22 +163,35 @@ export function RegisterPage() {
     if (!ok) return;
 
     setSubmitLoading(true);
+    // 1. Buat akun di Supabase Auth
     const result = await register({
       email,
       password,
       role: "siswa",
       name: studentData!.name,
       nisn: studentData!.nisn,
-      school: studentData!.school,
+      school: studentData!.class, // pakai class sebagai school fallback
       class: studentData!.class,
       parentName: studentData!.parentName,
     });
-    setSubmitLoading(false);
 
     if (!result.success) {
       setEmailError(result.message);
+      setSubmitLoading(false);
       return;
     }
+
+    // 2. Dapatkan user ID dari Supabase Auth
+    const { supabase } = await import('../../lib/supabase');
+    const { data: authData } = await supabase.auth.getUser();
+    const userId = authData?.user?.id;
+
+    if (userId && studentData?.id) {
+      // 3. Link siswa record dengan user_id, set status pending
+      await Database.applyStudentRegistration(studentData.id, userId, email);
+    }
+
+    setSubmitLoading(false);
     setStep("success");
   };
 
@@ -257,7 +247,7 @@ export function RegisterPage() {
         {role === "siswa" ? (
           <>
             <p className="text-center mb-2" style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.9rem" }}>
-              Data siswa <strong style={{ color: "white" }}>{studentData?.name}</strong> berhasil dikaitkan
+              Pendaftaran <strong style={{ color: "white" }}>{studentData?.name}</strong> berhasil dikirim
             </p>
             <div className="w-full rounded-2xl p-4 mb-4 mt-2"
               style={{ background: "rgba(255,255,255,0.18)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.3)" }}>
@@ -269,10 +259,21 @@ export function RegisterPage() {
                 <div>
                   <p style={{ color: "white", fontWeight: 800, fontSize: "0.92rem" }}>{studentData?.name}</p>
                   <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.75rem" }}>
-                    {studentData?.school} · {studentData?.class}
+                    Kelas {studentData?.class}
                   </p>
                 </div>
               </div>
+            </div>
+            {/* Pending notice for siswa */}
+            <div className="w-full rounded-2xl p-4 mb-4"
+              style={{ background: "rgba(255,255,255,0.15)", border: "1.5px dashed rgba(255,255,255,0.5)" }}>
+              <p className="text-center" style={{ color: "white", fontWeight: 700, fontSize: "0.95rem", marginBottom: "4px" }}>
+                ⏳ Menunggu Konfirmasi Admin
+              </p>
+              <p className="text-center" style={{ color: "rgba(255,255,255,0.85)", fontSize: "0.82rem", lineHeight: 1.5 }}>
+                Data Anda sedang ditinjau oleh admin sekolah.<br/>
+                Setelah dikonfirmasi, Anda dapat login menggunakan email <strong style={{ color: "white" }}>{email}</strong>
+              </p>
             </div>
           </>
         ) : (
@@ -281,7 +282,8 @@ export function RegisterPage() {
           </p>
         )}
 
-        {/* Email verification notice for ALL roles */}
+        {/* Email verification notice */}
+        {role === "siswa" ? null : (
         <div className="w-full rounded-2xl p-4 mb-8"
           style={{ background: "rgba(255,255,255,0.15)", border: "1.5px dashed rgba(255,255,255,0.5)" }}>
           <p className="text-center" style={{ color: "white", fontWeight: 700, fontSize: "0.95rem", marginBottom: "4px" }}>
@@ -293,6 +295,7 @@ export function RegisterPage() {
             Silakan verifikasi email Anda sebelum masuk.
           </p>
         </div>
+        )}
 
         <button
           onClick={() => navigate("/login")}

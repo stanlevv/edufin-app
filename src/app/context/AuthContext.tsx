@@ -140,11 +140,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data.user) {
         const uData = data.user.user_metadata;
+        const role = uData.role as UserRole;
+
+        // Jika siswa, cek registration_status di tabel students
+        if (role === 'siswa') {
+          const { supabase: sb } = await import('../lib/supabase');
+          const { data: studentData } = await sb
+            .from('students')
+            .select('registration_status, name, nisn, class, parent_name')
+            .eq('user_id', data.user.id)
+            .single();
+
+          if (!studentData) {
+            await sb.auth.signOut();
+            return { success: false, message: 'Data siswa tidak ditemukan. Hubungi admin sekolah Anda.' };
+          }
+
+          if (studentData.registration_status === 'pending') {
+            await sb.auth.signOut();
+            return { success: false, message: 'Akun Anda sedang menunggu konfirmasi admin sekolah. Silakan coba lagi nanti.' };
+          }
+
+          if (studentData.registration_status === 'data_only') {
+            await sb.auth.signOut();
+            return { success: false, message: 'Silakan daftar terlebih dahulu menggunakan NISN Anda.' };
+          }
+        }
+
         const supaUser: User = {
            id: data.user.id,
            email: data.user.email || email,
            name: uData.name || "User",
-           role: uData.role as UserRole,
+           role: role,
            verified: true,
            nisn: uData.nisn,
            school: uData.school,

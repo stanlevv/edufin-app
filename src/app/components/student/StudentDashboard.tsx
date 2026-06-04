@@ -359,12 +359,12 @@ export function StudentDashboard() {
 
       {/* ── HEADER ─────────────────────────────────────────── */}
       <div
-        className="relative px-6 pt-12 pb-6 overflow-hidden"
-        style={{ background: "linear-gradient(145deg, #0D5FD6 0%, #108EE9 60%, #1AAEFC 100%)" }}
+        className="relative px-6 pt-12 pb-6"
+        style={{ background: "linear-gradient(145deg, #0D5FD6 0%, #108EE9 60%, #1AAEFC 100%)", zIndex: 1 }}
       >
-        <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full opacity-10"
+        <div className="absolute -top-4 -right-4 w-32 h-32 rounded-full opacity-10"
           style={{ background: "white" }} />
-        <div className="absolute top-16 -right-4 w-24 h-24 rounded-full opacity-8"
+        <div className="absolute top-16 right-0 w-16 h-16 rounded-full opacity-8"
           style={{ background: "white" }} />
 
         <img
@@ -416,8 +416,7 @@ export function StudentDashboard() {
         <div
           className="rounded-3xl p-4 relative z-10"
           style={{
-            background: "rgba(255,255,255,0.15)",
-            backdropFilter: "blur(16px)",
+            background: "rgba(255,255,255,0.18)",
             border: "1px solid rgba(255,255,255,0.3)",
             boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
           }}

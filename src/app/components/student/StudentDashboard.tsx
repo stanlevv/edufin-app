@@ -32,10 +32,11 @@ function SvgBarChart({ data }: { data: typeof monthlyData }) {
   const paddingBottom = 20;
   const chartW = W - paddingLeft;
   const chartH = H - paddingBottom;
-  const max = 850000;
+  const dataMax = Math.max(...data.map(d => d.paid));
+  const max = Math.max(dataMax, 850000); // minimal 850rb untuk skala dasar
   const barW = 22;
   const gap = (chartW - barW * data.length) / (data.length + 1);
-  const yTicks = [0, 425000, 850000];
+  const yTicks = [0, max / 2, max];
 
   return (
     <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: "visible" }}>
@@ -52,7 +53,7 @@ function SvgBarChart({ data }: { data: typeof monthlyData }) {
               x={paddingLeft - 4} y={y + 3.5}
               textAnchor="end" fontSize={8} fill="#BFBFBF"
             >
-              {tick === 0 ? "0" : `${tick / 1000}rb`}
+              {tick === 0 ? "0" : formatK(tick)}
             </text>
           </g>
         );

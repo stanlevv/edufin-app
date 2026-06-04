@@ -2,21 +2,33 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>EDUFIN - Platform Manajemen Keuangan Pendidikan</title>
     <meta name="description" content="EDUFIN platform digital untuk manajemen SPP, cicilan, dan fundraising siswa." />
     <meta name="robots" content="noindex, nofollow" />
 
-    <!-- PWA -->
-    <link rel="manifest" href="/manifest.json" />
+    <!-- PWA Theme -->
     <meta name="theme-color" content="#1677FF" />
     <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- iOS PWA Support -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="EDUFIN" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
-    <style>html, body { height: 100%; margin: 0; } #root { height: 100%; }</style>
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+
+    <!-- Base styles -->
+    <style>
+      html, body { height: 100%; margin: 0; }
+      #root { height: 100%; }
+      /* Hapus highlight tap di mobile */
+      * { -webkit-tap-highlight-color: transparent; }
+      /* Safe area untuk notch iOS */
+      body { padding-top: env(safe-area-inset-top); }
+    </style>
     <!-- Midtrans Snap.js dimuat secara DINAMIS oleh PaySPP.tsx saat payment dimulai. Butuh VITE_MIDTRANS_CLIENT_KEY di .env.local -->
   </head>
   <body>

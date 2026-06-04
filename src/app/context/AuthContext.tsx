@@ -62,10 +62,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         const uData = session.user.user_metadata;
         let role = uData.role as UserRole || "donatur";
-        let name = uData.name || uData.full_name || "User";
-        const isGoogleUser = session.user.app_metadata?.provider === "google";
+        let name = uData.name || "User";
 
-        // Query tabel public.users untuk mengambil data role terbaru
+        // Query tabel public.users untuk mengambil data role terbaru (terutama untuk login Google)
         try {
           const { data: publicUser, error } = await supabase
             .from("users")
@@ -76,19 +75,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!error && publicUser) {
             if (publicUser.role) role = publicUser.role as UserRole;
             if (publicUser.name) name = publicUser.name;
-          } else if (isGoogleUser) {
-            // Google user baru: otomatis insert sebagai donatur
-            await supabase.from("users").insert({
-              id: session.user.id,
-              email: session.user.email,
-              name: name,
-              role: "donatur",
-            }).then(() => {});
-            role = "donatur";
           }
         } catch (dbErr) {
           console.error("[AUTH ONSTATECHANGE] Gagal query public.users:", dbErr);
-          if (isGoogleUser) role = "donatur";
         }
 
         const supaUser: User = {
@@ -248,18 +237,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
 
           if (studentData.registration_status === 'pending') {
-            // Siswa pending boleh login, tapi akan ditampilkan halaman tunggu konfirmasi di dashboard
-            // Jangan sign out, biarkan masuk
-            name = studentData.name || name;
+            await supabase.auth.signOut();
+            return { success: false, message: 'Akun Anda sedang menunggu konfirmasi admin sekolah. Silakan coba lagi nanti.' };
           }
 
           if (studentData.registration_status === 'data_only') {
             await supabase.auth.signOut();
             return { success: false, message: 'Silakan daftar terlebih dahulu menggunakan NISN Anda.' };
           }
-
-          // Override name dari data siswa jika ada
-          if (studentData.name) name = studentData.name;
         }
 
         const supaUser: User = {
@@ -292,8 +277,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          // Redirect ke /login agar useEffect di LoginPage bisa handle routing berdasarkan role
-          redirectTo: `${window.location.origin}/login`,
+          redirectTo: window.location.origin,
         },
       });
 

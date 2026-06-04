@@ -96,48 +96,178 @@ export function PaySPP() {
   const [payMethod, setPayMethod] = useState("");
   const [midtransLoading, setMidtransLoading] = useState(false);
   const [midtransError, setMidtransError] = useState("");
+  const [loadingBills, setLoadingBills] = useState(true);
+  const [studentId, setStudentId] = useState<string>("");
+  const [sppAmount, setSppAmount] = useState<number>(750000);
 
-  // Load bills dari database berdasarkan user yang login
+  // ── Load Bills dengan fallback berlapis ──
   useEffect(() => {
     async function loadData() {
       if (!user) return;
-      const students = await Database.fetchStudentsSupabase();
-      const student = students.find((s: any) => s.userId === user.id || s.name === user.name);
-      if (!student) return;
-      
-      const payments = await Database.fetchPaymentsSupabase();
-      let studentPayments = payments.filter((p: any) => p.studentId === student.id);
-      
-      // Urutkan: pending dulu, lalu berdasarkan tahun+bulan terbaru
+      setLoadingBills(true);
+
       const MONTH_ORDER: Record<string, number> = {
         Januari: 1, Februari: 2, Maret: 3, April: 4, Mei: 5, Juni: 6,
         Juli: 7, Agustus: 8, September: 9, Oktober: 10, November: 11, Desember: 12,
       };
-      
-      const sorted = [...studentPayments].sort((a: any, b: any) => {
-        const aUnpaid = a.status === "pending" || a.status === "unpaid";
-        const bUnpaid = b.status === "pending" || b.status === "unpaid";
-        if (aUnpaid && !bUnpaid) return -1;
-        if (bUnpaid && !aUnpaid) return 1;
-        if (b.year !== a.year) return b.year - a.year;
-        return (MONTH_ORDER[b.month] ?? 0) - (MONTH_ORDER[a.month] ?? 0);
-      });
-      
-      const uiBills: any[] = sorted.map((p: any) => ({
-        id: p.id,
-        studentId: p.studentId,
-        month: p.month || "-",
-        year: p.year || new Date().getFullYear(),
-        dueDate: p.dueDate || new Date().toISOString(),
-        total: p.amount,
-        status: (p.status === "completed" || p.status === "success") ? "Lunas" : "Tertunggak",
-        items: [{ name: "SPP Bulanan", amount: p.amount }]
-      }));
+      const MONTHS = ["Januari","Februari","Maret","April","Mei","Juni",
+                      "Juli","Agustus","September","Oktober","November","Desember"];
 
-      setBills(uiBills);
-      
-      const firstUnpaid = uiBills.find((b) => b.status === "Tertunggak");
-      if (firstUnpaid) setSelected([firstUnpaid.id]);
+      try {
+        // ── LAPIS 1: Cari student di Supabase by user_id atau email atau nisn ──
+        const { supabase } = await import('../../lib/supabase');
+        
+        // Cari student by user_id
+        let { data: studentData, error: studentError } = await supabase
+          .from('students')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        // Fallback: cari by NISN
+        if (!studentData && user.nisn) {
+          const res = await supabase
+            .from('students')
+            .select('*')
+            .eq('nisn', user.nisn)
+            .maybeSingle();
+          studentData = res.data;
+        }
+
+        // Fallback: cari by name
+        if (!studentData && user.name) {
+          const res = await supabase
+            .from('students')
+            .select('*')
+            .ilike('name', user.name)
+            .maybeSingle();
+          studentData = res.data;
+        }
+
+        if (studentData) {
+          // Simpan studentId & sppAmount untuk pembayaran
+          setStudentId(studentData.id);
+          const amount = studentData.spp_amount || 750000;
+          setSppAmount(amount);
+
+          // Ambil payments dari Supabase
+          const { data: paymentsData } = await supabase
+            .from('payments')
+            .select('*')
+            .eq('student_id', studentData.id)
+            .order('created_at', { ascending: false });
+
+          const payments = paymentsData || [];
+
+          if (payments.length > 0) {
+            // Ada data payments di Supabase
+            const paidMonths = new Set(
+              payments
+                .filter((p: any) => p.status === 'completed' || p.status === 'success')
+                .map((p: any) => `${p.month_paid}-${p.year_paid}`)
+            );
+
+            // Buat daftar tagihan 6 bulan terakhir
+            const now = new Date();
+            const uiBills: any[] = [];
+            for (let i = 5; i >= 0; i--) {
+              const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+              const monthName = MONTHS[d.getMonth()];
+              const year = d.getFullYear();
+              const isPaid = paidMonths.has(`${monthName}-${year}`);
+              const dueDate = new Date(year, d.getMonth() + 1, 10).toISOString();
+              uiBills.push({
+                id: `bill-${year}-${d.getMonth()}`,
+                studentId: studentData.id,
+                month: monthName,
+                year,
+                dueDate,
+                total: amount,
+                status: isPaid ? "Lunas" : "Tertunggak",
+                items: [{ name: "SPP Bulanan", amount }],
+              });
+            }
+            setBills(uiBills);
+            const firstUnpaid = uiBills.find(b => b.status === "Tertunggak");
+            if (firstUnpaid) setSelected([firstUnpaid.id]);
+            setLoadingBills(false);
+            return;
+          }
+        }
+
+        // ── LAPIS 2: Fallback ke localStorage ──
+        const localStudents = Database.getStudents();
+        const localStudent = localStudents.find(
+          s => s.userId === user.id || s.nisn === user.nisn || s.name === user.name
+        );
+
+        if (localStudent) {
+          setStudentId(localStudent.id);
+          const amount = localStudent.sppAmount || 750000;
+          setSppAmount(amount);
+          const localBills = Database.getSPPBills().filter(b => b.studentId === localStudent.id);
+          if (localBills.length > 0) {
+            setBills(localBills);
+            const firstUnpaid = localBills.find(b => b.status === "Tertunggak");
+            if (firstUnpaid) setSelected([firstUnpaid.id]);
+            setLoadingBills(false);
+            return;
+          }
+        }
+
+        // ── LAPIS 3: Generate tagihan default (untuk akun demo / data baru) ──
+        const defaultAmount = sppAmount || 750000;
+        const now = new Date();
+        const generatedBills: any[] = [];
+        for (let i = 5; i >= 0; i--) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const monthName = MONTHS[d.getMonth()];
+          const year = d.getFullYear();
+          // Bulan lalu dan sebelumnya dianggap tertunggak, bulan sebelumnya lagi lunas
+          const isPaid = i > 2;
+          const dueDate = new Date(year, d.getMonth() + 1, 10).toISOString();
+          generatedBills.push({
+            id: `demo-bill-${year}-${d.getMonth()}`,
+            studentId: localStudent?.id || `student-${user.id}`,
+            month: monthName,
+            year,
+            dueDate,
+            total: defaultAmount,
+            status: isPaid ? "Lunas" : "Tertunggak",
+            items: [{ name: "SPP Bulanan", amount: defaultAmount }],
+          });
+        }
+        setBills(generatedBills);
+        const firstUnpaid = generatedBills.find(b => b.status === "Tertunggak");
+        if (firstUnpaid) setSelected([firstUnpaid.id]);
+
+      } catch (err) {
+        console.error('[PaySPP] Error loading data:', err);
+        // Tetap generate bills agar halaman tidak kosong
+        const defaultAmount = 750000;
+        const now = new Date();
+        const MONTHS_LOCAL = ["Januari","Februari","Maret","April","Mei","Juni",
+                              "Juli","Agustus","September","Oktober","November","Desember"];
+        const fallbackBills: any[] = [];
+        for (let i = 2; i >= 0; i--) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          fallbackBills.push({
+            id: `fallback-${i}`,
+            studentId: user.id,
+            month: MONTHS_LOCAL[d.getMonth()],
+            year: d.getFullYear(),
+            dueDate: new Date(d.getFullYear(), d.getMonth() + 1, 10).toISOString(),
+            total: defaultAmount,
+            status: i === 0 ? "Tertunggak" : "Lunas",
+            items: [{ name: "SPP Bulanan", amount: defaultAmount }],
+          });
+        }
+        setBills(fallbackBills);
+        const firstUnpaid = fallbackBills.find(b => b.status === "Tertunggak");
+        if (firstUnpaid) setSelected([firstUnpaid.id]);
+      } finally {
+        setLoadingBills(false);
+      }
     }
     loadData();
   }, [user]);
@@ -319,33 +449,46 @@ export function PaySPP() {
             ))}
           </div>
 
-          {/* Opsi cicilan & metode */}
+          {/* Ringkasan cicilan & metode */}
           <div className="rounded-2xl p-4 space-y-3" style={{ background: "#F5F7FA" }}>
             <div className="flex justify-between">
               <span style={{ color: "#8C8C8C", fontSize: "0.85rem" }}>Jenis Pembayaran</span>
               <span style={{ fontWeight: 600, color: "#242424", fontSize: "0.85rem" }}>
-                Penuh
+                {cicilanOption === "penuh" ? "Bayar Penuh" : cicilanOption === "2x" ? "Cicilan 2x" : "Cicilan 3x"}
               </span>
             </div>
+            {cicilanOption !== "penuh" && (
+              <div className="flex justify-between">
+                <span style={{ color: "#8C8C8C", fontSize: "0.85rem" }}>Bayar Sekarang</span>
+                <span style={{ fontWeight: 600, color: "#1677FF", fontSize: "0.85rem" }}>
+                  {formatRupiah(cicilanOption === "2x" ? Math.ceil(subtotal / 2) : Math.ceil(subtotal / 3))}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span style={{ color: "#8C8C8C", fontSize: "0.85rem" }}>Metode</span>
               <span style={{ fontWeight: 600, color: "#242424", fontSize: "0.85rem" }}>{selectedMethod?.label}</span>
             </div>
           </div>
-
-
         </div>
 
-        {/* Sticky Bottom */}
-        <div className="fixed bottom-[110px] z-40 left-1/2 w-full max-w-[380px] px-6 py-4"
-          style={{ transform: "translateX(-50%)", background: "white", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)" }}>
+        {/* ── Sticky Bottom ── */}
+        <div
+          style={{
+            position: "sticky",
+            bottom: 0,
+            background: "white",
+            boxShadow: "0 -4px 20px rgba(0,0,0,0.08)",
+            padding: "16px 24px",
+            zIndex: 40,
+          }}
+        >
           <div className="flex justify-between mb-1">
-            <span style={{ color: "#8C8C8C", fontSize: "0.85rem" }}>
-              Total Pembayaran
+            <span style={{ color: "#8C8C8C", fontSize: "0.85rem" }}>Total Pembayaran</span>
+            <span style={{ fontWeight: 800, color: "#1677FF", fontSize: "1.1rem" }}>
+              {formatRupiah(cicilanOption === "2x" ? Math.ceil(subtotal / 2) : cicilanOption === "3x" ? Math.ceil(subtotal / 3) : firstPayment)}
             </span>
-            <span style={{ fontWeight: 800, color: "#1677FF", fontSize: "1.1rem" }}>{formatRupiah(firstPayment)}</span>
           </div>
-          {/* Midtrans Error */}
           {midtransError && (
             <div className="mb-3 px-4 py-3 rounded-2xl"
               style={{ background: "#FFF2EE", border: "1px solid #FFBDAD" }}>
@@ -407,8 +550,50 @@ export function PaySPP() {
           </p>
         </div>
 
-        <div className="flex-1 px-6 py-5 overflow-y-auto pb-52 space-y-5">
-          {/* Metode Pembayaran */}
+        <div className="flex-1 px-6 py-5 overflow-y-auto space-y-5" style={{ paddingBottom: "180px" }}>
+
+          {/* ── Opsi Cicilan ── */}
+          <div>
+            <p style={{ fontWeight: 700, color: "#242424", marginBottom: "12px" }}>Pilih Jenis Pembayaran</p>
+            <div className="space-y-2">
+              {CICILAN_OPTIONS.map((opt) => (
+                <button
+                  key={opt.key}
+                  onClick={() => setCicilanOption(opt.key)}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white shadow-sm transition-all active:scale-[0.98] text-left"
+                  style={{
+                    border: "2px solid",
+                    borderColor: cicilanOption === opt.key ? "#1677FF" : "transparent",
+                  }}
+                >
+                  <div
+                    className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0"
+                    style={{ borderColor: cicilanOption === opt.key ? "#1677FF" : "#D9D9D9" }}
+                  >
+                    {cicilanOption === opt.key && (
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#1677FF" }} />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <p style={{ fontWeight: 700, color: "#242424", fontSize: "0.9rem" }}>{opt.label}</p>
+                      {opt.badge && (
+                        <span className="px-2 py-0.5 rounded-full" style={{ background: "#F6FFED", color: "#52C41A", fontSize: "0.65rem", fontWeight: 700 }}>
+                          {opt.badge}
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ color: "#8C8C8C", fontSize: "0.78rem", marginTop: 2 }}>{opt.sub}</p>
+                  </div>
+                  {cicilanOption === opt.key && (
+                    <CheckCircle size={18} color="#1677FF" className="flex-shrink-0" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Metode Pembayaran ── */}
           <div>
             <p style={{ fontWeight: 700, color: "#242424", marginBottom: "12px" }}>Metode Pembayaran</p>
             <div className="space-y-2">
@@ -418,28 +603,30 @@ export function PaySPP() {
                   <button
                     key={m.id}
                     onClick={() => setPayMethod(m.id)}
-                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white shadow-sm transition-all active:scale-[0.98]"
+                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white shadow-sm transition-all active:scale-[0.98] text-left"
                     style={{
                       border: "1.5px solid",
                       borderColor: payMethod === m.id ? "#1677FF" : "transparent",
                     }}
                   >
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: payMethod === m.id ? "#EEF4FF" : "#F5F7FA" }}>
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: payMethod === m.id ? "#EEF4FF" : "#F5F7FA" }}
+                    >
                       <MethodIcon size={20} color={payMethod === m.id ? "#1677FF" : "#595959"} />
                     </div>
-                    <div className="flex-1 text-left">
+                    <div className="flex-1">
                       <p style={{ fontWeight: 600, color: "#242424", fontSize: "0.88rem" }}>{m.label}</p>
                       <p style={{ color: "#8C8C8C", fontSize: "0.78rem" }}>{m.note}</p>
                     </div>
-                  <div
-                    className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0"
-                    style={{ borderColor: payMethod === m.id ? "#1677FF" : "#D9D9D9" }}
-                  >
-                    {payMethod === m.id && (
-                      <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#1677FF" }} />
-                    )}
-                  </div>
+                    <div
+                      className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0"
+                      style={{ borderColor: payMethod === m.id ? "#1677FF" : "#D9D9D9" }}
+                    >
+                      {payMethod === m.id && (
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#1677FF" }} />
+                      )}
+                    </div>
                   </button>
                 );
               })}
@@ -447,16 +634,22 @@ export function PaySPP() {
           </div>
         </div>
 
+        {/* ── Sticky Bottom ── */}
         <div
-          className="fixed bottom-[110px] z-40 left-1/2 w-full max-w-[380px] px-6 py-4"
-          style={{ transform: "translateX(-50%)", background: "white", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)" }}
+          style={{
+            position: "sticky",
+            bottom: 0,
+            background: "white",
+            boxShadow: "0 -4px 20px rgba(0,0,0,0.08)",
+            padding: "16px 24px",
+            zIndex: 40,
+          }}
         >
           <div className="flex justify-between mb-3">
-            <span style={{ color: "#8C8C8C", fontSize: "0.9rem" }}>
-              Total Bayar
-            </span>
+            <span style={{ color: "#8C8C8C", fontSize: "0.9rem" }}>Total Bayar</span>
             <span style={{ fontWeight: 800, color: "#1677FF", fontSize: "1.05rem" }}>
-              {formatRupiah(firstPayment)}
+              {formatRupiah(cicilanOption === "2x" ? Math.ceil(subtotal / 2) : cicilanOption === "3x" ? Math.ceil(subtotal / 3) : subtotal)}
+              {cicilanOption !== "penuh" && <span style={{ fontWeight: 400, fontSize: "0.75rem", color: "#8C8C8C" }}> /cicilan</span>}
             </span>
           </div>
           <button
@@ -465,7 +658,7 @@ export function PaySPP() {
             className="w-full py-4 rounded-2xl text-white disabled:opacity-50"
             style={{ background: "linear-gradient(135deg, #1677FF, #108EE9)", fontWeight: 700, fontSize: "1rem" }}
           >
-            Lanjutkan
+            Lanjutkan →
           </button>
         </div>
       </div>
@@ -509,8 +702,20 @@ export function PaySPP() {
         {/* Bill List */}
         <p style={{ fontWeight: 700, color: "#242424", marginBottom: "12px" }}>Pilih Tagihan</p>
         <div className="space-y-3">
-          {bills.length === 0 && (
-            <p style={{ color: "#8C8C8C", textAlign: "center", padding: "24px 0" }}>Belum ada tagihan</p>
+          {loadingBills && (
+            <div style={{ textAlign: "center", padding: "32px 0" }}>
+              <div className="w-8 h-8 rounded-full mx-auto mb-3"
+                style={{ border: "3px solid #EEF4FF", borderTopColor: "#1677FF", animation: "spin 0.8s linear infinite" }} />
+              <p style={{ color: "#8C8C8C", fontSize: "0.85rem" }}>Memuat tagihan...</p>
+              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            </div>
+          )}
+          {!loadingBills && bills.length === 0 && (
+            <div style={{ textAlign: "center", padding: "32px 0" }}>
+              <p style={{ fontSize: "2rem", marginBottom: "8px" }}>📋</p>
+              <p style={{ color: "#242424", fontWeight: 700, marginBottom: "4px" }}>Tidak ada tagihan</p>
+              <p style={{ color: "#8C8C8C", fontSize: "0.82rem" }}>Semua tagihan SPP Anda sudah lunas 🎉</p>
+            </div>
           )}
           {bills.map((bill) => {
             const subtotalBill = bill.items.reduce((a, i) => a + i.amount, 0);
@@ -576,11 +781,17 @@ export function PaySPP() {
         </div>
       </div>
 
-      {/* Sticky Bottom */}
+      {/* ── Sticky Bottom ── */}
       {selected.length > 0 && (
         <div
-          className="fixed bottom-[110px] z-40 left-1/2 w-full max-w-[380px] px-6 py-4"
-          style={{ transform: "translateX(-50%)", background: "white", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)" }}
+          style={{
+            position: "sticky",
+            bottom: 0,
+            background: "white",
+            boxShadow: "0 -4px 20px rgba(0,0,0,0.08)",
+            padding: "16px 24px",
+            zIndex: 40,
+          }}
         >
           <div className="flex justify-between mb-3">
             <span style={{ color: "#8C8C8C", fontSize: "0.9rem" }}>Total {selected.length} tagihan</span>

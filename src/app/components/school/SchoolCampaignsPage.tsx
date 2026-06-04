@@ -49,8 +49,6 @@ export function SchoolCampaignsPage() {
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
   const [formData, setFormData] = useState<Partial<Campaign>>(EMPTY_FORM());
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [submitError, setSubmitError] = useState("");
-  const [submitLoading, setSubmitLoading] = useState(false);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -102,32 +100,16 @@ export function SchoolCampaignsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitError("");
-    setSubmitLoading(true);
-    try {
-      let ok = false;
-      if (editingCampaign) {
-        ok = await Database.updateCampaignSupabase({
-          ...editingCampaign,
-          ...formData
-        } as Campaign);
-      } else {
-        console.log("[INSERT CAMPAIGN] user.id:", user?.id, "formData:", formData);
-        ok = await Database.insertCampaignSupabase(formData, user?.id || "");
-      }
-      if (!ok) {
-        setSubmitError("Gagal menyimpan kampanye. Cek konsol browser untuk detail.");
-        setSubmitLoading(false);
-        return;
-      }
-      await loadData();
-      setShowModal(false);
-    } catch (err: any) {
-      console.error("[CAMPAIGN SUBMIT ERROR]", err);
-      setSubmitError(err.message || "Terjadi kesalahan.");
-    } finally {
-      setSubmitLoading(false);
+    if (editingCampaign) {
+      await Database.updateCampaignSupabase({
+        ...editingCampaign,
+        ...formData
+      } as Campaign);
+    } else {
+      await Database.insertCampaignSupabase(formData, user?.id || "");
     }
+    await loadData();
+    setShowModal(false);
   };
 
   const inputCls = "w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:border-blue-500 outline-none text-sm bg-white";
@@ -349,15 +331,10 @@ export function SchoolCampaignsPage() {
                 <input type="checkbox" id="verified" checked={formData.verified || false} onChange={(e) => setFormData({ ...formData, verified: e.target.checked })} className="w-4 h-4 accent-blue-600" />
                 <label htmlFor="verified" className="text-sm font-semibold text-blue-700 cursor-pointer">Tandai sebagai Terverifikasi</label>
               </div>
-              {submitError && (
-                <div className="px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm font-medium">
-                  ⚠️ {submitError}
-                </div>
-              )}
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-50">Batal</button>
-                <button type="submit" disabled={submitLoading} className="flex-1 px-4 py-2.5 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-60">
-                  {submitLoading ? "Menyimpan..." : (editingCampaign ? "Simpan Perubahan" : "Tambah Kampanye")}
+                <button type="submit" className="flex-1 px-4 py-2.5 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700">
+                  {editingCampaign ? "Simpan Perubahan" : "Tambah Kampanye"}
                 </button>
               </div>
             </form>

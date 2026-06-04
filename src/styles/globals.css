@@ -20,19 +20,33 @@ html, body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* ─── Mobile-in-Desktop Styling ──────────────────────────────────────────── */
-/* Pada layar lebar, container ponsel terlihat seperti simulator premium */
-@media (min-width: 431px) {
-  /* Tampilkan scrollbar vertikal hanya di dalam phone container */
+/* ─── Desktop-only Styling (mouse device, bukan layar sentuh) ────────────── */
+/* Hanya berlaku di komputer/laptop dengan mouse — TIDAK berlaku di HP/tablet */
+@media (pointer: fine) {
   body {
     overflow: hidden;
     height: 100dvh;
   }
-  
-  /* Phone container bisa scroll secara internal */
+  /* Phone container bisa scroll secara internal di desktop */
   .phone-scroll-container {
     overflow-y: auto;
     height: 100dvh;
+  }
+}
+
+/* Mobile: pastikan body bisa scroll normal full-width */
+@media (pointer: coarse) {
+  body {
+    overflow-x: hidden;
+    overflow-y: auto;
+    width: 100%;
+    max-width: 100vw;
+  }
+  /* Hapus semua border/padding yang tidak perlu di mobile */
+  #root {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 }
 

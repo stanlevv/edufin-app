@@ -318,8 +318,8 @@ export function SchoolBillsPage() {
 
       {/* Create/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-[200] p-0 sm:p-4">
-          <div className="bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-xl max-h-[92vh] overflow-y-auto shadow-2xl">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-2xl">
               <h3 className="text-lg font-bold text-gray-800">{editingPayment ? "Edit Tagihan" : "Buat Tagihan Manual"}</h3>
               <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={18} /></button>
@@ -371,7 +371,7 @@ export function SchoolBillsPage() {
                 </select>
               </div>
 
-              <div className="flex gap-3 pt-2 pb-safe pb-6">
+              <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-50" disabled={isSaving}>Batal</button>
                 <button type="submit" disabled={isSaving} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-70">
                   {isSaving ? <Loader2 size={18} className="animate-spin" /> : null}
@@ -385,7 +385,7 @@ export function SchoolBillsPage() {
 
       {/* Delete Confirm */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[200] p-4">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl text-center">
             <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4"><Trash2 size={24} color="#EF4444" /></div>
             <h3 className="text-lg font-bold text-gray-800 mb-2">Hapus Tagihan?</h3>
@@ -400,8 +400,8 @@ export function SchoolBillsPage() {
 
       {/* Generate Tagihan Modal */}
       {showGenerateModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-[200] p-0 sm:p-4">
-          <div className="bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-md shadow-2xl">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
             <div className="border-b border-gray-100 px-6 py-4 flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-bold text-gray-800">Generate Tagihan SPP</h3>

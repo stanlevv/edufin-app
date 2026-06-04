@@ -9,8 +9,6 @@ export interface Student {
   nisn: string;
   name: string;
   email: string;
-  edufinEmail?: string;
-  personalEmail?: string;
   school: string;
   class: string;
   parentName: string;
@@ -259,18 +257,16 @@ export class Database {
       userId: d.user_id || "",
       nisn: d.nisn,
       name: d.name,
-      email: d.edufin_email || d.email || "",
-      edufinEmail: d.edufin_email || "",
-      personalEmail: d.personal_email || "",
+      email: d.email || "",
       school: "",
       class: d.class,
       parentName: d.parent_name,
       phone: "",
       parentPhone: "",
-      address: d.address || "",
-      sppAmount: d.spp_amount || 725000,
+      address: "",
+      sppAmount: d.spp_amount,
       status: d.status,
-      registrationStatus: d.registration_status,
+      registrationStatus: d.registration_status || 'data_only',
       verified: d.registration_status === 'active',
     }));
   }
@@ -278,17 +274,13 @@ export class Database {
   static async insertStudentSupabase(student: Partial<Student>, adminUserId: string): Promise<boolean> {
     const { supabase } = await import('../../lib/supabase');
     const { error } = await supabase.from('students').insert([{
-      user_id: student.userId,
       nisn: student.nisn,
       name: student.name,
       class: student.class,
       parent_name: student.parentName,
       spp_amount: student.sppAmount || 725000,
       status: student.status || "active",
-      registration_status: "active", // langsung aktif
-      edufin_email: student.edufinEmail,
-      personal_email: student.personalEmail,
-      email: student.edufinEmail || student.email,
+      registration_status: "active",
       created_by: adminUserId
     }]);
     if (error) {
@@ -306,10 +298,7 @@ export class Database {
       class: student.class,
       parent_name: student.parentName,
       spp_amount: student.sppAmount,
-      status: student.status,
-      edufin_email: student.edufinEmail,
-      personal_email: student.personalEmail,
-      email: student.edufinEmail || student.email
+      status: student.status
     }).eq('id', student.id);
     
     if (error) {
@@ -317,25 +306,6 @@ export class Database {
       return false;
     }
     return true;
-  }
-
-  /** Update email & password langsung ke Supabase Auth (butuh admin bypass via edge function) */
-  static async updateStudentAuth(userId: string, edufinEmail?: string, newPassword?: string): Promise<boolean> {
-    const { supabase } = await import('../../lib/supabase');
-    try {
-      const payload: any = { userId };
-      if (edufinEmail) payload.email = edufinEmail;
-      if (newPassword) payload.password = newPassword;
-
-      const { error } = await supabase.functions.invoke('update-student-auth', {
-        body: payload
-      });
-      if (error) throw error;
-      return true;
-    } catch (e) {
-      console.error('Error updating auth details:', e);
-      return false;
-    }
   }
 
   static async deleteStudentSupabase(id: string): Promise<boolean> {
@@ -373,21 +343,32 @@ export class Database {
   }
 
   /**
-   * Generate email edufin.app dari nama + 4 digit NISN terakhir
-   * Format: budisantoso5678@edufin.app
+   * Generate email edufin.app dari nama siswa
+   * Format: nama.depan@edufin.app
+   * Jika duplikat: nama.depan.4digitNISN@edufin.app
    */
   static generateEdufinEmail(name: string, nisn: string): string {
-    const cleanName = name
+    const clean = name
       .toLowerCase()
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // hapus aksen
-      .replace(/[^a-z]/g, '');                           // hanya huruf
-    const last4 = nisn.slice(-4);
-    return `${cleanName}${last4}@edufin.app`;
+      .replace(/[^a-z\s]/g, '')    // hanya huruf & spasi
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)                 // ambil 2 kata pertama
+      .join('.');
+    return `${clean}@edufin.app`;
   }
 
   static async generateUniqueEdufinEmail(name: string, nisn: string): Promise<string> {
-    // Format sudah unik karena pakai 4 digit NISN — langsung return
-    return Database.generateEdufinEmail(name, nisn);
+    const base = Database.generateEdufinEmail(name, nisn);
+    const { supabase } = await import('../../lib/supabase');
+    // Cek apakah email sudah ada
+    const { data } = await supabase.from('students').select('edufin_email').eq('edufin_email', base);
+    if (!data || data.length === 0) return base;
+    // Duplikat → tambah 4 digit NISN terakhir
+    const suffix = nisn.slice(-4);
+    const [local] = base.split('@');
+    return `${local}.${suffix}@edufin.app`;
   }
 
   /** Siswa apply registrasi: update user_id, personal_email, edufin_email, dan set status pending */
@@ -410,38 +391,32 @@ export class Database {
     return true;
   }
 
-  /** Admin konfirmasi siswa pending → active + buat akun edufin.app + kirim email notifikasi */
+  /** Admin konfirmasi siswa pending → active + kirim email notifikasi */
   static async confirmStudentRegistration(studentId: string): Promise<boolean> {
     const { supabase } = await import('../../lib/supabase');
     
-    // Ambil data siswa dulu
+    // Ambil data siswa dulu (untuk email notifikasi)
     const { data: studentData } = await supabase
       .from('students')
-      .select('name, nisn, personal_email, edufin_email, user_id')
+      .select('name, personal_email, edufin_email')
       .eq('id', studentId)
       .single();
 
-    // Generate email edufin.app jika belum ada
-    const edufinEmail = studentData?.edufin_email ||
-      Database.generateEdufinEmail(studentData?.name || '', studentData?.nisn || '');
-
-    // Update status + simpan edufin_email
+    // Update status
     const { error } = await supabase.from('students').update({
       registration_status: 'active',
       status: 'active',
-      edufin_email: edufinEmail,
     }).eq('id', studentId);
     if (error) { console.error('Error confirming student:', error); return false; }
 
-    // Kirim ke Edge Function: update email Auth user → edufin.app + kirim notif ke personal email
-    if (studentData?.personal_email) {
+    // Kirim email notifikasi ke email pribadi siswa via Edge Function
+    if (studentData?.personal_email && studentData?.edufin_email) {
       try {
         await supabase.functions.invoke('send-confirmation-email', {
           body: {
             to: studentData.personal_email,
             studentName: studentData.name,
-            edufinEmail,
-            userId: studentData.user_id, // untuk update email di Auth
+            edufinEmail: studentData.edufin_email,
           }
         });
       } catch (e) {
@@ -659,15 +634,15 @@ export class Database {
       description: d.description,
       story: d.story || "",
       target: d.target_amount,
-      collected: d.collected_amount || 0,
+      collected: d.collected_amount,
       category: d.category,
       image: d.image_url || "",
-      school: d.school_name || "SMA Negeri 1 Jakarta",
-      location: d.location || "Jakarta",
-      verified: d.verified ?? false,
+      school: "SMA Negeri 1 Jakarta", // Dummy for now
+      location: "Jakarta",
+      verified: true, // Assuming verified if it's in DB for now
       status: d.status,
-      donors: d.donors_count || 0,
-      startDate: d.start_date || d.created_at,
+      donors: 0,
+      startDate: d.created_at,
       endDate: d.end_date || "",
       updates: []
     }));
@@ -678,19 +653,12 @@ export class Database {
     const { error } = await supabase.from('campaigns').insert([{
       title: campaign.title,
       description: campaign.description,
-      story: campaign.story || '',
+      story: campaign.story || "",
       target_amount: campaign.target,
-      collected_amount: campaign.collected || 0,
-      category: campaign.category || 'Fasilitas',
-      image_url: campaign.image || '',
-      status: campaign.status || 'active',
-      school_name: campaign.school || '',
-      location: campaign.location || '',
-      donors_count: 0,
-      verified: campaign.verified || false,
-      start_date: campaign.startDate || new Date().toISOString().slice(0, 10),
-      end_date: campaign.endDate || null,
-      created_by: adminUserId || null
+      category: campaign.category || "Fasilitas",
+      image_url: campaign.image || "https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&q=80&w=800",
+      status: campaign.status || "active",
+      created_by: adminUserId
     }]);
     if (error) {
       console.error('Error inserting campaign:', error);
@@ -978,39 +946,17 @@ export class Database {
     const { supabase } = await import('../../lib/supabase');
     const { data, error } = await supabase.from('scholarships').select('*');
     if (error) { console.error('Error scholarships:', error); return []; }
-    return (data || []).map((d: any) => ({
-      id: d.id,
-      name: d.name || '',
-      description: d.description || '',
-      amountPerMonth: d.amount_per_month || 0,
-      totalMonths: d.total_months || 12,
-      source: d.source || 'Dana BOS',
-      status: d.status || 'active',
-      maxRecipients: d.max_recipients || 5,
-      startDate: d.start_date || '',
-      endDate: d.end_date || '',
-      createdAt: d.created_at || '',
-      campaignId: d.campaign_id || null,
-    }));
+    return data;
   }
   
   static async insertScholarshipSupabase(s: any, adminId: string): Promise<boolean> {
     const { supabase } = await import('../../lib/supabase');
-    const payload: any = {
+    const { error } = await supabase.from('scholarships').insert([{
       name: s.name,
-      description: s.description || '',
-      amount_per_month: s.amountPerMonth || s.amount_per_month || 0,
-      total_months: s.totalMonths || s.total_months || 12,
-      source: s.source || 'Dana BOS',
-      status: s.status || 'active',
-      max_recipients: s.maxRecipients || s.max_recipients || 5,
-      created_by: adminId || null,
-    };
-    // Tambahkan start_date/end_date hanya jika ada nilainya
-    if (s.startDate) payload.start_date = s.startDate;
-    if (s.endDate) payload.end_date = s.endDate;
-
-    const { error } = await supabase.from('scholarships').insert([payload]);
+      amount_per_month: s.amount_per_month,
+      total_months: s.total_months,
+      created_by: adminId
+    }]);
     if (error) { console.error('Error insert scholarship:', error); return false; }
     return true;
   }
@@ -1030,32 +976,17 @@ export class Database {
       studentClass: d.students?.class,
       studentNisn: d.students?.nisn,
       status: d.status,
-      amountPerMonth: d.amount_per_month || 0,
-      startDate: d.start_date || '',
-      endDate: d.end_date || '',
-      notes: d.notes || '',
       joinedAt: d.created_at
     }));
   }
 
-  static async insertScholarshipRecipientSupabase(r: any): Promise<{success: boolean, error?: string}> {
+  static async insertScholarshipRecipientSupabase(scholarshipId: string, studentId: string): Promise<boolean> {
     const { supabase } = await import('../../lib/supabase');
-    const payload: any = {
-      scholarship_id: r.scholarshipId,
-      student_id: r.studentId,
-      amount_per_month: r.amountPerMonth || r.amount_per_month || 0,
-      status: r.status || 'active',
-      notes: r.notes || ''
-    };
-    if (r.startDate) payload.start_date = r.startDate;
-    if (r.endDate) payload.end_date = r.endDate;
-
-    const { error } = await supabase.from('scholarship_recipients').insert([payload]);
-    if (error) {
-      console.error("Error inserting recipient:", error);
-      return { success: false, error: error.message };
-    }
-    return { success: true };
+    const { error } = await supabase.from('scholarship_recipients').insert([{
+      scholarship_id: scholarshipId,
+      student_id: studentId
+    }]);
+    return !error;
   }
 
   static async deleteScholarshipRecipientSupabase(id: string): Promise<boolean> {

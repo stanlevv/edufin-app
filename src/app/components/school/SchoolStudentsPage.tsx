@@ -107,26 +107,58 @@ export function SchoolStudentsPage() {
         );
       }
     } else {
-      // 1. Buat akun Supabase Auth
-      if (formData.email && password) {
-        const regRes = await register({
-          email: formData.email,
-          password: password,
-          name: formData.name || "",
-          role: "siswa",
-          nisn: formData.nisn,
-          school: "SMA Negeri 1 Jakarta",
-          class: formData.class,
-          parentName: formData.parentName
-        });
-        if (!regRes.success) {
-          alert("Gagal membuat akun login: " + regRes.message);
-          setIsSaving(false);
-          return;
+      // 1. Generate Email Edufin otomatis
+      const generatedEdufinEmail = Database.generateEdufinEmail(formData.name || "", formData.nisn || "");
+      const defaultPassword = formData.nisn || "12345678"; // Default password = NISN
+      let newUserId = "";
+
+      // 2. Buat akun Supabase Auth
+      const regRes = await register({
+        email: generatedEdufinEmail,
+        password: defaultPassword,
+        name: formData.name || "",
+        role: "siswa",
+        nisn: formData.nisn || "",
+        school: "SMA Negeri 1 Jakarta",
+        class: formData.class || "",
+        parentName: formData.parentName || ""
+      });
+
+      if (!regRes.success) {
+        alert("Gagal membuat akun login: " + regRes.message);
+        setIsSaving(false);
+        return;
+      }
+
+      // Ambil user ID yang baru dibuat
+      const { supabase } = await import('../../lib/supabase');
+      const { data: authData } = await supabase.auth.getUser();
+      newUserId = authData?.user?.id || "";
+
+      // 3. Insert data siswa (dengan user_id, edufin_email, personal_email)
+      const studentToInsert = {
+        ...formData,
+        userId: newUserId,
+        edufinEmail: generatedEdufinEmail,
+        email: generatedEdufinEmail
+      };
+      await Database.insertStudentSupabase(studentToInsert, user?.id || "");
+
+      // 4. Kirim notifikasi email ke siswa (jika ada email pribadi)
+      if (formData.personalEmail) {
+        try {
+          await supabase.functions.invoke('send-confirmation-email', {
+            body: {
+              to: formData.personalEmail,
+              studentName: formData.name,
+              edufinEmail: generatedEdufinEmail,
+              userId: newUserId
+            }
+          });
+        } catch (e) {
+          console.warn('Gagal mengirim email notifikasi:', e);
         }
       }
-      // 2. Insert data siswa (tanpa phone/address - tidak ada di tabel)
-      await Database.insertStudentSupabase(formData, user?.id || "");
     }
 
     await loadData();
@@ -429,14 +461,18 @@ export function SchoolStudentsPage() {
               </div>
 
               {!editingStudent ? (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">Email Login *</label>
-                    <input type="email" required value={formData.email || ""} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className={inputCls} placeholder="email@siswa.com" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">Password Login *</label>
-                    <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className={inputCls} placeholder="Minimal 6 karakter" />
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="bg-blue-100 text-blue-600 p-2 rounded-lg mt-0.5"><Mail size={18} /></div>
+                      <div>
+                        <h4 className="text-sm font-bold text-gray-800 mb-1">Pengaturan Akun Otomatis</h4>
+                        <p className="text-xs text-gray-600 leading-relaxed mb-3">Sistem akan otomatis membuatkan akun login <strong>@edufin.app</strong> menggunakan nama dan NISN siswa. Password default adalah <strong>NISN siswa</strong>.</p>
+                        
+                        <label className="block text-xs font-semibold text-gray-600 mb-1.5">Email Pribadi Siswa (Untuk kirim notifikasi akun) *</label>
+                        <input type="email" required value={formData.personalEmail || ""} onChange={(e) => setFormData({ ...formData, personalEmail: e.target.value })} className={inputCls} placeholder="email.siswa@gmail.com" />
+                      </div>
+                    </div>
                   </div>
                 </div>
               ) : (

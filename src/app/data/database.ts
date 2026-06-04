@@ -278,13 +278,17 @@ export class Database {
   static async insertStudentSupabase(student: Partial<Student>, adminUserId: string): Promise<boolean> {
     const { supabase } = await import('../../lib/supabase');
     const { error } = await supabase.from('students').insert([{
+      user_id: student.userId,
       nisn: student.nisn,
       name: student.name,
       class: student.class,
       parent_name: student.parentName,
       spp_amount: student.sppAmount || 725000,
       status: student.status || "active",
-      registration_status: "active",
+      registration_status: "active", // langsung aktif
+      edufin_email: student.edufinEmail,
+      personal_email: student.personalEmail,
+      email: student.edufinEmail || student.email,
       created_by: adminUserId
     }]);
     if (error) {

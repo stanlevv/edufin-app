@@ -19,7 +19,7 @@ export function SchoolDashboard() {
   const [students, setStudents] = useState<Student[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [transactions, setTransactions] = useState<any[]>([]);
+  const [donations, setDonations] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<"overview" | "students" | "campaigns">("overview");
 
   useEffect(() => {
@@ -30,14 +30,14 @@ export function SchoolDashboard() {
       setPayments(p);
       const c = await Database.fetchCampaignsSupabase();
       setCampaigns(c);
-      const t = await Database.fetchTransactionsSupabase();
-      setTransactions(t);
+      const d = await Database.fetchDonationsSupabase();
+      setDonations(d);
     }
     loadData();
   }, []);
 
   // Stats
-  const totalStudents = students.filter((s) => s.status === "active").length;
+  const totalStudents = students.filter((s) => s.status !== "inactive").length;
   // Filter tagihan bulan ini
   const currentMonthFull = MONTHS_FULL[new Date().getMonth()];
   const currentYear = new Date().getFullYear();
@@ -45,9 +45,10 @@ export function SchoolDashboard() {
   const lunas = paymentsThisMonth.filter((p) => p.status === "completed").length;
   const belumBayar = totalStudents - lunas; // Yang belum lunas berarti selisih siswa aktif dan yang sudah bayar
   
-  // Hitung total penerimaan dari transactions
-  const totalPenerimaan = transactions.filter(t => t.type === 'in').reduce((acc, t) => acc + t.amount, 0);
-  const totalSPP = transactions.filter(t => t.category === 'SPP').reduce((acc, t) => acc + t.amount, 0);
+  // Hitung total penerimaan dari pembayaran SPP dan Donasi
+  const totalSPP = payments.filter((p) => p.status === "completed").reduce((acc, p) => acc + p.amount, 0);
+  const totalDonasi = donations.filter((d) => d.status === "success" || d.status === "completed").reduce((acc, d) => acc + d.amount, 0);
+  const totalPenerimaan = totalSPP + totalDonasi;
 
   // Chart: hitung pembayaran Lunas per bulan
   const chartData = MONTHS_FULL.slice(0, 6).map((monthFull, i) => {

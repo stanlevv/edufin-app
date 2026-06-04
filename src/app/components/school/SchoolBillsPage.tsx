@@ -43,6 +43,11 @@ export function SchoolBillsPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingPayment, setEditingPayment] = useState<PaymentRow | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [genMonth, setGenMonth] = useState(MONTHS[new Date().getMonth()]);
+  const [genYear, setGenYear] = useState(new Date().getFullYear());
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [genResult, setGenResult] = useState<{created: number; skipped: number} | null>(null);
 
   // form state
   const [fStudentId, setFStudentId] = useState("");
@@ -106,6 +111,53 @@ export function SchoolBillsPage() {
     setShowModal(true);
   };
 
+  const handleGenerateBills = async () => {
+    setIsGenerating(true);
+    setGenResult(null);
+    const { supabase } = await import('../../lib/supabase');
+
+    // Ambil siswa aktif
+    const activeStudents = students.filter(s => s.status === 'active');
+
+    // Cek tagihan yang sudah ada bulan ini
+    const { data: existing } = await supabase
+      .from('payments')
+      .select('student_id')
+      .eq('month_paid', genMonth)
+      .eq('year_paid', genYear);
+
+    const existingIds = new Set((existing || []).map((e: any) => e.student_id));
+
+    // Filter siswa yang belum punya tagihan bulan ini
+    const toCreate = activeStudents.filter(s => !existingIds.has(s.id));
+    const skipped = activeStudents.length - toCreate.length;
+
+    if (toCreate.length > 0) {
+      const inserts = toCreate.map(s => ({
+        student_id: s.id,
+        month_paid: genMonth,
+        year_paid: genYear,
+        amount: s.sppAmount,
+        payment_method: 'Belum Dibayar',
+        status: 'pending'
+      }));
+      await supabase.from('payments').insert(inserts);
+    }
+
+    setGenResult({ created: toCreate.length, skipped });
+    await loadData();
+    setIsGenerating(false);
+  };
+
+  const handleConfirmPayment = async (paymentId: string) => {
+    const { supabase } = await import('../../lib/supabase');
+    await supabase.from('payments').update({ 
+      status: 'completed',
+      payment_method: 'Manual Cash'
+    }).eq('id', paymentId);
+    await loadData();
+  };
+
   const handleDelete = async (id: string) => {
     await Database.deletePaymentSupabase(id);
     await loadData();
@@ -148,9 +200,17 @@ export function SchoolBillsPage() {
             <h2 className="text-2xl font-bold text-gray-800 mb-1">Manajemen Tagihan</h2>
             <p className="text-sm text-gray-500">Buat, edit, dan kelola tagihan SPP seluruh siswa</p>
           </div>
-          <button onClick={openCreate} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-all shadow-sm">
-            <Plus size={18} /> <span className="text-sm">Buat Tagihan</span>
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => { setGenResult(null); setShowGenerateModal(true); }}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700 transition-all shadow-sm"
+            >
+              <FileText size={18} /> <span className="text-sm">Generate Tagihan</span>
+            </button>
+            <button onClick={openCreate} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-all shadow-sm">
+              <Plus size={18} /> <span className="text-sm">Buat Manual</span>
+            </button>
+          </div>
         </div>
 
         {/* Stats */}
@@ -229,6 +289,15 @@ export function SchoolBillsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
+                        {p.status === 'pending' && (
+                          <button
+                            onClick={() => handleConfirmPayment(p.id)}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-all text-xs font-semibold"
+                            title="Konfirmasi Lunas"
+                          >
+                            <CheckCircle size={13} /> Konfirmasi
+                          </button>
+                        )}
                         <button onClick={() => openEdit(p)} className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all" title="Edit"><Edit size={15} /></button>
                         <button onClick={() => setDeleteConfirm(p.id)} className="p-2 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-all" title="Hapus"><Trash2 size={15} /></button>
                       </div>
@@ -252,7 +321,7 @@ export function SchoolBillsPage() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-2xl">
-              <h3 className="text-lg font-bold text-gray-800">{editingBill ? "Edit Tagihan" : "Buat Tagihan Baru"}</h3>
+              <h3 className="text-lg font-bold text-gray-800">{editingPayment ? "Edit Tagihan" : "Buat Tagihan Manual"}</h3>
               <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={18} /></button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -324,6 +393,72 @@ export function SchoolBillsPage() {
             <div className="flex gap-3">
               <button onClick={() => setDeleteConfirm(null)} className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-semibold">Batal</button>
               <button onClick={() => handleDelete(deleteConfirm)} className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white font-semibold">Hapus</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Generate Tagihan Modal */}
+      {showGenerateModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-gray-800">Generate Tagihan SPP</h3>
+                <p className="text-xs text-gray-500 mt-0.5">Buat tagihan untuk semua siswa aktif sekaligus</p>
+              </div>
+              <button onClick={() => setShowGenerateModal(false)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={18} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">Bulan *</label>
+                  <select value={genMonth} onChange={(e) => setGenMonth(e.target.value)} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:border-green-500 outline-none text-sm bg-white">
+                    {MONTHS.map((m) => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">Tahun *</label>
+                  <input type="number" value={genYear} onChange={(e) => setGenYear(parseInt(e.target.value))} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:border-green-500 outline-none text-sm bg-white" min={2020} max={2030} />
+                </div>
+              </div>
+
+              {/* Info */}
+              <div className="rounded-xl p-4 bg-blue-50 border border-blue-100">
+                <p className="text-sm text-blue-700 font-semibold mb-1">ℹ️ Informasi</p>
+                <p className="text-xs text-blue-600 leading-relaxed">
+                  Sistem akan membuat tagihan <strong>{genMonth} {genYear}</strong> untuk{' '}
+                  <strong>{students.filter(s => s.status === 'active').length} siswa aktif</strong>.
+                  Siswa yang sudah punya tagihan bulan ini akan di-skip otomatis.
+                </p>
+              </div>
+
+              {/* Result */}
+              {genResult && (
+                <div className={`rounded-xl p-4 border ${genResult.created > 0 ? 'bg-green-50 border-green-100' : 'bg-gray-50 border-gray-100'}`}>
+                  <p className="text-sm font-semibold mb-1" style={{ color: genResult.created > 0 ? '#52C41A' : '#8C8C8C' }}>
+                    {genResult.created > 0 ? '✅ Generate Berhasil!' : 'ℹ️ Tidak ada tagihan baru'}
+                  </p>
+                  <p className="text-xs" style={{ color: genResult.created > 0 ? '#52C41A' : '#8C8C8C' }}>
+                    {genResult.created} tagihan dibuat · {genResult.skipped} di-skip (sudah ada)
+                  </p>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-1">
+                <button onClick={() => setShowGenerateModal(false)} className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-50">
+                  {genResult ? 'Tutup' : 'Batal'}
+                </button>
+                {!genResult && (
+                  <button
+                    onClick={handleGenerateBills}
+                    disabled={isGenerating}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700 disabled:opacity-70"
+                  >
+                    {isGenerating ? <><Loader2 size={16} className="animate-spin" /> Generating...</> : <><FileText size={16} /> Generate Sekarang</>}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

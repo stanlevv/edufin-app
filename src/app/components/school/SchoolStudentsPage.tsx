@@ -17,7 +17,7 @@ const EMPTY_FORM: Partial<Student> = {
 };
 
 export function SchoolStudentsPage() {
-  const { user } = useAuth();
+  const { user, register } = useAuth();
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -27,6 +27,7 @@ export function SchoolStudentsPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [formData, setFormData] = useState<Partial<Student>>(EMPTY_FORM);
+  const [password, setPassword] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const loadData = async () => {
@@ -52,6 +53,7 @@ export function SchoolStudentsPage() {
   const handleAdd = () => {
     setEditingStudent(null);
     setFormData({ ...EMPTY_FORM });
+    setPassword("");
     setShowModal(true);
   };
 
@@ -78,12 +80,32 @@ export function SchoolStudentsPage() {
         ...formData
       } as Student);
     } else {
+      if (formData.email && password) {
+        // Daftarkan akun login di Supabase Auth
+        const regRes = await register({
+          email: formData.email,
+          password: password,
+          name: formData.name || "",
+          role: "siswa",
+          nisn: formData.nisn,
+          school: "SMA Negeri 1 Jakarta",
+          class: formData.class,
+          parentName: formData.parentName
+        });
+        
+        if (!regRes.success) {
+          alert("Gagal membuat akun login: " + regRes.message);
+          setIsSaving(false);
+          return;
+        }
+      }
       await Database.insertStudentSupabase(formData, user?.id || "");
     }
     
     await loadData();
     setShowModal(false);
     setFormData(EMPTY_FORM);
+    setPassword("");
     setIsSaving(false);
   };
 
@@ -249,6 +271,17 @@ export function SchoolStudentsPage() {
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1.5">NISN *</label>
                   <input required value={formData.nisn || ""} onChange={(e) => setFormData({ ...formData, nisn: e.target.value })} className={inputCls} placeholder="10 digit NISN" maxLength={10} />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">Email Login {editingStudent ? "" : "*"}</label>
+                  <input type="email" required={!editingStudent} value={formData.email || ""} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className={inputCls} placeholder="email@siswa.com" disabled={!!editingStudent} />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">Password Login {editingStudent ? "(Tidak bisa diedit disini)" : "*"}</label>
+                  <input type="password" required={!editingStudent} value={password} onChange={(e) => setPassword(e.target.value)} className={inputCls} placeholder="Minimal 6 karakter" disabled={!!editingStudent} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">

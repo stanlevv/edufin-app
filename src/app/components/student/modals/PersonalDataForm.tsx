@@ -5,18 +5,35 @@ import { ModalWrapper } from "../../shared/ModalWrapper";
 interface PersonalDataFormProps {
   isOpen: boolean;
   onClose: () => void;
+  user?: any;
+  studentData?: any;
 }
 
-export function PersonalDataForm({ isOpen, onClose }: PersonalDataFormProps) {
+export function PersonalDataForm({ isOpen, onClose, user, studentData }: PersonalDataFormProps) {
   const [formData, setFormData] = useState({
-    name: "Budi Santoso",
-    nisn: "0012345678",
-    email: "budi.santoso@student.id",
-    phone: "081234567890",
-    parentName: "Hendra Santoso",
-    parentPhone: "081234567891",
-    address: "Jl. Mawar No. 15, Malang",
+    name: user?.name || studentData?.name || "",
+    nisn: studentData?.nisn || user?.nisn || "",
+    email: user?.email || "",
+    phone: user?.phone || studentData?.phone || "",
+    parentName: studentData?.parentName || user?.parentName || "",
+    parentPhone: studentData?.parentPhone || "",
+    address: studentData?.address || user?.address || "",
   });
+
+  // Update formData when props change
+  React.useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        name: user?.name || studentData?.name || "",
+        nisn: studentData?.nisn || user?.nisn || "",
+        email: user?.email || "",
+        phone: user?.phone || studentData?.phone || "",
+        parentName: studentData?.parentName || user?.parentName || "",
+        parentPhone: studentData?.parentPhone || "",
+        address: studentData?.address || user?.address || "",
+      });
+    }
+  }, [isOpen, user, studentData]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +54,7 @@ export function PersonalDataForm({ isOpen, onClose }: PersonalDataFormProps) {
         <div className="relative">
           <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-white"
             style={{ background: "linear-gradient(135deg, #1677FF, #108EE9)", fontSize: "2rem", fontWeight: 800 }}>
-            B
+            {formData.name ? formData.name[0].toUpperCase() : "S"}
           </div>
           <button className="absolute bottom-0 right-0 w-7 h-7 rounded-full flex items-center justify-center"
             style={{ background: "#1677FF", border: "2px solid white" }}>

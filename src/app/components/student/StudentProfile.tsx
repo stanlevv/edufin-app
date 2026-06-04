@@ -96,7 +96,7 @@ export function StudentProfile() {
           {/* Stats Grid */}
           <div className="grid grid-cols-3 mb-3 pb-3" style={{ borderBottom: "1px solid #F0F0F0" }}>
             {[
-              { label: "Kelas", value: studentData?.class || user?.class || "XII IPA 2" },
+              { label: "Kelas", value: studentData?.class || user?.class || "-" },
               { label: "Status", value: "Aktif" },
               { label: "Tagihan", value: `${unpaidCount} Tertunggak` },
             ].map((item, idx) => (
@@ -161,8 +161,8 @@ export function StudentProfile() {
       </div>
 
       {/* Modals */}
-      <PersonalDataForm isOpen={showPersonalData} onClose={() => setShowPersonalData(false)} />
-      <SchoolInfoForm isOpen={showSchoolInfo} onClose={() => setShowSchoolInfo(false)} />
+      <PersonalDataForm isOpen={showPersonalData} onClose={() => setShowPersonalData(false)} user={user} studentData={studentData} />
+      <SchoolInfoForm isOpen={showSchoolInfo} onClose={() => setShowSchoolInfo(false)} user={user} studentData={studentData} />
       <ITSupportForm isOpen={showITSupport} onClose={() => setShowITSupport(false)} />
     </div>
   );

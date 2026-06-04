@@ -4,19 +4,21 @@ import { X, MapPin, Phone, Mail, Globe, School } from "lucide-react";
 interface SchoolInfoFormProps {
   isOpen: boolean;
   onClose: () => void;
+  user?: any;
+  studentData?: any;
 }
 
-export function SchoolInfoForm({ isOpen, onClose }: SchoolInfoFormProps) {
+export function SchoolInfoForm({ isOpen, onClose, user, studentData }: SchoolInfoFormProps) {
   const schoolInfo = {
-    name: "SDN 3 Malang",
-    npsn: "20534812",
-    address: "Jl. Veteran No. 12, Malang, Jawa Timur 65145",
-    phone: "(0341) 123-4567",
-    email: "admin@sdn3malang.sch.id",
-    website: "www.sdn3malang.sch.id",
-    class: "XII IPA 2",
-    academicYear: "2025/2026",
-    semester: "Genap",
+    name: studentData?.school || user?.school || "Nama Sekolah Belum Diset",
+    npsn: studentData?.npsn || "-",
+    address: studentData?.schoolAddress || "-",
+    phone: studentData?.schoolPhone || "-",
+    email: studentData?.schoolEmail || "-",
+    website: studentData?.schoolWebsite || "-",
+    class: studentData?.class || user?.class || "-",
+    academicYear: studentData?.academicYear || "2025/2026",
+    semester: studentData?.semester || "Genap",
   };
 
   if (!isOpen) return null;

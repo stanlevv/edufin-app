@@ -237,14 +237,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
 
           if (studentData.registration_status === 'pending') {
-            await supabase.auth.signOut();
-            return { success: false, message: 'Akun Anda sedang menunggu konfirmasi admin sekolah. Silakan coba lagi nanti.' };
+            // Siswa pending boleh login, tapi akan ditampilkan halaman tunggu konfirmasi di dashboard
+            // Jangan sign out, biarkan masuk
+            name = studentData.name || name;
           }
 
           if (studentData.registration_status === 'data_only') {
             await supabase.auth.signOut();
             return { success: false, message: 'Silakan daftar terlebih dahulu menggunakan NISN Anda.' };
           }
+
+          // Override name dari data siswa jika ada
+          if (studentData.name) name = studentData.name;
         }
 
         const supaUser: User = {

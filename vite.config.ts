@@ -23,27 +23,50 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "apple-touch-icon.png", "mask-icon.svg"],
+      includeAssets: ["favicon.ico", "apple-touch-icon.png", "pwa-192x192.png", "pwa-512x512.png"],
       manifest: {
-        name: "EDUFIN - Platform Manajemen Keuangan Pendidikan",
+        name: "EDUFIN - Manajemen Keuangan Sekolah",
         short_name: "EDUFIN",
-        description: "Bayar SPP dan Berdonasi untuk Kas Sekolah secara Transparan",
-        theme_color: "#1d4ed8",
+        description: "Bayar SPP, lihat tagihan, dan berdonasi untuk sekolah secara transparan.",
+        start_url: "/student",
+        scope: "/",
+        display: "standalone",
+        orientation: "portrait",
+        background_color: "#ffffff",
+        theme_color: "#1677FF",
+        lang: "id",
         icons: [
           {
             src: "pwa-192x192.png",
             sizes: "192x192",
             type: "image/png",
+            purpose: "any maskable",
           },
           {
             src: "pwa-512x512.png",
             sizes: "512x512",
             type: "image/png",
+            purpose: "any maskable",
           },
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        // Cache halaman utama siswa untuk offline
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/pxqamlbdamrkwrdnbhmf\.supabase\.co\/.*/i,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "supabase-api-cache",
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 },
+              networkTimeoutSeconds: 10,
+            },
+          },
+        ],
+      },
+      devOptions: {
+        enabled: false,
       },
     }),
   ],

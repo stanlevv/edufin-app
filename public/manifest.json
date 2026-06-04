@@ -1,0 +1,36 @@
+{
+  "name": "EDUFIN - Manajemen Keuangan Sekolah",
+  "short_name": "EDUFIN",
+  "description": "Bayar SPP, lihat tagihan, dan berdonasi untuk sekolah secara transparan.",
+  "start_url": "/student",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#1677FF",
+  "lang": "id",
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "EDUFIN Dashboard Siswa"
+    }
+  ],
+  "categories": ["education", "finance"]
+}

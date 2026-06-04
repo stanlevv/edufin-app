@@ -8,6 +8,7 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { CampaignSubmissionForm } from "../shared/CampaignSubmissionForm";
 import { NotificationDropdown } from "../shared/NotificationDropdown";
+import { InstallPWAButton } from "../shared/InstallPWAButton";
 import { Database } from "../../data/database";
 import heroImg from "figma:asset/c8cddcb48410b814bd5d05fb077ab775500e3bac.png";
 
@@ -388,15 +389,18 @@ export function StudentDashboard() {
             </div>
           </div>
 
-          {/* Bell */}
-          <NotificationDropdown
-            notifications={notifications}
-            unreadCount={notifications.filter((n) => n.unread).length}
-            onNotificationClick={(id) => {
-              // Mark notification as read
-              console.log("Notification clicked:", id);
-            }}
-          />
+          {/* Bell + Install PWA */}
+          <div className="flex items-center gap-2">
+            <InstallPWAButton variant="icon" />
+            <NotificationDropdown
+              notifications={notifications}
+              unreadCount={notifications.filter((n) => n.unread).length}
+              onNotificationClick={(id) => {
+                // Mark notification as read
+                console.log("Notification clicked:", id);
+              }}
+            />
+          </div>
         </div>
 
         {/* NISN badge */}

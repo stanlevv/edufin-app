@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
@@ -6,6 +6,16 @@
     <title>EDUFIN - Platform Manajemen Keuangan Pendidikan</title>
     <meta name="description" content="EDUFIN platform digital untuk manajemen SPP, cicilan, dan fundraising siswa." />
     <meta name="robots" content="noindex, nofollow" />
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#1677FF" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="EDUFIN" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
     <style>html, body { height: 100%; margin: 0; } #root { height: 100%; }</style>
     <!-- Midtrans Snap.js dimuat secara DINAMIS oleh PaySPP.tsx saat payment dimulai. Butuh VITE_MIDTRANS_CLIENT_KEY di .env.local -->
   </head>

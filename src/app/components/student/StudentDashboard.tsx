@@ -375,7 +375,7 @@ export function StudentDashboard() {
         />
 
         {/* Top Bar */}
-        <div className="flex items-center justify-between mb-5 relative z-10">
+        <div className="flex items-center justify-between mb-5" style={{ position: "relative", zIndex: 100 }}>
           <div className="flex items-center gap-3">
             <div
               className="w-11 h-11 rounded-2xl flex items-center justify-center text-white"

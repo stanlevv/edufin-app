@@ -51,7 +51,7 @@ export function NotificationDropdown({
         <>
           {/* Backdrop */}
           <div
-            style={{ position: "fixed", inset: 0, zIndex: 9998 }}
+            style={{ position: "fixed", inset: 0, zIndex: 2147483646 }}
             onClick={() => setIsOpen(false)}
           />
           {/* Dropdown panel */}
@@ -60,7 +60,7 @@ export function NotificationDropdown({
               position: "fixed",
               top: pos.top,
               right: pos.right,
-              zIndex: 9999,
+              zIndex: 2147483647,
               width: 320,
               maxHeight: 400,
               background: "white",

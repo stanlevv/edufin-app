@@ -2,6 +2,7 @@
  * Local Database - Store semua data aplikasi
  * Data disimpan di localStorage untuk demo/development
  */
+import { supabase } from '../lib/supabase';
 
 export interface Student {
   id: string;
@@ -245,7 +246,7 @@ export class Database {
 
   // --- SUPABASE ASYNC METHODS FOR STUDENTS ---
   static async fetchStudentsSupabase(): Promise<Student[]> {
-    const { supabase } = await import('../../lib/supabase');
+    
     // Ambil SEMUA siswa termasuk data_only, pending, active
     const { data, error } = await supabase.from('students').select('*').order('name', { ascending: true });
     if (error) {
@@ -272,7 +273,7 @@ export class Database {
   }
 
   static async insertStudentSupabase(student: Partial<Student>, adminUserId: string): Promise<boolean> {
-    const { supabase } = await import('../../lib/supabase');
+    
     const { error } = await supabase.from('students').insert([{
       nisn: student.nisn,
       name: student.name,
@@ -291,7 +292,7 @@ export class Database {
   }
 
   static async updateStudentSupabase(student: Student): Promise<boolean> {
-    const { supabase } = await import('../../lib/supabase');
+    
     const { error } = await supabase.from('students').update({
       nisn: student.nisn,
       name: student.name,
@@ -309,7 +310,7 @@ export class Database {
   }
 
   static async deleteStudentSupabase(id: string): Promise<boolean> {
-    const { supabase } = await import('../../lib/supabase');
+    
     const { error } = await supabase.from('students').delete().eq('id', id);
     if (error) {
       console.error('Error deleting student:', error);
@@ -322,7 +323,7 @@ export class Database {
 
   /** Cari siswa berdasarkan NISN (untuk langkah registrasi mandiri) */
   static async findStudentByNISN(nisn: string): Promise<any | null> {
-    const { supabase } = await import('../../lib/supabase');
+    
     const { data, error } = await supabase
       .from('students')
       .select('*')
@@ -361,7 +362,7 @@ export class Database {
 
   static async generateUniqueEdufinEmail(name: string, nisn: string): Promise<string> {
     const base = Database.generateEdufinEmail(name, nisn);
-    const { supabase } = await import('../../lib/supabase');
+    
     // Cek apakah email sudah ada
     const { data } = await supabase.from('students').select('edufin_email').eq('edufin_email', base);
     if (!data || data.length === 0) return base;
@@ -378,7 +379,7 @@ export class Database {
     personalEmail: string,
     edufinEmail: string
   ): Promise<boolean> {
-    const { supabase } = await import('../../lib/supabase');
+    
     const { error } = await supabase.from('students').update({
       user_id: userId,
       email: edufinEmail,           // login email = edufin.app
@@ -393,7 +394,7 @@ export class Database {
 
   /** Admin konfirmasi siswa pending → active + kirim email notifikasi */
   static async confirmStudentRegistration(studentId: string): Promise<boolean> {
-    const { supabase } = await import('../../lib/supabase');
+    
     
     // Ambil data siswa dulu (untuk email notifikasi)
     const { data: studentData } = await supabase
@@ -429,7 +430,7 @@ export class Database {
 
   /** Admin tolak siswa pending → kembalikan ke data_only */
   static async rejectStudentRegistration(studentId: string): Promise<boolean> {
-    const { supabase } = await import('../../lib/supabase');
+    
     const { error } = await supabase.from('students').update({
       registration_status: 'data_only',
       user_id: null,
@@ -444,7 +445,7 @@ export class Database {
 
   /** Ambil semua siswa pending untuk admin */
   static async fetchPendingStudentsSupabase(): Promise<any[]> {
-    const { supabase } = await import('../../lib/supabase');
+    
     const { data, error } = await supabase
       .from('students')
       .select('*')
@@ -512,7 +513,7 @@ export class Database {
 
   // --- SUPABASE ASYNC METHODS FOR PAYMENTS ---
   static async fetchPaymentsSupabase(): Promise<any[]> {
-    const { supabase } = await import('../../lib/supabase');
+    
     const { data, error } = await supabase.from('payments').select(`
       *,
       students ( name, nisn, class )
@@ -537,7 +538,7 @@ export class Database {
   }
 
   static async insertPaymentSupabase(payment: any): Promise<boolean> {
-    const { supabase } = await import('../../lib/supabase');
+    
     const { error } = await supabase.from('payments').insert([{
       student_id: payment.studentId,
       month_paid: payment.month,
@@ -554,7 +555,7 @@ export class Database {
   }
 
   static async updatePaymentSupabase(payment: any): Promise<boolean> {
-    const { supabase } = await import('../../lib/supabase');
+    
     const { error } = await supabase.from('payments').update({
       month_paid: payment.month,
       year_paid: payment.year,
@@ -570,7 +571,7 @@ export class Database {
   }
 
   static async deletePaymentSupabase(id: string): Promise<boolean> {
-    const { supabase } = await import('../../lib/supabase');
+    
     const { error } = await supabase.from('payments').delete().eq('id', id);
     if (error) {
       console.error('Error deleting payment:', error);
@@ -622,7 +623,7 @@ export class Database {
 
   // --- SUPABASE ASYNC METHODS FOR CAMPAIGNS ---
   static async fetchCampaignsSupabase(): Promise<Campaign[]> {
-    const { supabase } = await import('../../lib/supabase');
+    
     const { data, error } = await supabase.from('campaigns').select('*');
     if (error) {
       console.error('Error fetching campaigns:', error);
@@ -649,7 +650,7 @@ export class Database {
   }
 
   static async insertCampaignSupabase(campaign: Partial<Campaign>, adminUserId: string): Promise<boolean> {
-    const { supabase } = await import('../../lib/supabase');
+    
     const { error } = await supabase.from('campaigns').insert([{
       title: campaign.title,
       description: campaign.description,
@@ -668,7 +669,7 @@ export class Database {
   }
 
   static async updateCampaignSupabase(campaign: Campaign): Promise<boolean> {
-    const { supabase } = await import('../../lib/supabase');
+    
     const { error } = await supabase.from('campaigns').update({
       title: campaign.title,
       description: campaign.description,
@@ -686,7 +687,7 @@ export class Database {
   }
 
   static async deleteCampaignSupabase(id: string): Promise<boolean> {
-    const { supabase } = await import('../../lib/supabase');
+    
     const { error } = await supabase.from('campaigns').delete().eq('id', id);
     if (error) {
       console.error('Error deleting campaign:', error);
@@ -907,21 +908,21 @@ export class Database {
 
   // --- SUPABASE ASYNC METHODS FOR TRANSACTIONS, DONATIONS, SCHOLARSHIPS ---
   static async fetchNotificationsSupabase(): Promise<any[]> {
-    const { supabase } = await import('../../lib/supabase');
+    
     const { data, error } = await supabase.from('notifications').select('*').order('created_at', { ascending: false });
     if (error) { console.error('Error notifications:', error); return []; }
     return data || [];
   }
 
   static async fetchTransactionsSupabase(): Promise<any[]> {
-    const { supabase } = await import('../../lib/supabase');
+    
     const { data, error } = await supabase.from('transactions').select('*');
     if (error) { console.error('Error transactions:', error); return []; }
     return data;
   }
 
   static async fetchDonationsSupabase(): Promise<any[]> {
-    const { supabase } = await import('../../lib/supabase');
+    
     const { data, error } = await supabase.from('donations').select(`
       *,
       campaigns ( title ),
@@ -943,14 +944,14 @@ export class Database {
   }
 
   static async fetchScholarshipsSupabase(): Promise<any[]> {
-    const { supabase } = await import('../../lib/supabase');
+    
     const { data, error } = await supabase.from('scholarships').select('*');
     if (error) { console.error('Error scholarships:', error); return []; }
     return data;
   }
   
   static async insertScholarshipSupabase(s: any, adminId: string): Promise<boolean> {
-    const { supabase } = await import('../../lib/supabase');
+    
     const { error } = await supabase.from('scholarships').insert([{
       name: s.name,
       amount_per_month: s.amount_per_month,
@@ -962,7 +963,7 @@ export class Database {
   }
 
   static async fetchScholarshipRecipientsSupabase(scholarshipId?: string): Promise<any[]> {
-    const { supabase } = await import('../../lib/supabase');
+    
     let query = supabase.from('scholarship_recipients').select(`*, students ( name, class, nisn )`);
     if (scholarshipId) query = query.eq('scholarship_id', scholarshipId);
     
@@ -981,7 +982,7 @@ export class Database {
   }
 
   static async insertScholarshipRecipientSupabase(scholarshipId: string, studentId: string): Promise<boolean> {
-    const { supabase } = await import('../../lib/supabase');
+    
     const { error } = await supabase.from('scholarship_recipients').insert([{
       scholarship_id: scholarshipId,
       student_id: studentId
@@ -990,7 +991,7 @@ export class Database {
   }
 
   static async deleteScholarshipRecipientSupabase(id: string): Promise<boolean> {
-    const { supabase } = await import('../../lib/supabase');
+    
     const { error } = await supabase.from('scholarship_recipients').delete().eq('id', id);
     return !error;
   }

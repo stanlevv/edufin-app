@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { ArrowLeft, CheckCircle, Download, ChevronRight, Building2, Smartphone, Store, Loader2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { Database, Bill } from "../../data/database";
+import { supabase } from "../../lib/supabase";
 
 function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
@@ -118,7 +119,6 @@ export function PaySPP() {
 
       try {
         // ── LAPIS 1: Cari student di Supabase by user_id atau email atau nisn ──
-        const { supabase } = await import('../../lib/supabase');
         
         // Cari student by user_id
         let { data: studentData, error: studentError } = await supabase

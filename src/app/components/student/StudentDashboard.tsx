@@ -9,6 +9,7 @@ import { useAuth } from "../../context/AuthContext";
 import { CampaignSubmissionForm } from "../shared/CampaignSubmissionForm";
 import { NotificationDropdown } from "../shared/NotificationDropdown";
 import { Database } from "../../data/database";
+import { supabase } from "../../lib/supabase";
 import heroImg from "figma:asset/c8cddcb48410b814bd5d05fb077ab775500e3bac.png";
 
 // ─── Helper Functions ────────────────────────────────────────────────────────
@@ -191,7 +192,6 @@ export function StudentDashboard() {
       if (!user) return;
 
       try {
-        const { supabase } = await import('../../lib/supabase');
         const MONTHS = ["Januari","Februari","Maret","April","Mei","Juni",
                         "Juli","Agustus","September","Oktober","November","Desember"];
 

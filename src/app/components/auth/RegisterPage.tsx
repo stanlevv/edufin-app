@@ -797,7 +797,7 @@ export function RegisterPage() {
 
             <button
               onClick={handlePasswordSubmit}
-              disabled={!email || !password || !confirmPassword}
+              disabled={!personalEmail || !password || !confirmPassword}
               className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
               style={{
                 background: "linear-gradient(135deg,#1677FF,#108EE9)",

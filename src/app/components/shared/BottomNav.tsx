@@ -130,7 +130,7 @@ export function BottomNav({ role }: BottomNavProps) {
 
   return (
     <div
-      className="fixed bottom-0 left-1/2 w-full max-w-[430px] z-40 px-4"
+      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-40 px-4"
       style={{
         paddingBottom: "max(16px, env(safe-area-inset-bottom))",
         background: "transparent",
@@ -147,17 +147,17 @@ export function BottomNav({ role }: BottomNavProps) {
           boxShadow: "0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9)",
         }}
       >
-        <div className="flex items-center justify-around px-3 py-3">
+        <div className="flex items-center justify-around px-2 py-2">
           {items.map((item) => {
             const isActive = active === item.key;
             return (
               <button
                 key={item.key}
                 onClick={() => navigate(item.route)}
-                className="flex flex-col items-center gap-1.5 px-3 py-2 rounded-2xl transition-all active:scale-90"
+                className="flex flex-col items-center gap-1 px-2 py-1.5 rounded-2xl transition-all active:scale-90"
                 style={{
                   color: isActive ? activeColor : "#9CA3AF",
-                  minWidth: "68px",
+                  minWidth: "64px",
                   position: "relative",
                 }}
               >

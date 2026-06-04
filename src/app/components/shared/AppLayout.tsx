@@ -55,6 +55,17 @@ function AppLayoutInner() {
   const { user } = useAuth();
   const location = useLocation();
 
+  // Jika pengguna sudah login dan mengakses halaman onboarding/login/register,
+  // langsung redirect ke dashboard peran mereka masing-masing.
+  if (user && NO_NAV_PATHS.includes(location.pathname)) {
+    const dashboardByRole: Record<string, string> = {
+      siswa: "/student",
+      sekolah: "/school",
+      donatur: "/donor",
+    };
+    return <Navigate to={dashboardByRole[user.role] ?? "/"} replace />;
+  }
+
   const isSchoolAdmin = user?.role === "sekolah";
 
   const showNav =

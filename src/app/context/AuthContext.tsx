@@ -33,6 +33,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ success: boolean; message: string; role?: UserRole }>;
   logout: () => void;
   register: (payload: RegisterPayload) => Promise<{ success: boolean; message: string }>;
+  loginWithGoogle: () => Promise<{ success: boolean; message: string }>;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
@@ -52,6 +53,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   });
   const [isLoading, setIsLoading] = useState(false);
+
+  // Sesi listener untuk menangani perubahan status login (OAuth Google / Email)
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log(`[AUTH STATE CHANGE] Event: ${event}`, session?.user?.email);
+      
+      if (session?.user) {
+        const uData = session.user.user_metadata;
+        let role = uData.role as UserRole || "donatur";
+        let name = uData.name || "User";
+
+        // Query tabel public.users untuk mengambil data role terbaru (terutama untuk login Google)
+        try {
+          const { data: publicUser, error } = await supabase
+            .from("users")
+            .select("role, name")
+            .eq("id", session.user.id)
+            .single();
+
+          if (!error && publicUser) {
+            if (publicUser.role) role = publicUser.role as UserRole;
+            if (publicUser.name) name = publicUser.name;
+          }
+        } catch (dbErr) {
+          console.error("[AUTH ONSTATECHANGE] Gagal query public.users:", dbErr);
+        }
+
+        const supaUser: User = {
+          id: session.user.id,
+          email: session.user.email || "",
+          name: name,
+          role: role,
+          verified: true,
+          nisn: uData.nisn,
+          school: uData.school,
+          class: uData.class,
+          parentName: uData.parentName
+        };
+
+        setUser(supaUser);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   // Persist session
   useEffect(() => {
@@ -113,6 +163,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!data.user) {
          throw new Error("Pendaftaran berhasil, tetapi data user tidak turun.");
       }
+
+      // Hubungkan user_id di tabel students jika mendaftar sebagai siswa
+      if (payload.role === "siswa" && payload.nisn) {
+        const { error: updateError } = await supabase
+          .from("students")
+          .update({ user_id: data.user.id })
+          .eq("nisn", payload.nisn);
+          
+        if (updateError) {
+          console.error("[REGISTER] Gagal menghubungkan user_id ke tabel students:", updateError.message);
+        }
+      }
+
       return { success: true, message: "Akun berhasil dibuat! Silakan cek email jika diperlukan." };
     } catch (err: any) {
       console.error("[REGISTER] Network error:", err);
@@ -140,11 +203,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data.user) {
         const uData = data.user.user_metadata;
+        
+        let role = uData.role as UserRole || "donatur";
+        let name = uData.name || "User";
+
+        // Query tabel public.users untuk memvalidasi role
+        try {
+          const { data: publicUser } = await supabase
+            .from("users")
+            .select("role, name")
+            .eq("id", data.user.id)
+            .single();
+
+          if (publicUser) {
+            if (publicUser.role) role = publicUser.role as UserRole;
+            if (publicUser.name) name = publicUser.name;
+          }
+        } catch (dbErr) {
+          console.error("[LOGIN] Gagal query public.users:", dbErr);
+        }
+
         const supaUser: User = {
            id: data.user.id,
            email: data.user.email || email,
-           name: uData.name || "User",
-           role: uData.role as UserRole,
+           name: name,
+           role: role,
            verified: true,
            nisn: uData.nisn,
            school: uData.school,
@@ -163,6 +246,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // ── Login With Google (OAuth) ────────────────────────────
+  const loginWithGoogle = async (): Promise<{ success: boolean; message: string }> => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      return { success: true, message: "Mengalihkan ke Google Login..." };
+    } catch (err: any) {
+      console.error("[GOOGLE AUTH] Error:", err);
+      return { success: false, message: err.message || "Gagal login dengan Google." };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // ── Logout ──────────────────────────────────────────────
   const logout = () => {
     supabase.auth.signOut();
@@ -170,7 +277,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, register, isAuthenticated: !!user, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, register, loginWithGoogle, isAuthenticated: !!user, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

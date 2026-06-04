@@ -17,7 +17,7 @@ const DEMOS = [
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -221,7 +221,13 @@ export function LoginPage() {
 
         {/* Google (Donatur) */}
         <button
-          onClick={() => navigate("/register")}
+          onClick={async () => {
+            setError("");
+            const res = await loginWithGoogle();
+            if (!res.success) {
+              setError(res.message);
+            }
+          }}
           className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-95"
           style={{
             background: "white",
@@ -236,7 +242,7 @@ export function LoginPage() {
             <path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.34 5.7c1.74-5.2 6.59-9.07 12.32-9.07z" />
           </svg>
           <span style={{ fontWeight: 600, color: "#595959", fontSize: "0.9rem" }}>
-            Masuk dengan Google
+            Masuk dengan Google (Khusus Donatur)
           </span>
         </button>
 

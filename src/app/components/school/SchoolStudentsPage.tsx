@@ -193,8 +193,8 @@ export function SchoolStudentsPage() {
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Siswa</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">NISN</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Kelas</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Orang Tua</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Email Daftar</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Akun EDUFIN</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Email Notif</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Tgl Daftar</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Aksi</th>
                 </tr>
@@ -212,8 +212,11 @@ export function SchoolStudentsPage() {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600 font-mono">{s.nisn}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">{s.class}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{s.parentName}</td>
-                    <td className="px-6 py-4 text-sm text-blue-600">{s.email}</td>
+                    <td className="px-6 py-4">
+                      <p className="text-sm font-semibold text-blue-600 font-mono">{s.edufinEmail || s.email || '-'}</p>
+                      <p className="text-xs text-gray-400">Akun login EDUFIN</p>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{s.personalEmail || '-'}</td>
                     <td className="px-6 py-4 text-sm text-gray-400">
                       {s.registeredAt
                         ? new Date(s.registeredAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })

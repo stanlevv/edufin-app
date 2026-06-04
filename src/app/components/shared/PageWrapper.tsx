@@ -9,7 +9,7 @@ export function PageWrapper({ children }: PageWrapperProps) {
     <div className="min-h-screen flex items-start justify-center"
       style={{ background: "linear-gradient(135deg, #EEF4FF 0%, #E6F7FF 100%)" }}>
       <div
-        className="relative w-full max-w-[430px] min-h-screen bg-white shadow-2xl overflow-hidden"
+        className="relative w-full max-w-[380px] min-h-screen bg-white shadow-2xl overflow-hidden"
         style={{ minHeight: "100dvh" }}
       >
         {children}
@@ -17,3 +17,4 @@ export function PageWrapper({ children }: PageWrapperProps) {
     </div>
   );
 }
+

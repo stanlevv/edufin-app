@@ -399,7 +399,7 @@ export function CampaignDetail() {
 
       {/* Sticky Bottom — sits above BottomNav (bottom-16 ≈ 64px) */}
       <div
-        className="fixed bottom-16 left-1/2 w-full max-w-[430px] px-6 py-3 z-[51]"
+        className="fixed bottom-16 left-1/2 w-full max-w-[380px] px-6 py-3 z-[51]"
         style={{ transform: "translateX(-50%)", background: "white", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)" }}
       >
         <button

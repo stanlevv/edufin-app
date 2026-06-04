@@ -94,7 +94,7 @@ export const CampaignSubmissionForm: React.FC<CampaignSubmissionFormProps> = ({
   return (
     <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>
       <div
-        className="bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-[430px] max-h-[90vh] overflow-y-auto animate-slide-up"
+        className="bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-[380px] max-h-[90vh] overflow-y-auto animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -355,3 +355,4 @@ export const CampaignSubmissionForm: React.FC<CampaignSubmissionFormProps> = ({
     </div>
   );
 };
+

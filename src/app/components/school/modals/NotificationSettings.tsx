@@ -41,7 +41,7 @@ export function NotificationSettings({ isOpen, onClose }: NotificationSettingsPr
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>
-      <div className="w-full max-w-[430px] bg-white rounded-t-3xl p-6 pb-8 animate-slide-up max-h-[85vh] overflow-y-auto">
+      <div className="w-full max-w-[380px] bg-white rounded-t-3xl p-6 pb-8 animate-slide-up max-h-[85vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <h2 style={{ fontWeight: 800, fontSize: "1.1rem", color: "#242424" }}>Pengaturan Notifikasi</h2>
@@ -122,3 +122,4 @@ export function NotificationSettings({ isOpen, onClose }: NotificationSettingsPr
     </div>
   );
 }
+

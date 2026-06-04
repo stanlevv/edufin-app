@@ -85,19 +85,20 @@ function AppLayoutInner() {
     <div
       className="min-h-screen flex items-start justify-center"
       style={{
-        background: "white", // Pure white background
+        background: "white", // Pure white for desktop background as requested
         minHeight: "100dvh",
       }}
     >
       {/* Phone container - scrollable internally */}
       <div
-        className="relative w-full max-w-[430px] flex flex-col"
+        className="relative w-full max-w-[380px] flex flex-col bg-white"
         style={{
           height: "100dvh",
-          background: "white",
           overflowY: "auto",
           overflowX: "hidden",
-          boxShadow: "0 0 40px rgba(0,0,0,0.05)", // Lighter shadow
+          borderLeft: "1px solid #F0F0F0",
+          borderRight: "1px solid #F0F0F0",
+          boxShadow: "0 0 20px rgba(0,0,0,0.03)", // Subtle shadow to define the phone edges
           scrollbarWidth: "none",
         }}
       >

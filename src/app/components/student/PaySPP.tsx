@@ -337,7 +337,7 @@ export function PaySPP() {
         </div>
 
         {/* Sticky Bottom */}
-        <div className="fixed bottom-[110px] z-40 left-1/2 w-full max-w-[430px] px-6 py-4"
+        <div className="fixed bottom-[110px] z-40 left-1/2 w-full max-w-[380px] px-6 py-4"
           style={{ transform: "translateX(-50%)", background: "white", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)" }}>
           <div className="flex justify-between mb-1">
             <span style={{ color: "#8C8C8C", fontSize: "0.85rem" }}>
@@ -448,7 +448,7 @@ export function PaySPP() {
         </div>
 
         <div
-          className="fixed bottom-[110px] z-40 left-1/2 w-full max-w-[430px] px-6 py-4"
+          className="fixed bottom-[110px] z-40 left-1/2 w-full max-w-[380px] px-6 py-4"
           style={{ transform: "translateX(-50%)", background: "white", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)" }}
         >
           <div className="flex justify-between mb-3">
@@ -579,7 +579,7 @@ export function PaySPP() {
       {/* Sticky Bottom */}
       {selected.length > 0 && (
         <div
-          className="fixed bottom-[110px] z-40 left-1/2 w-full max-w-[430px] px-6 py-4"
+          className="fixed bottom-[110px] z-40 left-1/2 w-full max-w-[380px] px-6 py-4"
           style={{ transform: "translateX(-50%)", background: "white", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)" }}
         >
           <div className="flex justify-between mb-3">

@@ -94,8 +94,8 @@ export function SchoolStudentsPage() {
         ...formData
       } as Student);
     } else {
+      // 1. Buat akun Supabase Auth
       if (formData.email && password) {
-        // Admin buat akun langsung → status langsung active
         const regRes = await register({
           email: formData.email,
           password: password,
@@ -106,33 +106,14 @@ export function SchoolStudentsPage() {
           class: formData.class,
           parentName: formData.parentName
         });
-
         if (!regRes.success) {
           alert("Gagal membuat akun login: " + regRes.message);
           setIsSaving(false);
           return;
         }
       }
-      // Insert student data with registration_status = active (admin created)
-      const { supabase } = await import('../../lib/supabase');
-      const { error } = await supabase.from('students').insert([{
-        nisn: formData.nisn,
-        name: formData.name,
-        class: formData.class,
-        parent_name: formData.parentName,
-        phone: formData.phone || "",
-        parent_phone: formData.parentPhone || "",
-        address: formData.address || "",
-        spp_amount: formData.sppAmount || 725000,
-        status: formData.status || "active",
-        registration_status: "active",
-        created_by: user?.id
-      }]);
-      if (error) {
-        alert("Gagal menyimpan data siswa: " + error.message);
-        setIsSaving(false);
-        return;
-      }
+      // 2. Insert data siswa (tanpa phone/address - tidak ada di tabel)
+      await Database.insertStudentSupabase(formData, user?.id || "");
     }
 
     await loadData();
@@ -449,25 +430,11 @@ export function SchoolStudentsPage() {
                   <input required value={formData.class || ""} onChange={(e) => setFormData({ ...formData, class: e.target.value })} className={inputCls} placeholder="Contoh: X IPA 1" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">No. HP Siswa</label>
-                  <input value={formData.phone || ""} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className={inputCls} placeholder="081234567890" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1.5">Nama Orang Tua *</label>
                   <input required value={formData.parentName || ""} onChange={(e) => setFormData({ ...formData, parentName: e.target.value })} className={inputCls} placeholder="Nama orang tua/wali" />
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">No. HP Orang Tua</label>
-                  <input value={formData.parentPhone || ""} onChange={(e) => setFormData({ ...formData, parentPhone: e.target.value })} className={inputCls} placeholder="081234567890" />
-                </div>
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Alamat</label>
-                <textarea value={formData.address || ""} onChange={(e) => setFormData({ ...formData, address: e.target.value })} className={inputCls} placeholder="Alamat lengkap" rows={2} />
-              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1.5">SPP / Bulan (Rp)</label>
@@ -481,6 +448,7 @@ export function SchoolStudentsPage() {
                   </select>
                 </div>
               </div>
+
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-50 transition-all">Batal</button>
                 <button type="submit" disabled={isSaving} className="flex-1 px-4 py-2.5 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-all flex items-center justify-center gap-2">

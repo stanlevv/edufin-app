@@ -261,9 +261,9 @@ export class Database {
       school: "",
       class: d.class,
       parentName: d.parent_name,
-      phone: d.phone || "",
-      parentPhone: d.parent_phone || "",
-      address: d.address || "",
+      phone: "",
+      parentPhone: "",
+      address: "",
       sppAmount: d.spp_amount,
       status: d.status,
       registrationStatus: d.registration_status || 'data_only',
@@ -278,11 +278,9 @@ export class Database {
       name: student.name,
       class: student.class,
       parent_name: student.parentName,
-      phone: student.phone || "",
-      parent_phone: student.parentPhone || "",
-      address: student.address || "",
       spp_amount: student.sppAmount || 725000,
       status: student.status || "active",
+      registration_status: "active",
       created_by: adminUserId
     }]);
     if (error) {
@@ -299,9 +297,6 @@ export class Database {
       name: student.name,
       class: student.class,
       parent_name: student.parentName,
-      phone: student.phone || "",
-      parent_phone: student.parentPhone || "",
-      address: student.address,
       spp_amount: student.sppAmount,
       status: student.status
     }).eq('id', student.id);

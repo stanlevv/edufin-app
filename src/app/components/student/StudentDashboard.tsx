@@ -184,6 +184,8 @@ export function StudentDashboard() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [paymentStreak, setPaymentStreak] = useState(0);
   const [activeScholarship, setActiveScholarship] = useState<{ name: string; amount: number; endDate: string } | null>(null);
+  const [isPending, setIsPending] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   // Load data dari database
   useEffect(() => {
@@ -191,9 +193,31 @@ export function StudentDashboard() {
       if (!user) return;
 
       const students = await Database.fetchStudentsSupabase();
-      const student = students.find((s: any) => s.userId === user.id || s.name === user.name);
+      const student = students.find((s: any) => s.userId === user.id || s.nisn === (user as any).nisn);
+
       if (!student) {
+        // Cari berdasarkan email untuk cek status pending
+        const { supabase } = await import('../../lib/supabase');
+        const { data: authUser } = await supabase.auth.getUser();
+        const currentEmail = authUser?.user?.email || '';
+        const pendingStudent = students.find((s: any) =>
+          s.email === currentEmail ||
+          s.edufinEmail === currentEmail ||
+          s.personalEmail === currentEmail
+        );
+        if (pendingStudent?.registrationStatus === 'pending') {
+          setIsPending(true);
+          setDataLoaded(true);
+          return;
+        }
         setActiveBill({ month: "-", dueDate: "-", total: 0, status: "Lunas" });
+        setDataLoaded(true);
+        return;
+      }
+
+      if (student.registrationStatus === 'pending') {
+        setIsPending(true);
+        setDataLoaded(true);
         return;
       }
 
@@ -260,6 +284,7 @@ export function StudentDashboard() {
       setNotifications(allNotifs.slice(0, 2).map((n: any) => {
         return { id: n.id, text: n.title, time: "Baru saja", unread: false };
       }));
+      setDataLoaded(true);
     }
     loadData();
   }, [user]);
@@ -273,14 +298,50 @@ export function StudentDashboard() {
   const paidCount = monthlyData.filter(m => m.status === "lunas").length;
   const totalMonths = monthlyData.length;
 
-  // Show loading if user exists but activeBill hasn't been set yet
-  if (!!user && activeBill === null) {
+  // Show loading if data hasn't been loaded yet
+  if (!dataLoaded && !!user) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-white">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 rounded-2xl animate-spin"
             style={{ border: "3px solid #E6F0FF", borderTopColor: "#1677FF" }} />
           <p style={{ color: "#8C8C8C", fontSize: "0.85rem" }}>Memuat data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show pending screen if student hasn't been confirmed yet
+  if (isPending) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-white px-6">
+        <div className="flex flex-col items-center gap-4 text-center max-w-xs">
+          <div className="w-20 h-20 rounded-3xl flex items-center justify-center"
+            style={{ background: "linear-gradient(135deg,#FFF7E0,#FFE7A0)" }}>
+            <Clock size={36} style={{ color: "#D48806" }} />
+          </div>
+          <h2 style={{ fontWeight: 800, fontSize: "1.2rem", color: "#1a1a2e" }}>Menunggu Konfirmasi Admin</h2>
+          <p style={{ color: "#8C8C8C", fontSize: "0.88rem", lineHeight: 1.6 }}>
+            Pendaftaran kamu sudah diterima! Admin sekolah sedang memverifikasi data kamu.
+            Setelah dikonfirmasi, kamu akan mendapatkan email notifikasi ke email pribadi kamu.
+          </p>
+          <div className="w-full rounded-2xl p-4" style={{ background: "#FFF7E0", border: "1px solid #FFE7A0" }}>
+            <p style={{ color: "#8B6A00", fontSize: "0.8rem", fontWeight: 600 }}>💡 Apa yang terjadi setelah dikonfirmasi?</p>
+            <p style={{ color: "#8B6A00", fontSize: "0.75rem", marginTop: "4px", lineHeight: 1.5 }}>
+              Kamu akan menerima email berisi akun login <strong>@edufin.app</strong> dan bisa langsung menggunakannya untuk akses penuh.
+            </p>
+          </div>
+          <button
+            onClick={async () => {
+              const { supabase } = await import('../../lib/supabase');
+              await supabase.auth.signOut();
+              navigate('/login');
+            }}
+            className="text-sm"
+            style={{ color: "#8C8C8C", textDecoration: "underline", marginTop: "8px" }}
+          >
+            Keluar
+          </button>
         </div>
       </div>
     );

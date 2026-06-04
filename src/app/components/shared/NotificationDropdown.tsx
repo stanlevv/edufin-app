@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Bell } from "lucide-react";
 
 interface Notification {
@@ -22,146 +23,145 @@ export function NotificationDropdown({
   variant = "dark",
 }: NotificationDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ top: 0, right: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  const updatePosition = () => {
+  const calcPos = () => {
     if (buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      setDropdownPos({
-        top: rect.bottom + 8,
-        right: window.innerWidth - rect.right,
-      });
+      const r = buttonRef.current.getBoundingClientRect();
+      setPos({ top: r.bottom + 8, right: window.innerWidth - r.right });
     }
   };
 
-  useLayoutEffect(() => {
-    if (isOpen) {
-      updatePosition();
-    }
-  }, [isOpen]);
-
   useEffect(() => {
     if (!isOpen) return;
-
-    const handleClose = (e: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node) &&
-        buttonRef.current &&
-        !buttonRef.current.contains(e.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    };
-
-    window.addEventListener("scroll", updatePosition, true);
-    document.addEventListener("mousedown", handleClose);
-    window.addEventListener("resize", updatePosition);
-
+    calcPos();
+    window.addEventListener("resize", calcPos);
+    window.addEventListener("scroll", calcPos, true);
     return () => {
-      window.removeEventListener("scroll", updatePosition, true);
-      document.removeEventListener("mousedown", handleClose);
-      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("resize", calcPos);
+      window.removeEventListener("scroll", calcPos, true);
     };
   }, [isOpen]);
 
   const isDark = variant === "dark";
 
-  return (
-    <div className="relative">
-      <button
-        ref={buttonRef}
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-10 h-10 rounded-full flex items-center justify-center relative transition-all active:scale-90"
-        style={{ background: isDark ? "rgba(255,255,255,0.2)" : "#F5F5F5" }}
-      >
-        <Bell size={19} color={isDark ? "white" : "#595959"} />
-        {unreadCount > 0 && (
-          <span
-            className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-white flex items-center justify-center"
-            style={{ background: "#EA4E0D", fontSize: "0.6rem", fontWeight: 700 }}
-          >
-            {unreadCount > 9 ? "9+" : unreadCount}
-          </span>
-        )}
-      </button>
-
-      {isOpen && (
+  const dropdown = isOpen
+    ? createPortal(
         <>
-          <div className="fixed inset-0 z-[9998]" onClick={() => setIsOpen(false)} />
-
+          {/* Backdrop */}
           <div
-            ref={dropdownRef}
-            className="fixed w-80 rounded-2xl z-[9999] overflow-hidden bg-white"
+            style={{ position: "fixed", inset: 0, zIndex: 9998 }}
+            onClick={() => setIsOpen(false)}
+          />
+          {/* Dropdown panel */}
+          <div
             style={{
-              top: dropdownPos.top,
-              right: dropdownPos.right,
-              maxHeight: "400px",
+              position: "fixed",
+              top: pos.top,
+              right: pos.right,
+              zIndex: 9999,
+              width: 320,
+              maxHeight: 400,
+              background: "white",
+              borderRadius: 16,
+              boxShadow: "0 12px 40px rgba(0,0,0,0.18)",
+              border: "1px solid #EFEFEF",
               display: "flex",
               flexDirection: "column",
-              border: "1px solid #F0F0F0",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+              overflow: "hidden",
             }}
           >
-            <div className="px-4 py-3 flex-shrink-0 flex items-center justify-between"
-              style={{ borderBottom: "1px solid #F0F0F0" }}>
-              <p style={{ fontWeight: 700, color: "#242424", fontSize: "0.9rem" }}>Notifikasi</p>
+            {/* Header */}
+            <div style={{ padding: "12px 16px", borderBottom: "1px solid #F0F0F0", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+              <span style={{ fontWeight: 700, color: "#1a1a2e", fontSize: "0.92rem" }}>Notifikasi</span>
               {unreadCount > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold"
-                  style={{ background: "#EEF4FF", color: "#1677FF" }}>
+                <span style={{ background: "#EEF4FF", color: "#1677FF", fontWeight: 700, fontSize: "0.72rem", padding: "2px 8px", borderRadius: 99 }}>
                   {unreadCount} baru
                 </span>
               )}
             </div>
 
-            <div className="overflow-y-auto"
-              style={{ flex: 1, scrollbarWidth: "thin", scrollbarColor: "#D9D9D9 transparent" }}>
+            {/* List */}
+            <div style={{ overflowY: "auto", flex: 1 }}>
               {notifications.length === 0 ? (
-                <div className="px-4 py-10 text-center">
-                  <Bell size={32} color="#D9D9D9" className="mx-auto mb-2" />
+                <div style={{ padding: "40px 16px", textAlign: "center" }}>
+                  <Bell size={32} color="#D9D9D9" style={{ margin: "0 auto 8px" }} />
                   <p style={{ fontSize: "0.82rem", color: "#8C8C8C" }}>Tidak ada notifikasi</p>
                 </div>
               ) : (
                 notifications.map((n) => (
                   <div
                     key={n.id}
-                    className="px-4 py-3 flex gap-3 cursor-pointer transition-colors"
-                    style={{ background: n.unread ? "#EEF4FF" : "white", borderBottom: "1px solid #F8F8F8" }}
+                    onClick={() => { onNotificationClick?.(n.id); setIsOpen(false); }}
+                    style={{
+                      padding: "12px 16px",
+                      display: "flex",
+                      gap: 12,
+                      cursor: "pointer",
+                      background: n.unread ? "#EEF4FF" : "white",
+                      borderBottom: "1px solid #F8F8F8",
+                      transition: "background 0.15s",
+                    }}
                     onMouseEnter={(e) => (e.currentTarget.style.background = "#F5F7FA")}
                     onMouseLeave={(e) => (e.currentTarget.style.background = n.unread ? "#EEF4FF" : "white")}
-                    onClick={() => { onNotificationClick?.(n.id); }}
                   >
-                    <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
-                      style={{ background: n.unread ? "#1677FF" : "#D9D9D9" }} />
-                    <div className="flex-1">
-                      <p style={{ fontSize: "0.82rem", color: "#242424", lineHeight: 1.4 }}>{n.text}</p>
-                      <p style={{ fontSize: "0.72rem", color: "#8C8C8C", marginTop: "4px" }}>{n.time}</p>
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: n.unread ? "#1677FF" : "#D9D9D9", flexShrink: 0, marginTop: 6 }} />
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontSize: "0.82rem", color: "#242424", lineHeight: 1.45, margin: 0 }}>{n.text}</p>
+                      <p style={{ fontSize: "0.72rem", color: "#8C8C8C", marginTop: 4, marginBottom: 0 }}>{n.time}</p>
                     </div>
-                    {n.unread && (
-                      <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-2"
-                        style={{ background: "#1677FF" }} />
-                    )}
                   </div>
                 ))
               )}
             </div>
 
+            {/* Footer */}
             {notifications.length > 0 && (
               <div
-                className="px-4 py-2.5 text-center cursor-pointer flex-shrink-0 transition-colors hover:bg-gray-50"
-                style={{ borderTop: "1px solid #F0F0F0" }}
                 onClick={() => setIsOpen(false)}
+                style={{ padding: "10px 16px", textAlign: "center", borderTop: "1px solid #F0F0F0", cursor: "pointer", flexShrink: 0 }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#F5F7FA")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
               >
-                <p style={{ fontSize: "0.75rem", color: "#1677FF", fontWeight: 600 }}>
-                  Lihat Semua Notifikasi
-                </p>
+                <span style={{ fontSize: "0.75rem", color: "#1677FF", fontWeight: 600 }}>Lihat Semua</span>
               </div>
             )}
           </div>
-        </>
-      )}
+        </>,
+        document.body
+      )
+    : null;
+
+  return (
+    <div style={{ position: "relative" }}>
+      <button
+        ref={buttonRef}
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          width: 40, height: 40, borderRadius: "50%",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: isDark ? "rgba(255,255,255,0.2)" : "#F5F5F5",
+          border: "none", cursor: "pointer", position: "relative",
+          transition: "transform 0.15s",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
+        onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+      >
+        <Bell size={19} color={isDark ? "white" : "#595959"} />
+        {unreadCount > 0 && (
+          <span style={{
+            position: "absolute", top: -2, right: -2,
+            width: 16, height: 16, borderRadius: "50%",
+            background: "#EA4E0D", color: "white",
+            fontSize: "0.6rem", fontWeight: 700,
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
+        )}
+      </button>
+      {dropdown}
     </div>
   );
 }

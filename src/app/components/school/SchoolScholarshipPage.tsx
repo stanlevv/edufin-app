@@ -281,7 +281,7 @@ export function SchoolScholarshipPage() {
   };
 
   const handleSaveRecipient = async (r: any) => {
-    await Database.insertScholarshipRecipientSupabase(r.scholarshipId, r.studentId);
+    await Database.insertScholarshipRecipientSupabase(r);
     Database.fetchScholarshipRecipientsSupabase(selected?.id).then(setRecipients);
     setShowRecipientModal(false);
   };

@@ -1030,16 +1030,27 @@ export class Database {
       studentClass: d.students?.class,
       studentNisn: d.students?.nisn,
       status: d.status,
+      amountPerMonth: d.amount_per_month || 0,
+      startDate: d.start_date || '',
+      endDate: d.end_date || '',
+      notes: d.notes || '',
       joinedAt: d.created_at
     }));
   }
 
-  static async insertScholarshipRecipientSupabase(scholarshipId: string, studentId: string): Promise<boolean> {
+  static async insertScholarshipRecipientSupabase(r: any): Promise<boolean> {
     const { supabase } = await import('../../lib/supabase');
-    const { error } = await supabase.from('scholarship_recipients').insert([{
-      scholarship_id: scholarshipId,
-      student_id: studentId
-    }]);
+    const payload: any = {
+      scholarship_id: r.scholarshipId,
+      student_id: r.studentId,
+      amount_per_month: r.amountPerMonth || r.amount_per_month || 0,
+      status: r.status || 'active',
+      notes: r.notes || ''
+    };
+    if (r.startDate) payload.start_date = r.startDate;
+    if (r.endDate) payload.end_date = r.endDate;
+
+    const { error } = await supabase.from('scholarship_recipients').insert([payload]);
     return !error;
   }
 

@@ -53,7 +53,10 @@ async function createMidtransTransaction(
   customerName: string,
   customerEmail: string
 ): Promise<{ snapToken: string; orderId: string }> {
-  const orderId = `BILL-${billIds.join("-")}-${Date.now()}`;
+  // Midtrans membatasi order_id maksimal 50 karakter.
+  // Gunakan timestamp dan random string pendek agar selalu unik dan di bawah 50 char.
+  const shortRandom = Math.random().toString(36).substring(2, 6).toUpperCase();
+  const orderId = `EDUFIN-${Date.now()}-${shortRandom}`;
   // Di lingkungan produksi (Vercel), kita cukup memanggil endpoint /api
   // yang akan dilayani oleh Vercel Serverless Functions.
   const serverBase = "/api/midtrans-create-transaction";

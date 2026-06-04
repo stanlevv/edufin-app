@@ -297,15 +297,30 @@ export function PaySPP() {
       }
 
       window.snap.pay(snapToken, {
-        onSuccess: (_result) => {
+        onSuccess: async (_result: any) => {
+          try {
+            for (const bill of selectedBills) {
+              const [monthName, yearStr] = bill.month.split(' ');
+              await Database.insertPaymentSupabase({
+                studentId: studentId || user?.id,
+                month: monthName,
+                year: yearStr || new Date().getFullYear().toString(),
+                amount: bill.items.reduce((s: any, i: any) => s + i.amount, 0),
+                method: selectedMethod?.label || 'Midtrans QRIS/VA',
+                status: 'completed'
+              });
+            }
+          } catch (e) {
+            console.error("Gagal menyimpan riwayat pembayaran ke database", e);
+          }
           setMidtransLoading(false);
           setStep("success"); // show receipt
         },
-        onPending: (_result) => {
+        onPending: (_result: any) => {
           setMidtransLoading(false);
           setMidtransError("Pembayaran pending — selesaikan di aplikasi bank/e-wallet kamu.");
         },
-        onError: (_result) => {
+        onError: (_result: any) => {
           setMidtransLoading(false);
           setMidtransError("Pembayaran gagal. Silakan coba lagi.");
         },

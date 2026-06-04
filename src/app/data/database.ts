@@ -983,12 +983,21 @@ export class Database {
   
   static async insertScholarshipSupabase(s: any, adminId: string): Promise<boolean> {
     const { supabase } = await import('../../lib/supabase');
-    const { error } = await supabase.from('scholarships').insert([{
+    const payload: any = {
       name: s.name,
-      amount_per_month: s.amount_per_month,
-      total_months: s.total_months,
-      created_by: adminId
-    }]);
+      description: s.description || '',
+      amount_per_month: s.amountPerMonth || s.amount_per_month || 0,
+      total_months: s.totalMonths || s.total_months || 12,
+      source: s.source || 'Dana BOS',
+      status: s.status || 'active',
+      max_recipients: s.maxRecipients || s.max_recipients || 5,
+      created_by: adminId || null,
+    };
+    // Tambahkan start_date/end_date hanya jika ada nilainya
+    if (s.startDate) payload.start_date = s.startDate;
+    if (s.endDate) payload.end_date = s.endDate;
+
+    const { error } = await supabase.from('scholarships').insert([payload]);
     if (error) { console.error('Error insert scholarship:', error); return false; }
     return true;
   }

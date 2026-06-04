@@ -166,16 +166,18 @@ export function RegisterPage() {
 
     setSubmitLoading(true);
 
-    // 1. Generate email edufin.app unik
+    // 1. Generate email edufin.app (hanya untuk preview & disimpan di DB)
     const edufinEmail = await Database.generateUniqueEdufinEmail(
       studentData!.name,
       studentData!.nisn
     );
     setEdufinEmailPreview(edufinEmail);
 
-    // 2. Buat akun Supabase Auth dengan email edufin.app
+    // 2. Buat akun Supabase Auth dengan email PRIBADI (Gmail/Yahoo)
+    //    Karena @edufin.app bukan domain email nyata, Supabase akan menolaknya.
+    //    Email edufin.app akan diset setelah admin konfirmasi via Edge Function.
     const result = await register({
-      email: edufinEmail,
+      email: personalEmail,   // ← pakai Gmail
       password,
       role: "siswa",
       name: studentData!.name,
@@ -197,7 +199,7 @@ export function RegisterPage() {
     const userId = authData?.user?.id;
 
     if (userId && studentData?.id) {
-      // 4. Link siswa dengan user_id, simpan personal_email + edufin_email
+      // 4. Link siswa: simpan user_id, personal_email, edufin_email (untuk nanti diset setelah konfirmasi)
       await Database.applyStudentRegistration(
         studentData.id,
         userId,

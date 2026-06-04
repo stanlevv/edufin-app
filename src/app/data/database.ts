@@ -355,6 +355,76 @@ export class Database {
     saveToStorage(KEYS.PAYMENTS, payments);
   }
 
+  // --- SUPABASE ASYNC METHODS FOR PAYMENTS ---
+  static async fetchPaymentsSupabase(): Promise<any[]> {
+    const { supabase } = await import('../../lib/supabase');
+    const { data, error } = await supabase.from('payments').select(`
+      *,
+      students ( name, nisn, class )
+    `);
+    if (error) {
+      console.error('Error fetching payments:', error);
+      return [];
+    }
+    return data.map((d: any) => ({
+      id: d.id,
+      studentId: d.student_id,
+      studentName: d.students?.name || 'Unknown',
+      studentNisn: d.students?.nisn || '',
+      studentClass: d.students?.class || '',
+      month: d.month_paid,
+      year: d.year_paid,
+      amount: d.amount,
+      method: d.payment_method,
+      status: d.status,
+      paidAt: d.created_at
+    }));
+  }
+
+  static async insertPaymentSupabase(payment: any): Promise<boolean> {
+    const { supabase } = await import('../../lib/supabase');
+    const { error } = await supabase.from('payments').insert([{
+      student_id: payment.studentId,
+      month_paid: payment.month,
+      year_paid: payment.year,
+      amount: payment.amount,
+      payment_method: payment.method || 'Manual Cash',
+      status: payment.status || 'completed'
+    }]);
+    if (error) {
+      console.error('Error inserting payment:', error);
+      return false;
+    }
+    return true;
+  }
+
+  static async updatePaymentSupabase(payment: any): Promise<boolean> {
+    const { supabase } = await import('../../lib/supabase');
+    const { error } = await supabase.from('payments').update({
+      month_paid: payment.month,
+      year_paid: payment.year,
+      amount: payment.amount,
+      payment_method: payment.method,
+      status: payment.status
+    }).eq('id', payment.id);
+    if (error) {
+      console.error('Error updating payment:', error);
+      return false;
+    }
+    return true;
+  }
+
+  static async deletePaymentSupabase(id: string): Promise<boolean> {
+    const { supabase } = await import('../../lib/supabase');
+    const { error } = await supabase.from('payments').delete().eq('id', id);
+    if (error) {
+      console.error('Error deleting payment:', error);
+      return false;
+    }
+    return true;
+  }
+  // -------------------------------------------
+
   // Installments
   static getSPPInstallments(): Installment[] {
     return getFromStorage<Installment>(KEYS.INSTALLMENTS);
@@ -394,6 +464,82 @@ export class Database {
     }
     saveToStorage(KEYS.CAMPAIGNS, campaigns);
   }
+
+  // --- SUPABASE ASYNC METHODS FOR CAMPAIGNS ---
+  static async fetchCampaignsSupabase(): Promise<Campaign[]> {
+    const { supabase } = await import('../../lib/supabase');
+    const { data, error } = await supabase.from('campaigns').select('*');
+    if (error) {
+      console.error('Error fetching campaigns:', error);
+      return [];
+    }
+    return data.map((d: any) => ({
+      id: d.id,
+      title: d.title,
+      description: d.description,
+      story: d.story || "",
+      target: d.target_amount,
+      collected: d.collected_amount,
+      category: d.category,
+      image: d.image_url || "",
+      school: "SMA Negeri 1 Jakarta", // Dummy for now
+      location: "Jakarta",
+      verified: true, // Assuming verified if it's in DB for now
+      status: d.status,
+      donors: 0,
+      startDate: d.created_at,
+      endDate: d.end_date || "",
+      updates: []
+    }));
+  }
+
+  static async insertCampaignSupabase(campaign: Partial<Campaign>, adminUserId: string): Promise<boolean> {
+    const { supabase } = await import('../../lib/supabase');
+    const { error } = await supabase.from('campaigns').insert([{
+      title: campaign.title,
+      description: campaign.description,
+      story: campaign.story || "",
+      target_amount: campaign.target,
+      category: campaign.category || "Fasilitas",
+      image_url: campaign.image || "https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&q=80&w=800",
+      status: campaign.status || "active",
+      created_by: adminUserId
+    }]);
+    if (error) {
+      console.error('Error inserting campaign:', error);
+      return false;
+    }
+    return true;
+  }
+
+  static async updateCampaignSupabase(campaign: Campaign): Promise<boolean> {
+    const { supabase } = await import('../../lib/supabase');
+    const { error } = await supabase.from('campaigns').update({
+      title: campaign.title,
+      description: campaign.description,
+      story: campaign.story || "",
+      target_amount: campaign.target,
+      category: campaign.category,
+      status: campaign.status
+    }).eq('id', campaign.id);
+    
+    if (error) {
+      console.error('Error updating campaign:', error);
+      return false;
+    }
+    return true;
+  }
+
+  static async deleteCampaignSupabase(id: string): Promise<boolean> {
+    const { supabase } = await import('../../lib/supabase');
+    const { error } = await supabase.from('campaigns').delete().eq('id', id);
+    if (error) {
+      console.error('Error deleting campaign:', error);
+      return false;
+    }
+    return true;
+  }
+  // ---------------------------------------------
 
   // Donations
   static getDonations(): Donation[] {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Search, Plus, Edit, Trash2, X, CheckCircle, XCircle, Megaphone } from "lucide-react";
 import { SchoolDesktopLayout } from "./SchoolDesktopLayout";
 import { Database, Campaign } from "../../data/database";
+import { useAuth } from "../../context/AuthContext";
 
 function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
@@ -38,7 +39,9 @@ const EMPTY_FORM = (): Partial<Campaign> => ({
 });
 
 export function SchoolCampaignsPage() {
+  const { user } = useAuth();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterType>("Semua");
   const [filterCat, setFilterCat] = useState("Semua");
@@ -47,8 +50,14 @@ export function SchoolCampaignsPage() {
   const [formData, setFormData] = useState<Partial<Campaign>>(EMPTY_FORM());
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  const load = () => setCampaigns(Database.getCampaigns());
-  useEffect(() => { load(); }, []);
+  const loadData = async () => {
+    setIsLoading(true);
+    const data = await Database.fetchCampaignsSupabase();
+    setCampaigns(data);
+    setIsLoading(false);
+  };
+
+  useEffect(() => { loadData(); }, []);
 
   const filtered = campaigns.filter((c) => {
     const ms = c.title.toLowerCase().includes(search.toLowerCase()) || c.school.toLowerCase().includes(search.toLowerCase());
@@ -77,41 +86,29 @@ export function SchoolCampaignsPage() {
     setShowModal(true);
   };
 
-  const handleDelete = (id: string) => {
-    Database.deleteCampaign(id);
-    load();
+  const handleDelete = async (id: string) => {
+    await Database.deleteCampaignSupabase(id);
+    await loadData();
     setDeleteConfirm(null);
   };
 
-  const handleToggleVerify = (c: Campaign) => {
-    Database.saveCampaign({ ...c, verified: !c.verified });
-    load();
+  const handleToggleVerify = async (c: Campaign) => {
+    // Verified flag is just status 'active' in DB for simplicity right now
+    await Database.updateCampaignSupabase({ ...c, verified: !c.verified });
+    await loadData();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const campaign: Campaign = {
-      id: editingCampaign?.id ?? `campaign-${Date.now()}`,
-      title: formData.title || "",
-      description: formData.description || "",
-      story: formData.story || "",
-      target: formData.target || 0,
-      collected: formData.collected || 0,
-      image: formData.image || "https://images.unsplash.com/photo-1569173675610-42c361a86e37?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=800",
-      school: formData.school || "",
-      location: formData.location || "",
-      category: (formData.category || "Beasiswa") as Category,
-      verified: formData.verified ?? false,
-      status: (formData.status || "active") as CampaignStatus,
-      donors: formData.donors || 0,
-      startDate: formData.startDate || "",
-      endDate: formData.endDate || "",
-      updates: formData.updates || [],
-      studentId: formData.studentId,
-      schoolId: formData.schoolId,
-    };
-    Database.saveCampaign(campaign);
-    load();
+    if (editingCampaign) {
+      await Database.updateCampaignSupabase({
+        ...editingCampaign,
+        ...formData
+      } as Campaign);
+    } else {
+      await Database.insertCampaignSupabase(formData, user?.id || "");
+    }
+    await loadData();
     setShowModal(false);
   };
 

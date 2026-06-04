@@ -659,15 +659,15 @@ export class Database {
       description: d.description,
       story: d.story || "",
       target: d.target_amount,
-      collected: d.collected_amount,
+      collected: d.collected_amount || 0,
       category: d.category,
       image: d.image_url || "",
-      school: "SMA Negeri 1 Jakarta", // Dummy for now
-      location: "Jakarta",
-      verified: true, // Assuming verified if it's in DB for now
+      school: d.school_name || "SMA Negeri 1 Jakarta",
+      location: d.location || "Jakarta",
+      verified: d.verified ?? false,
       status: d.status,
-      donors: 0,
-      startDate: d.created_at,
+      donors: d.donors_count || 0,
+      startDate: d.start_date || d.created_at,
       endDate: d.end_date || "",
       updates: []
     }));
@@ -678,12 +678,19 @@ export class Database {
     const { error } = await supabase.from('campaigns').insert([{
       title: campaign.title,
       description: campaign.description,
-      story: campaign.story || "",
+      story: campaign.story || '',
       target_amount: campaign.target,
-      category: campaign.category || "Fasilitas",
-      image_url: campaign.image || "https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&q=80&w=800",
-      status: campaign.status || "active",
-      created_by: adminUserId
+      collected_amount: campaign.collected || 0,
+      category: campaign.category || 'Fasilitas',
+      image_url: campaign.image || '',
+      status: campaign.status || 'active',
+      school_name: campaign.school || '',
+      location: campaign.location || '',
+      donors_count: 0,
+      verified: campaign.verified || false,
+      start_date: campaign.startDate || new Date().toISOString().slice(0, 10),
+      end_date: campaign.endDate || null,
+      created_by: adminUserId || null
     }]);
     if (error) {
       console.error('Error inserting campaign:', error);

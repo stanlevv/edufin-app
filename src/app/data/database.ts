@@ -218,7 +218,7 @@ function saveToStorage<T>(key: string, data: T[]): void {
 
 // ─── Database Class ───────────────────────────────────────────────────────────
 export class Database {
-  // Students
+  // Students (Lokal & Supabase)
   static getStudents(): Student[] {
     return getFromStorage<Student>(KEYS.STUDENTS);
   }
@@ -241,6 +241,80 @@ export class Database {
     }
     saveToStorage(KEYS.STUDENTS, students);
   }
+
+  // --- SUPABASE ASYNC METHODS FOR STUDENTS ---
+  static async fetchStudentsSupabase(): Promise<Student[]> {
+    const { supabase } = await import('../../lib/supabase');
+    const { data, error } = await supabase.from('students').select('*');
+    if (error) {
+      console.error('Error fetching students:', error);
+      return [];
+    }
+    // Map from DB schema to frontend Student schema
+    return data.map((d: any) => ({
+      id: d.id,
+      userId: d.user_id || "",
+      nisn: d.nisn,
+      name: d.name,
+      email: "", // email is in users table, but frontend student model expects it
+      school: "", // removed from db, assume single school
+      class: d.class,
+      parentName: d.parent_name,
+      address: d.address,
+      sppAmount: d.spp_amount,
+      status: d.status,
+      verified: true
+    }));
+  }
+
+  static async insertStudentSupabase(student: Partial<Student>, adminUserId: string): Promise<boolean> {
+    const { supabase } = await import('../../lib/supabase');
+    const { error } = await supabase.from('students').insert([{
+      nisn: student.nisn,
+      name: student.name,
+      class: student.class,
+      parent_name: student.parentName,
+      address: student.address || "",
+      spp_amount: student.sppAmount || 725000,
+      status: student.status || "active",
+      created_by: adminUserId
+    }]);
+    if (error) {
+      console.error('Error inserting student:', error);
+      return false;
+    }
+    return true;
+  }
+
+  static async updateStudentSupabase(student: Student): Promise<boolean> {
+    const { supabase } = await import('../../lib/supabase');
+    const { error } = await supabase.from('students').update({
+      nisn: student.nisn,
+      name: student.name,
+      class: student.class,
+      parent_name: student.parentName,
+      address: student.address,
+      spp_amount: student.sppAmount,
+      status: student.status
+    }).eq('id', student.id);
+    
+    if (error) {
+      console.error('Error updating student:', error);
+      return false;
+    }
+    return true;
+  }
+
+  static async deleteStudentSupabase(id: string): Promise<boolean> {
+    const { supabase } = await import('../../lib/supabase');
+    const { error } = await supabase.from('students').delete().eq('id', id);
+    if (error) {
+      console.error('Error deleting student:', error);
+      return false;
+    }
+    return true;
+  }
+  // -------------------------------------------
 
   // Bills
   static getBills(): Bill[] {

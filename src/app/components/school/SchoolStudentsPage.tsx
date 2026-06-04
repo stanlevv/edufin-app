@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Search, Plus, Edit, Trash2, X, Users, CheckCircle, XCircle, BookOpen } from "lucide-react";
+import { Search, Plus, Edit, Trash2, X, Users, CheckCircle, XCircle, BookOpen, Loader2 } from "lucide-react";
 import { SchoolDesktopLayout } from "./SchoolDesktopLayout";
 import { Database, Student } from "../../data/database";
+import { useAuth } from "../../context/AuthContext";
 
 function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
@@ -16,7 +17,11 @@ const EMPTY_FORM: Partial<Student> = {
 };
 
 export function SchoolStudentsPage() {
+  const { user } = useAuth();
   const [students, setStudents] = useState<Student[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
   const [showModal, setShowModal] = useState(false);
@@ -24,8 +29,15 @@ export function SchoolStudentsPage() {
   const [formData, setFormData] = useState<Partial<Student>>(EMPTY_FORM);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
+  const loadData = async () => {
+    setIsLoading(true);
+    const data = await Database.fetchStudentsSupabase();
+    setStudents(data);
+    setIsLoading(false);
+  };
+
   useEffect(() => {
-    setStudents(Database.getStudents());
+    loadData();
   }, []);
 
   const filtered = students.filter((s) => {
@@ -49,35 +61,30 @@ export function SchoolStudentsPage() {
     setShowModal(true);
   };
 
-  const handleDelete = (id: string) => {
-    Database.deleteStudent(id);
-    setStudents(Database.getStudents());
+  const handleDelete = async (id: string) => {
+    setIsLoading(true);
+    await Database.deleteStudentSupabase(id);
+    await loadData();
     setDeleteConfirm(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const id = editingStudent?.id ?? `student-${Date.now()}`;
-    const student: Student = {
-      id,
-      userId: formData.userId || id,
-      nisn: formData.nisn || "",
-      name: formData.name || "",
-      email: formData.email || "",
-      school: formData.school || "SDN 3 Malang",
-      class: formData.class || "",
-      parentName: formData.parentName || "",
-      phone: formData.phone || "",
-      parentPhone: formData.parentPhone || "",
-      address: formData.address || "",
-      sppAmount: formData.sppAmount || 725000,
-      status: formData.status || "active",
-      verified: formData.verified ?? false,
-    };
-    Database.saveStudent(student);
-    setStudents(Database.getStudents());
+    setIsSaving(true);
+    
+    if (editingStudent) {
+      await Database.updateStudentSupabase({
+        ...editingStudent,
+        ...formData
+      } as Student);
+    } else {
+      await Database.insertStudentSupabase(formData, user?.id || "");
+    }
+    
+    await loadData();
     setShowModal(false);
     setFormData(EMPTY_FORM);
+    setIsSaving(false);
   };
 
   const stats = {

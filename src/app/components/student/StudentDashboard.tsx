@@ -241,8 +241,19 @@ export function StudentDashboard() {
           { name: "SPP Bulanan", value: unpaidPayment.amount, color: "#1677FF" }
         ]);
       } else {
-        // Tampilkan tagihan dummy jika belum ada data
-        setActiveBill({ month: "-", dueDate: "-", total: 0, status: "Lunas" });
+        // Belum ada data payment — tampilkan tagihan bulan ini sebagai Tertunggak
+        const now = new Date();
+        const bulan = now.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+        const sppAmount = student.sppAmount || 725000;
+        setActiveBill({
+          month: bulan,
+          dueDate: `10 ${bulan}`,
+          total: sppAmount,
+          status: "Tertunggak",
+        });
+        setBillBreakdown([
+          { name: "SPP Bulanan", value: sppAmount, color: "#1677FF" }
+        ]);
       }
 
       const months = ["Des", "Jan", "Feb", "Mar", "Apr", "Mei"];

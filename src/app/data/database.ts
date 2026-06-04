@@ -1051,6 +1051,7 @@ export class Database {
     if (r.endDate) payload.end_date = r.endDate;
 
     const { error } = await supabase.from('scholarship_recipients').insert([payload]);
+    if (error) console.error("Error inserting recipient:", error);
     return !error;
   }
 

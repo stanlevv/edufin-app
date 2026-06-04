@@ -138,6 +138,7 @@ export function RegisterPage() {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [submitLoading, setSubmitLoading] = useState(false);
+  const [name, setName] = useState("");
 
   // Step progress map
   const STEPS_SISWA: Step[] = ["role", "nisn", "verify", "password", "success"];
@@ -220,7 +221,7 @@ export function RegisterPage() {
       email,
       password,
       role: "donatur",
-      name: email.split("@")[0],
+      name: name.trim() || email.split("@")[0],
     });
     setSubmitLoading(false);
 
@@ -846,8 +847,8 @@ export function RegisterPage() {
               label="Nama Lengkap (opsional)"
               icon={<User size={18} />}
               placeholder="Nama kamu"
-              value={""}
-              onChange={() => {}}
+              value={name}
+              onChange={setName}
             />
 
             <button

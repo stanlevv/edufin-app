@@ -62,9 +62,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         const uData = session.user.user_metadata;
         let role = uData.role as UserRole || "donatur";
-        let name = uData.name || "User";
+        let name = uData.name || uData.full_name || "User";
+        const isGoogleUser = session.user.app_metadata?.provider === "google";
 
-        // Query tabel public.users untuk mengambil data role terbaru (terutama untuk login Google)
+        // Query tabel public.users untuk mengambil data role terbaru
         try {
           const { data: publicUser, error } = await supabase
             .from("users")
@@ -75,9 +76,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!error && publicUser) {
             if (publicUser.role) role = publicUser.role as UserRole;
             if (publicUser.name) name = publicUser.name;
+          } else if (isGoogleUser) {
+            // Google user baru: otomatis insert sebagai donatur
+            await supabase.from("users").insert({
+              id: session.user.id,
+              email: session.user.email,
+              name: name,
+              role: "donatur",
+            }).then(() => {});
+            role = "donatur";
           }
         } catch (dbErr) {
           console.error("[AUTH ONSTATECHANGE] Gagal query public.users:", dbErr);
+          if (isGoogleUser) role = "donatur";
         }
 
         const supaUser: User = {
@@ -281,7 +292,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: window.location.origin,
+          // Redirect ke /login agar useEffect di LoginPage bisa handle routing berdasarkan role
+          redirectTo: `${window.location.origin}/login`,
         },
       });
 

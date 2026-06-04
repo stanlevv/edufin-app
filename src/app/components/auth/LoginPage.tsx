@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Eye, EyeOff, ArrowLeft, Mail, Lock, AlertCircle, ChevronRight, HeadphonesIcon, X, MessageCircle, Phone, Send, Clock, ChevronDown, GraduationCap, Lightbulb, Receipt } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
@@ -17,13 +17,21 @@ const DEMOS = [
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { login, loginWithGoogle } = useAuth();
+  const { login, loginWithGoogle, user } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
   const [showHelpdesk, setShowHelpdesk] = useState(false);
+
+  // Auto-redirect jika sudah login (termasuk setelah OAuth Google callback)
+  useEffect(() => {
+    if (user?.role) {
+      navigate(ROLE_DEST[user.role], { replace: true });
+    }
+  }, [user, navigate]);
 
   const handleLogin = async () => {
     if (!email.trim()) { setError("Masukkan alamat email kamu."); return; }
@@ -223,10 +231,13 @@ export function LoginPage() {
         <button
           onClick={async () => {
             setError("");
+            setGoogleLoading(true);
             const res = await loginWithGoogle();
-            if (!res.success) {
+            setGoogleLoading(false);
+            if (!res.success && res.message) {
               setError(res.message);
             }
+            // Redirect ditangani oleh useEffect di atas saat user state berubah
           }}
           className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-95"
           style={{
@@ -242,7 +253,7 @@ export function LoginPage() {
             <path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.34 5.7c1.74-5.2 6.59-9.07 12.32-9.07z" />
           </svg>
           <span style={{ fontWeight: 600, color: "#595959", fontSize: "0.9rem" }}>
-            Masuk dengan Google (Khusus Donatur)
+            {googleLoading ? "Menghubungkan ke Google..." : "Masuk dengan Google (Khusus Donatur)"}
           </span>
         </button>
 

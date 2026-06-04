@@ -124,11 +124,12 @@ function ScholarshipModal({
 
 // ─── Recipient Form ────────────────────────────────────────────────────────────
 function RecipientModal({
-  scholarshipId, defaultAmount, existingIds, onClose, onSave,
+  scholarshipId, defaultAmount, existingIds, error, onClose, onSave,
 }: {
   scholarshipId: string;
   defaultAmount: number;
   existingIds: string[];
+  error?: string;
   onClose: () => void;
   onSave: (r: ScholarshipRecipient) => void;
 }) {
@@ -169,12 +170,16 @@ function RecipientModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+    <div className="bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-md shadow-2xl">
         <div className="border-b border-gray-100 px-6 py-4 flex items-center justify-between">
           <h3 className="text-lg font-bold text-gray-800">Tambah Penerima Beasiswa</h3>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg"><X size={18} /></button>
         </div>
+        {error && (
+          <div className="mx-6 mt-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
+            ⚠️ {error}
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-xs font-semibold text-gray-600 mb-1.5">Pilih Siswa *</label>
@@ -202,12 +207,11 @@ function RecipientModal({
             <label className="block text-xs font-semibold text-gray-600 mb-1.5">Catatan / Alasan</label>
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className={inp} rows={2} placeholder="Contoh: Peringkat 1 kelas, orang tua tidak mampu..." />
           </div>
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-semibold">Batal</button>
-            <button type="submit" className="flex-1 px-4 py-2.5 rounded-xl bg-blue-600 text-white font-semibold">Tambah Penerima</button>
+          <div className="flex gap-3 pt-2 pb-6">
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-50">Batal</button>
+            <button type="submit" className="flex-1 px-4 py-2.5 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700">Tambah Penerima</button>
           </div>
         </form>
-      </div>
     </div>
   );
 }
@@ -281,9 +285,18 @@ export function SchoolScholarshipPage() {
   };
 
   const handleSaveRecipient = async (r: any) => {
-    await Database.insertScholarshipRecipientSupabase(r);
-    Database.fetchScholarshipRecipientsSupabase(selected?.id).then(setRecipients);
-    setShowRecipientModal(false);
+    setSaveError("");
+    try {
+      const ok = await Database.insertScholarshipRecipientSupabase(r);
+      if (!ok) {
+        setSaveError("Gagal menambah penerima. Pastikan RLS policy sudah diatur.");
+        return;
+      }
+      Database.fetchScholarshipRecipientsSupabase(selected?.id).then(setRecipients);
+      setShowRecipientModal(false);
+    } catch (err: any) {
+      setSaveError(err.message || "Terjadi kesalahan saat menambah penerima.");
+    }
   };
 
   const handleDeleteRecipient = async (id: string) => {
@@ -547,15 +560,17 @@ export function SchoolScholarshipPage() {
         </div>
       )}
 
-      {/* Recipient Modal */}
       {showRecipientModal && selected && (
-        <RecipientModal
-          scholarshipId={selected.id}
-          defaultAmount={selected.amountPerMonth}
-          existingIds={recipients.filter((r) => r.scholarshipId === selected.id && r.status === "active").map((r) => r.studentId)}
-          onClose={() => setShowRecipientModal(false)}
-          onSave={handleSaveRecipient}
-        />
+        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-[200] p-0 sm:p-4">
+          <RecipientModal
+            scholarshipId={selected.id}
+            defaultAmount={selected.amountPerMonth}
+            existingIds={recipients.filter((r) => r.scholarshipId === selected.id && r.status === "active").map((r) => r.studentId)}
+            error={saveError}
+            onClose={() => { setShowRecipientModal(false); setSaveError(""); }}
+            onSave={handleSaveRecipient}
+          />
+        </div>
       )}
 
       {deleteScholarshipId && (

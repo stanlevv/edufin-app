@@ -144,9 +144,9 @@ export function SchoolStudentsPage() {
 
   const stats = {
     total: students.length,
-    active: students.filter((s) => s.status === "active").length,
+    active: students.filter((s) => s.registrationStatus === "active" && s.status === "active").length,
     inactive: students.filter((s) => s.status === "inactive").length,
-    classes: new Set(students.map((s) => s.class)).size,
+    classes: new Set(students.map((s) => s.class).filter(Boolean)).size,
   };
 
   const inputCls = "w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-blue-500 outline-none text-sm bg-white";
@@ -323,6 +323,7 @@ export function SchoolStudentsPage() {
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Orang Tua</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">SPP/Bulan</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Status Akun</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Aksi</th>
                   </tr>
                 </thead>
@@ -358,6 +359,26 @@ export function SchoolStudentsPage() {
                           <span className="w-1.5 h-1.5 rounded-full" style={{ background: student.status === "active" ? "#52C41A" : "#8C8C8C" }} />
                           {student.status === "active" ? "Aktif" : "Non-Aktif"}
                         </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {(() => {
+                          const rs = student.registrationStatus || 'data_only';
+                          if (rs === 'active') return (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-600">
+                              <span className="w-1.5 h-1.5 rounded-full bg-green-500" /> Aktif
+                            </span>
+                          );
+                          if (rs === 'pending') return (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-50 text-orange-500">
+                              <span className="w-1.5 h-1.5 rounded-full bg-orange-400" /> Menunggu
+                            </span>
+                          );
+                          return (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500">
+                              <span className="w-1.5 h-1.5 rounded-full bg-gray-400" /> Belum Daftar
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex gap-2">

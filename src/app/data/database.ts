@@ -17,6 +17,7 @@ export interface Student {
   address: string;
   sppAmount: number;
   status: "active" | "inactive";
+  registrationStatus?: "data_only" | "pending" | "active";
   verified: boolean;
 }
 
@@ -245,27 +246,28 @@ export class Database {
   // --- SUPABASE ASYNC METHODS FOR STUDENTS ---
   static async fetchStudentsSupabase(): Promise<Student[]> {
     const { supabase } = await import('../../lib/supabase');
-    const { data, error } = await supabase.from('students').select('*');
+    // Ambil SEMUA siswa termasuk data_only, pending, active
+    const { data, error } = await supabase.from('students').select('*').order('name', { ascending: true });
     if (error) {
       console.error('Error fetching students:', error);
       return [];
     }
-    // Map from DB schema to frontend Student schema
     return data.map((d: any) => ({
       id: d.id,
       userId: d.user_id || "",
       nisn: d.nisn,
       name: d.name,
-      email: "", // email is in users table, but frontend student model expects it
-      school: "", // removed from db, assume single school
+      email: d.email || "",
+      school: "",
       class: d.class,
       parentName: d.parent_name,
       phone: d.phone || "",
       parentPhone: d.parent_phone || "",
-      address: d.address,
+      address: d.address || "",
       sppAmount: d.spp_amount,
       status: d.status,
-      verified: true
+      registrationStatus: d.registration_status || 'data_only',
+      verified: d.registration_status === 'active',
     }));
   }
 

@@ -978,7 +978,20 @@ export class Database {
     const { supabase } = await import('../../lib/supabase');
     const { data, error } = await supabase.from('scholarships').select('*');
     if (error) { console.error('Error scholarships:', error); return []; }
-    return data;
+    return (data || []).map((d: any) => ({
+      id: d.id,
+      name: d.name || '',
+      description: d.description || '',
+      amountPerMonth: d.amount_per_month || 0,
+      totalMonths: d.total_months || 12,
+      source: d.source || 'Dana BOS',
+      status: d.status || 'active',
+      maxRecipients: d.max_recipients || 5,
+      startDate: d.start_date || '',
+      endDate: d.end_date || '',
+      createdAt: d.created_at || '',
+      campaignId: d.campaign_id || null,
+    }));
   }
   
   static async insertScholarshipSupabase(s: any, adminId: string): Promise<boolean> {

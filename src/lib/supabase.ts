@@ -1,11 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Supabase configuration
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-anon-key-edufin';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://pxqamlbdamrkwrdnbhmf.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_kR-qLNL8nf-G4ReZTML1pg_MvXqiDLi';
 
 if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-  console.warn('⚠️ Supabase URL or Anon Key is missing. Using local database fallback.');
+  console.warn('⚠️ Environment variables missing. Using fallback URL.');
 }
 
 // Create Supabase client

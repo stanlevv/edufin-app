@@ -32,16 +32,12 @@ export function SchoolDonorsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [detailDonation, setDetailDonation] = useState<DonationRow | null>(null);
 
-  const load = () => {
-    const allCampaigns = Database.getCampaigns();
+  const load = async () => {
+    const allCampaigns = await Database.fetchCampaignsSupabase();
     setCampaigns(allCampaigns);
-    const campMap = new Map(allCampaigns.map((c) => [c.id, c.title]));
-    const rows: DonationRow[] = Database.getDonations().map((d) => ({
-      ...d,
-      campaignTitle: campMap.get(d.campaignId) ?? "—",
-    }));
-    rows.sort((a, b) => b.donatedAt.localeCompare(a.donatedAt));
-    setDonations(rows);
+    const allDonations = await Database.fetchDonationsSupabase();
+    allDonations.sort((a: any, b: any) => new Date(b.donatedAt).getTime() - new Date(a.donatedAt).getTime());
+    setDonations(allDonations);
   };
 
   useEffect(() => { load(); }, []);
@@ -54,19 +50,29 @@ export function SchoolDonorsPage() {
   });
 
   const handleDelete = (id: string) => {
-    Database.deleteDonation(id);
-    load();
+    alert("Delete donation from Admin is disabled in read-only mode");
     setDeleteConfirm(null);
   };
 
   const stats = {
     totalDonors: new Set(donations.filter((d) => !d.isAnonymous).map((d) => d.donorId)).size,
     totalDonations: donations.length,
-    totalAmount: donations.filter((d) => d.status === "success").reduce((s, d) => s + d.amount, 0),
+    totalAmount: donations.filter((d) => d.status === "completed" || d.status === "success").reduce((s, d) => s + d.amount, 0),
     avgAmount: donations.length ? Math.round(donations.reduce((s, d) => s + d.amount, 0) / donations.length) : 0,
   };
 
-  const topDonors = Database.getDonors().slice(0, 5);
+  const getTopDonors = () => {
+    const map = new Map();
+    donations.filter(d => d.status === "completed" || d.status === "success").forEach(d => {
+      const key = d.isAnonymous ? `anon-${d.donorId}` : d.donorId;
+      if (!map.has(key)) map.set(key, { id: key, name: d.donorName, totalDonated: 0, donationCount: 0 });
+      const donor = map.get(key);
+      donor.totalDonated += d.amount;
+      donor.donationCount += 1;
+    });
+    return Array.from(map.values()).sort((a, b) => b.totalDonated - a.totalDonated).slice(0, 5);
+  };
+  const topDonors = getTopDonors();
 
   return (
     <SchoolDesktopLayout>

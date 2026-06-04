@@ -8,7 +8,6 @@ const NAV_ITEMS = [
   { path: "/school", icon: LayoutDashboard, label: "Dashboard" },
   { path: "/school/students", icon: Users, label: "Siswa" },
   { path: "/school/bills", icon: FileText, label: "Tagihan" },
-  { path: "/school/loans", icon: CreditCard, label: "Pinjaman" },
   { path: "/school/scholarships", icon: GraduationCap, label: "Beasiswa" },
   { path: "/school/campaigns", icon: Megaphone, label: "Kampanye" },
   { path: "/school/donors", icon: Heart, label: "Donatur" },

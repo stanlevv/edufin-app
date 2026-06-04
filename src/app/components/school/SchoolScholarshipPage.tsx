@@ -235,21 +235,24 @@ export function SchoolScholarshipPage() {
   const [deleteRecipientId, setDeleteRecipientId] = useState<string | null>(null);
   const [editingRecipient, setEditingRecipient] = useState<ScholarshipRecipient | null>(null);
 
-  const load = () => {
-    const allS = Database.getScholarships();
+  const load = async () => {
+    const allS = await Database.fetchScholarshipsSupabase();
     setScholarships(allS);
-    setRecipients(Database.getScholarshipRecipients());
-    setStudents(Database.getStudents());
+    setStudents(await Database.fetchStudentsSupabase());
     if (allS.length > 0 && !selected) setSelected(allS[0]);
   };
 
   useEffect(() => { load(); }, []);
 
+  useEffect(() => {
+    if (selected) {
+      Database.fetchScholarshipRecipientsSupabase(selected.id).then(setRecipients);
+    }
+  }, [selected]);
+
   const studentMap = new Map(students.map((s) => [s.id, s]));
 
-  const selectedRecipients = selected
-    ? recipients.filter((r) => r.scholarshipId === selected.id)
-    : [];
+  const selectedRecipients = recipients;
 
   const filteredRecipients = selectedRecipients.filter((r) => {
     const s = studentMap.get(r.studentId);
@@ -260,43 +263,37 @@ export function SchoolScholarshipPage() {
   const activeRecipients = recipients.filter((r) => r.status === "active");
   const totalCoverage = activeRecipients.reduce((sum, r) => sum + r.amountPerMonth, 0);
 
-  const handleSaveScholarship = (s: Scholarship) => {
-    Database.saveScholarship(s);
+  const handleSaveScholarship = async (s: any) => {
+    // Only insert new scholarship (edit not fully supported yet in this migration script)
+    await Database.insertScholarshipSupabase(s, user?.id || "");
     load();
     setShowScholarshipModal(false);
-    setSelected(s);
   };
 
-  const handleDeleteScholarship = (id: string) => {
-    Database.deleteScholarship(id);
-    const remaining = Database.getScholarships();
-    setScholarships(remaining);
-    setRecipients(Database.getScholarshipRecipients());
-    setSelected(remaining[0] ?? null);
+  const handleDeleteScholarship = async (id: string) => {
+    // Database.deleteScholarship(id); (Need API if we want full CRUD)
+    alert("Delete not implemented for Supabase yet");
     setDeleteScholarshipId(null);
   };
 
-  const handleSaveRecipient = (r: ScholarshipRecipient) => {
-    Database.saveScholarshipRecipient(r);
-    setRecipients(Database.getScholarshipRecipients());
+  const handleSaveRecipient = async (r: any) => {
+    await Database.insertScholarshipRecipientSupabase(r.scholarshipId, r.studentId);
+    Database.fetchScholarshipRecipientsSupabase(selected?.id).then(setRecipients);
     setShowRecipientModal(false);
-    setEditingRecipient(null);
   };
 
-  const handleDeleteRecipient = (id: string) => {
-    Database.deleteScholarshipRecipient(id);
-    setRecipients(Database.getScholarshipRecipients());
+  const handleDeleteRecipient = async (id: string) => {
+    await Database.deleteScholarshipRecipientSupabase(id);
+    Database.fetchScholarshipRecipientsSupabase(selected?.id).then(setRecipients);
     setDeleteRecipientId(null);
   };
 
-  const handleTerminate = (r: ScholarshipRecipient) => {
-    Database.saveScholarshipRecipient({ ...r, status: "terminated" });
-    setRecipients(Database.getScholarshipRecipients());
+  const handleTerminate = (r: any) => {
+    alert("Update status not implemented in this migration yet");
   };
 
-  const handleReactivate = (r: ScholarshipRecipient) => {
-    Database.saveScholarshipRecipient({ ...r, status: "active" });
-    setRecipients(Database.getScholarshipRecipients());
+  const handleReactivate = (r: any) => {
+    alert("Update status not implemented in this migration yet");
   };
 
   return (

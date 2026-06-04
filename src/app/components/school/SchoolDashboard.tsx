@@ -4,7 +4,7 @@ import { Users, CheckCircle, XCircle, Plus, TrendingUp, AlertCircle, FileText, M
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts";
 import { useAuth } from "../../context/AuthContext";
 import { SchoolDesktopLayout } from "./SchoolDesktopLayout";
-import { Database, Student, Bill, Campaign } from "../../data/database";
+import { Database, Student, Campaign } from "../../data/database";
 
 function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
@@ -17,63 +17,74 @@ export function SchoolDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [students, setStudents] = useState<Student[]>([]);
-  const [bills, setBills] = useState<Bill[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<"overview" | "students" | "campaigns">("overview");
 
   useEffect(() => {
-    setStudents(Database.getStudents());
-    setBills(Database.getBills());
-    setCampaigns(Database.getCampaigns());
+    async function loadData() {
+      const s = await Database.fetchStudentsSupabase();
+      setStudents(s);
+      const p = await Database.fetchPaymentsSupabase();
+      setPayments(p);
+      const c = await Database.fetchCampaignsSupabase();
+      setCampaigns(c);
+      const t = await Database.fetchTransactionsSupabase();
+      setTransactions(t);
+    }
+    loadData();
   }, []);
 
   // Stats
   const totalStudents = students.filter((s) => s.status === "active").length;
-  // Filter tagihan bulan ini — cocokkan dengan nama bulan panjang di database
+  // Filter tagihan bulan ini
   const currentMonthFull = MONTHS_FULL[new Date().getMonth()];
   const currentYear = new Date().getFullYear();
-  const billsThisMonth = bills.filter((b) => b.month === currentMonthFull && b.year === currentYear);
-  const lunas = billsThisMonth.filter((b) => b.status === "Lunas").length;
-  const belumBayar = billsThisMonth.filter((b) => b.status === "Tertunggak").length;
-  const cicilan = billsThisMonth.filter((b) => b.status === "Cicilan").length;
+  const paymentsThisMonth = payments.filter((p) => p.month === currentMonthFull && p.year === currentYear);
+  const lunas = paymentsThisMonth.filter((p) => p.status === "completed").length;
+  const belumBayar = totalStudents - lunas; // Yang belum lunas berarti selisih siswa aktif dan yang sudah bayar
+  
+  // Hitung total penerimaan dari transactions
+  const totalPenerimaan = transactions.filter(t => t.type === 'in').reduce((acc, t) => acc + t.amount, 0);
+  const totalSPP = transactions.filter(t => t.category === 'SPP').reduce((acc, t) => acc + t.amount, 0);
 
-  const totalPenerimaan = bills.filter((b) => b.status === "Lunas").reduce((s, b) => s + b.total, 0);
-  const totalTertunggak = bills.filter((b) => b.status === "Tertunggak").reduce((s, b) => s + b.total, 0);
-
-  // Chart: hitung tagihan Lunas per bulan — gunakan nama bulan PANJANG
+  // Chart: hitung pembayaran Lunas per bulan
   const chartData = MONTHS_FULL.slice(0, 6).map((monthFull, i) => {
-    const monthBills = bills.filter((b) => b.month === monthFull);
-    const paid = monthBills.filter((b) => b.status === "Lunas").length;
-    const total = monthBills.length || 1;
+    const monthPayments = payments.filter((p) => p.month === monthFull);
+    const paid = monthPayments.filter((p) => p.status === "completed").length;
+    const total = totalStudents || 1; // Asumsi total tagihan sama dengan total siswa
     return {
       id: `chart-month-${i}-${MONTHS_SHORT[i]}`,
-      month: MONTHS_SHORT[i],   // label pendek untuk sumbu X chart
+      month: MONTHS_SHORT[i],
       pct: Math.round((paid / total) * 100),
       index: i
     };
   });
 
-  // Pending campaigns (not verified)
+  // Pending campaigns
   const pendingCampaigns = campaigns.filter((c) => !c.verified && c.status === "active");
 
-  const handleApproveCampaign = (id: string) => {
-    const c = Database.getCampaignById(id);
-    if (c) { Database.saveCampaign({ ...c, verified: true }); setCampaigns(Database.getCampaigns()); }
+  const handleApproveCampaign = async (id: string) => {
+    const c = campaigns.find(x => x.id === id);
+    if (c) { 
+      await Database.updateCampaignSupabase({ ...c, verified: true }); 
+      setCampaigns(await Database.fetchCampaignsSupabase()); 
+    }
   };
-  const handleRejectCampaign = (id: string) => {
-    const c = Database.getCampaignById(id);
-    if (c) { Database.saveCampaign({ ...c, verified: false, status: "cancelled" }); setCampaigns(Database.getCampaigns()); }
+  const handleRejectCampaign = async (id: string) => {
+    const c = campaigns.find(x => x.id === id);
+    if (c) { 
+      await Database.updateCampaignSupabase({ ...c, verified: false, status: "cancelled" }); 
+      setCampaigns(await Database.fetchCampaignsSupabase()); 
+    }
   };
 
-  const statusColor: Record<string, string> = { Lunas: "#52C41A", Tertunggak: "#EA4E0D", Cicilan: "#D4A017" };
+  const statusColor: Record<string, string> = { completed: "#52C41A", failed: "#EA4E0D", pending: "#D4A017" };
 
-  const recentBills = [...bills]
-    .sort((a, b) => (b.paidAt ?? "").localeCompare(a.paidAt ?? ""))
-    .slice(0, 6)
-    .map((b) => {
-      const s = Database.getStudentById(b.studentId);
-      return { ...b, studentName: s?.name ?? "—", studentClass: s?.class ?? "—" };
-    });
+  const recentPayments = [...payments]
+    .sort((a, b) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime())
+    .slice(0, 6);
 
   return (
     <SchoolDesktopLayout>
@@ -82,11 +93,11 @@ export function SchoolDashboard() {
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-gray-800">Selamat datang, {user?.name?.split(" ")[0]} 👋</h2>
-            <p className="text-sm text-gray-500 mt-1">{user?.school} — Panel Administrasi</p>
+            <p className="text-sm text-gray-500 mt-1">{user?.school || "Panel Administrasi"}</p>
           </div>
           <div className="flex gap-3">
             <button onClick={() => navigate("/school/bills")} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-all shadow-sm text-sm">
-              <Plus size={16} /> Buat Tagihan
+              <Plus size={16} /> Buat Pembayaran
             </button>
             <button onClick={() => navigate("/school/students")} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition-all text-sm">
               <Users size={16} /> Tambah Siswa
@@ -98,9 +109,9 @@ export function SchoolDashboard() {
         <div className="grid grid-cols-4 gap-5 mb-6">
           {[
             { label: "Siswa Aktif", value: totalStudents, sub: `${students.length} terdaftar`, icon: <Users size={22} color="#1677FF" />, bg: "#EEF4FF", color: "#1677FF", path: "/school/students" },
-            { label: "Sudah Lunas", value: lunas, sub: "Tagihan terbayar", icon: <CheckCircle size={22} color="#52C41A" />, bg: "#F6FFED", color: "#52C41A", path: "/school/bills" },
-            { label: "Tertunggak", value: belumBayar, sub: formatRupiah(totalTertunggak), icon: <AlertCircle size={22} color="#EA4E0D" />, bg: "#FFF2EE", color: "#EA4E0D", path: "/school/bills" },
-            { label: "Cicilan Aktif", value: cicilan, sub: "Sedang berjalan", icon: <XCircle size={22} color="#D4A017" />, bg: "#FFFBE6", color: "#D4A017", path: "/school/bills" },
+            { label: "SPP Bulan Ini (Lunas)", value: lunas, sub: "Siswa sudah bayar", icon: <CheckCircle size={22} color="#52C41A" />, bg: "#F6FFED", color: "#52C41A", path: "/school/bills" },
+            { label: "SPP Bulan Ini (Belum)", value: belumBayar, sub: "Siswa tertunggak", icon: <AlertCircle size={22} color="#EA4E0D" />, bg: "#FFF2EE", color: "#EA4E0D", path: "/school/bills" },
+            { label: "Total Kas SPP Masuk", value: formatRupiah(totalSPP), sub: "Berdasarkan transaksi", icon: <FileText size={22} color="#D4A017" />, bg: "#FFFBE6", color: "#D4A017", path: "/school/history" },
           ].map((c) => (
             <button key={c.label} onClick={() => navigate(c.path)}
               className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 text-left hover:shadow-md transition-all group">
@@ -108,7 +119,7 @@ export function SchoolDashboard() {
                 <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: c.bg }}>{c.icon}</div>
                 <ArrowRight size={14} className="text-gray-300 group-hover:text-gray-400 mt-1 transition-colors" />
               </div>
-              <p className="text-2xl font-bold text-gray-800 mb-0.5">{c.value}</p>
+              <p className="text-xl font-bold text-gray-800 mb-0.5">{c.value}</p>
               <p className="text-xs text-gray-500">{c.label}</p>
               <p className="text-xs font-medium mt-0.5" style={{ color: c.color }}>{c.sub}</p>
             </button>
@@ -132,7 +143,7 @@ export function SchoolDashboard() {
             <div className="col-span-2 bg-white rounded-xl p-6 shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h3 className="font-bold text-gray-800">Persentase Pembayaran</h3>
+                  <h3 className="font-bold text-gray-800">Persentase Kepatuhan SPP</h3>
                   <p className="text-xs text-gray-500 mt-0.5">6 bulan terakhir</p>
                 </div>
                 <TrendingUp size={18} color="#52C41A" />
@@ -153,15 +164,15 @@ export function SchoolDashboard() {
             {/* Financial Summary */}
             <div className="space-y-5">
               <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                <h3 className="font-bold text-gray-800 mb-4">Ringkasan Keuangan</h3>
+                <h3 className="font-bold text-gray-800 mb-4">Total Kas Keuangan</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-gray-500">Total Penerimaan</span>
+                    <span className="text-xs text-gray-500">Pemasukan Keseluruhan</span>
                     <span className="text-sm font-bold text-green-600">{formatRupiah(totalPenerimaan)}</span>
                   </div>
                   <div className="border-t border-gray-50 pt-3 flex justify-between items-center">
-                    <span className="text-xs text-gray-500">Belum Terbayar</span>
-                    <span className="text-sm font-bold text-red-500">{formatRupiah(totalTertunggak)}</span>
+                    <span className="text-xs text-gray-500">Jumlah Siswa Belum Bayar Bulan Ini</span>
+                    <span className="text-sm font-bold text-red-500">{belumBayar} Siswa</span>
                   </div>
                   <div className="border-t border-gray-50 pt-3 flex justify-between items-center">
                     <span className="text-xs text-gray-500">Total Kampanye</span>
@@ -205,9 +216,9 @@ export function SchoolDashboard() {
             </div>
             <div className="divide-y divide-gray-50">
               {students.slice(0, 8).map((s) => {
-                const studentBills = bills.filter((b) => b.studentId === s.id);
-                const latestBill = studentBills.sort((a, b) => b.year - a.year)[0];
-                const status = latestBill?.status ?? "Tertunggak";
+                const studentPayments = payments.filter((p) => p.studentId === s.id);
+                const latestPayment = studentPayments.sort((a, b) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime())[0];
+                const status = latestPayment?.status ?? "pending";
                 return (
                   <div key={s.id} className="flex items-center gap-3 px-6 py-3 hover:bg-gray-50 transition-all">
                     <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">

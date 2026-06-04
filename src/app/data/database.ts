@@ -756,6 +756,89 @@ export class Database {
     return Array.from(map.values()).sort((a, b) => b.totalDonated - a.totalDonated);
   }
 
+  // --- SUPABASE ASYNC METHODS FOR TRANSACTIONS, DONATIONS, SCHOLARSHIPS ---
+  static async fetchTransactionsSupabase(): Promise<any[]> {
+    const { supabase } = await import('../../lib/supabase');
+    const { data, error } = await supabase.from('transactions').select('*');
+    if (error) { console.error('Error transactions:', error); return []; }
+    return data;
+  }
+
+  static async fetchDonationsSupabase(): Promise<any[]> {
+    const { supabase } = await import('../../lib/supabase');
+    const { data, error } = await supabase.from('donations').select(`
+      *,
+      campaigns ( title ),
+      users ( name )
+    `);
+    if (error) { console.error('Error donations:', error); return []; }
+    return data.map((d: any) => ({
+      id: d.id,
+      campaignId: d.campaign_id,
+      campaignTitle: d.campaigns?.title || 'Donasi Umum',
+      donorId: d.donor_id,
+      donorName: d.is_anonymous ? 'Anonim' : (d.users?.name || 'Anonim'),
+      amount: d.amount,
+      message: d.message,
+      isAnonymous: d.is_anonymous,
+      status: d.status,
+      donatedAt: d.created_at
+    }));
+  }
+
+  static async fetchScholarshipsSupabase(): Promise<any[]> {
+    const { supabase } = await import('../../lib/supabase');
+    const { data, error } = await supabase.from('scholarships').select('*');
+    if (error) { console.error('Error scholarships:', error); return []; }
+    return data;
+  }
+  
+  static async insertScholarshipSupabase(s: any, adminId: string): Promise<boolean> {
+    const { supabase } = await import('../../lib/supabase');
+    const { error } = await supabase.from('scholarships').insert([{
+      name: s.name,
+      amount_per_month: s.amount_per_month,
+      total_months: s.total_months,
+      created_by: adminId
+    }]);
+    if (error) { console.error('Error insert scholarship:', error); return false; }
+    return true;
+  }
+
+  static async fetchScholarshipRecipientsSupabase(scholarshipId?: string): Promise<any[]> {
+    const { supabase } = await import('../../lib/supabase');
+    let query = supabase.from('scholarship_recipients').select(`*, students ( name, class, nisn )`);
+    if (scholarshipId) query = query.eq('scholarship_id', scholarshipId);
+    
+    const { data, error } = await query;
+    if (error) { console.error('Error recipients:', error); return []; }
+    return data.map((d: any) => ({
+      id: d.id,
+      scholarshipId: d.scholarship_id,
+      studentId: d.student_id,
+      studentName: d.students?.name,
+      studentClass: d.students?.class,
+      studentNisn: d.students?.nisn,
+      status: d.status,
+      joinedAt: d.created_at
+    }));
+  }
+
+  static async insertScholarshipRecipientSupabase(scholarshipId: string, studentId: string): Promise<boolean> {
+    const { supabase } = await import('../../lib/supabase');
+    const { error } = await supabase.from('scholarship_recipients').insert([{
+      scholarship_id: scholarshipId,
+      student_id: studentId
+    }]);
+    return !error;
+  }
+
+  static async deleteScholarshipRecipientSupabase(id: string): Promise<boolean> {
+    const { supabase } = await import('../../lib/supabase');
+    const { error } = await supabase.from('scholarship_recipients').delete().eq('id', id);
+    return !error;
+  }
+
   // Clear all data (for testing)
   static clearAll(): void {
     Object.values(KEYS).forEach((key) => {

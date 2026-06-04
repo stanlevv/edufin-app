@@ -18,7 +18,6 @@ import { SchoolStudentsPage } from "./components/school/SchoolStudentsPage";
 import { SchoolNotificationsPage } from "./components/school/SchoolNotificationsPage";
 import { SchoolCampaignsPage } from "./components/school/SchoolCampaignsPage";
 import { SchoolDonorsPage } from "./components/school/SchoolDonorsPage";
-import { SchoolLoansPage } from "./components/school/SchoolLoansPage";
 import { SchoolScholarshipPage } from "./components/school/SchoolScholarshipPage";
 import { DonorDashboard } from "./components/donor/DonorDashboard";
 import { CampaignDetail } from "./components/donor/CampaignDetail";
@@ -58,7 +57,6 @@ export const router = createBrowserRouter([
       { path: "/school/scholarships", element: <ProtectedRoute allowedRoles={["sekolah"]}><SchoolScholarshipPage /></ProtectedRoute> },
       { path: "/school/campaigns", element: <ProtectedRoute allowedRoles={["sekolah"]}><SchoolCampaignsPage /></ProtectedRoute> },
       { path: "/school/donors", element: <ProtectedRoute allowedRoles={["sekolah"]}><SchoolDonorsPage /></ProtectedRoute> },
-      { path: "/school/loans", element: <ProtectedRoute allowedRoles={["sekolah"]}><SchoolLoansPage /></ProtectedRoute> },
       { path: "/school/notifications", element: <ProtectedRoute allowedRoles={["sekolah"]}><SchoolNotificationsPage /></ProtectedRoute> },
       { path: "/school/report", element: <ProtectedRoute allowedRoles={["sekolah"]}><SchoolReportPage /></ProtectedRoute> },
       { path: "/school/history", element: <ProtectedRoute allowedRoles={["sekolah"]}><SchoolHistoryPage /></ProtectedRoute> },

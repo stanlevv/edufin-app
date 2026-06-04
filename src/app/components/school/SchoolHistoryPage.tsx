@@ -21,10 +21,21 @@ export function SchoolHistoryPage() {
   const [activeCat, setActiveCat] = useState("Semua");
 
   useEffect(() => {
-    const all = Database.getTransactions();
-    // Show school transactions (userId = demo-2 or current user)
-    const schoolTxns = all.filter((t) => t.type === "in");
-    setTransactions(schoolTxns.sort((a, b) => b.date.localeCompare(a.date)));
+    async function loadData() {
+      const all = await Database.fetchTransactionsSupabase();
+      const schoolTxns = all.filter((t: any) => t.type === "in");
+      // Supabase created_at is named created_at instead of date
+      setTransactions(schoolTxns.map((t: any) => ({
+        id: t.id,
+        userId: t.user_id,
+        type: t.type,
+        category: t.category,
+        amount: t.amount,
+        description: t.description,
+        date: t.created_at
+      })).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    }
+    loadData();
   }, []);
 
   const filtered = transactions.filter((h) => activeCat === "Semua" || h.category === activeCat);

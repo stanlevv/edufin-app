@@ -5,7 +5,7 @@ import { LoginPage } from "./components/auth/LoginPage";
 import { RegisterPage } from "./components/auth/RegisterPage";
 import { StudentDashboard } from "./components/student/StudentDashboard";
 import { PaySPP } from "./components/student/PaySPP";
-import { LoanPage } from "./components/student/LoanPage";
+
 import { FundraisingPage } from "./components/student/FundraisingPage";
 import { HistoryPage } from "./components/student/HistoryPage";
 import { StudentProfile } from "./components/student/StudentProfile";
@@ -44,7 +44,7 @@ export const router = createBrowserRouter([
       // Student (role: siswa)
       { path: "/student", element: <ProtectedRoute allowedRoles={["siswa"]}><StudentDashboard /></ProtectedRoute> },
       { path: "/student/spp", element: <ProtectedRoute allowedRoles={["siswa"]}><PaySPP /></ProtectedRoute> },
-      { path: "/student/loan", element: <ProtectedRoute allowedRoles={["siswa"]}><LoanPage /></ProtectedRoute> },
+
       { path: "/student/fundraising", element: <ProtectedRoute allowedRoles={["siswa"]}><FundraisingPage /></ProtectedRoute> },
       { path: "/student/campaign/:id", element: <ProtectedRoute allowedRoles={["siswa"]}><CampaignDetail /></ProtectedRoute> },
       { path: "/student/history", element: <ProtectedRoute allowedRoles={["siswa"]}><HistoryPage /></ProtectedRoute> },

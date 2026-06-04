@@ -130,10 +130,10 @@ export function BottomNav({ role }: BottomNavProps) {
 
   return (
     <div
-      className="fixed bottom-0 left-1/2 w-full max-w-[430px] z-50 px-4"
+      className="sticky bottom-0 w-full z-50 px-4"
       style={{
-        transform: "translateX(-50%)",
-        paddingBottom: "max(16px, env(safe-area-inset-bottom))"
+        paddingBottom: "max(16px, env(safe-area-inset-bottom))",
+        background: "transparent",
       }}
     >
       {/* Rounded floating container */}

@@ -99,25 +99,47 @@ export function PaySPP() {
 
   // Load bills dari database berdasarkan user yang login
   useEffect(() => {
-    if (!user) return;
-    const student = Database.getStudentByUserId(user.id);
-    if (!student) return;
-    const studentBills = Database.getBillsByStudentId(student.id);
-    // Urutkan: Tertunggak dulu, lalu berdasarkan tahun+bulan terbaru
-    const MONTH_ORDER: Record<string, number> = {
-      Januari: 1, Februari: 2, Maret: 3, April: 4, Mei: 5, Juni: 6,
-      Juli: 7, Agustus: 8, September: 9, Oktober: 10, November: 11, Desember: 12,
-    };
-    const sorted = [...studentBills].sort((a, b) => {
-      if (a.status === "Tertunggak" && b.status !== "Tertunggak") return -1;
-      if (b.status === "Tertunggak" && a.status !== "Tertunggak") return 1;
-      if (b.year !== a.year) return b.year - a.year;
-      return (MONTH_ORDER[b.month] ?? 0) - (MONTH_ORDER[a.month] ?? 0);
-    });
-    setBills(sorted);
-    // Auto-select tagihan Tertunggak pertama
-    const firstUnpaid = sorted.find((b) => b.status === "Tertunggak");
-    if (firstUnpaid) setSelected([firstUnpaid.id]);
+    async function loadData() {
+      if (!user) return;
+      const students = await Database.fetchStudentsSupabase();
+      const student = students.find((s: any) => s.userId === user.id || s.name === user.name);
+      if (!student) return;
+      
+      const payments = await Database.fetchPaymentsSupabase();
+      let studentPayments = payments.filter((p: any) => p.studentId === student.id);
+      
+      // Urutkan: pending dulu, lalu berdasarkan tahun+bulan terbaru
+      const MONTH_ORDER: Record<string, number> = {
+        Januari: 1, Februari: 2, Maret: 3, April: 4, Mei: 5, Juni: 6,
+        Juli: 7, Agustus: 8, September: 9, Oktober: 10, November: 11, Desember: 12,
+      };
+      
+      const sorted = [...studentPayments].sort((a: any, b: any) => {
+        const aUnpaid = a.status === "pending" || a.status === "unpaid";
+        const bUnpaid = b.status === "pending" || b.status === "unpaid";
+        if (aUnpaid && !bUnpaid) return -1;
+        if (bUnpaid && !aUnpaid) return 1;
+        if (b.year !== a.year) return b.year - a.year;
+        return (MONTH_ORDER[b.month] ?? 0) - (MONTH_ORDER[a.month] ?? 0);
+      });
+      
+      const uiBills: any[] = sorted.map((p: any) => ({
+        id: p.id,
+        studentId: p.studentId,
+        month: p.month || "-",
+        year: p.year || new Date().getFullYear(),
+        dueDate: p.dueDate || new Date().toISOString(),
+        total: p.amount,
+        status: (p.status === "completed" || p.status === "success") ? "Lunas" : "Tertunggak",
+        items: [{ name: "SPP Bulanan", amount: p.amount }]
+      }));
+
+      setBills(uiBills);
+      
+      const firstUnpaid = uiBills.find((b) => b.status === "Tertunggak");
+      if (firstUnpaid) setSelected([firstUnpaid.id]);
+    }
+    loadData();
   }, [user]);
 
   // ─── Midtrans Payment Handler ───────────────────────────────────────────────
@@ -168,13 +190,7 @@ export function PaySPP() {
   const selectedBills = bills.filter((b) => selected.includes(b.id));
   const subtotal = selectedBills.reduce((acc, b) => acc + b.items.reduce((s, i) => s + i.amount, 0), 0);
 
-  // Hitung nominal bayar sekarang berdasarkan opsi cicilan
-  const firstPayment =
-    cicilanOption === "penuh"
-      ? subtotal
-      : cicilanOption === "2x"
-      ? Math.ceil(subtotal / 2)
-      : Math.ceil(subtotal / 3);
+  const firstPayment = subtotal;
 
   const now = new Date();
   const receiptNo = "EDU" + now.getFullYear() + String(now.getMonth() + 1).padStart(2, "0") + "0053";
@@ -195,12 +211,10 @@ export function PaySPP() {
             <CheckCircle size={52} color="#52C41A" />
           </div>
           <h2 style={{ fontSize: "1.5rem", fontWeight: 800, color: "#242424", marginBottom: "8px", textAlign: "center" }}>
-            {cicilanOption === "penuh" ? "Pembayaran Berhasil!" : "Cicilan Pertama Berhasil!"}
+            Pembayaran Berhasil!
           </h2>
           <p style={{ color: "#8C8C8C", textAlign: "center", marginBottom: "32px", fontSize: "0.9rem" }}>
-            {cicilanOption === "penuh"
-              ? "SPP kamu telah berhasil dibayarkan secara penuh"
-              : `Cicilan 1/${cicilanOption === "2x" ? "2" : "3"} berhasil. Tagihan berikutnya akan muncul otomatis.`}
+            SPP kamu telah berhasil dibayarkan
           </p>
 
           {/* E-Receipt */}
@@ -227,7 +241,7 @@ export function PaySPP() {
               <div className="flex justify-between">
                 <span style={{ color: "#8C8C8C", fontSize: "0.85rem" }}>Jenis Bayar</span>
                 <span style={{ fontWeight: 600, color: "#242424", fontSize: "0.85rem" }}>
-                  {cicilanOption === "penuh" ? "Penuh" : `Cicilan ${cicilanOption} (Gratis)`}
+                  Penuh
                 </span>
               </div>
               <div className="flex justify-between">
@@ -245,16 +259,10 @@ export function PaySPP() {
               <div className="h-px" style={{ background: "#F0F0F0" }} />
               <div className="flex justify-between">
                 <span style={{ fontWeight: 700, color: "#242424" }}>
-                  {cicilanOption === "penuh" ? "Total Dibayar" : "Bayar Sekarang"}
+                  Total Dibayar
                 </span>
                 <span style={{ fontWeight: 800, color: "#1677FF" }}>{formatRupiah(firstPayment)}</span>
               </div>
-              {cicilanOption !== "penuh" && (
-                <div className="flex justify-between">
-                  <span style={{ color: "#8C8C8C", fontSize: "0.85rem" }}>Total Tagihan</span>
-                  <span style={{ fontWeight: 600, color: "#242424", fontSize: "0.85rem" }}>{formatRupiah(subtotal)}</span>
-                </div>
-              )}
             </div>
           </div>
 
@@ -316,35 +324,16 @@ export function PaySPP() {
             <div className="flex justify-between">
               <span style={{ color: "#8C8C8C", fontSize: "0.85rem" }}>Jenis Pembayaran</span>
               <span style={{ fontWeight: 600, color: "#242424", fontSize: "0.85rem" }}>
-                {cicilanOption === "penuh" ? "Penuh" : `Cicilan ${cicilanOption} (Gratis)`}
+                Penuh
               </span>
             </div>
             <div className="flex justify-between">
               <span style={{ color: "#8C8C8C", fontSize: "0.85rem" }}>Metode</span>
               <span style={{ fontWeight: 600, color: "#242424", fontSize: "0.85rem" }}>{selectedMethod?.label}</span>
             </div>
-            {cicilanOption !== "penuh" && (
-              <div className="flex justify-between">
-                <span style={{ color: "#8C8C8C", fontSize: "0.85rem" }}>Total Tagihan</span>
-                <span style={{ fontWeight: 600, color: "#242424", fontSize: "0.85rem" }}>{formatRupiah(subtotal)}</span>
-              </div>
-            )}
           </div>
 
-          {/* Info cicilan */}
-          {cicilanOption !== "penuh" && (
-            <div className="rounded-2xl p-4" style={{ background: "#FFF7E6", border: "1px solid #FFD591" }}>
-              <p style={{ fontWeight: 700, color: "#FD9A16", fontSize: "0.85rem", marginBottom: "4px" }}>
-                Info Cicilan {cicilanOption}
-              </p>
-              <p style={{ color: "#595959", fontSize: "0.82rem", lineHeight: "1.5" }}>
-                {cicilanOption === "2x"
-                  ? `Bayar ${formatRupiah(Math.ceil(subtotal / 2))} sekarang, sisanya ${formatRupiah(subtotal - Math.ceil(subtotal / 2))} otomatis tagih tanggal 15.`
-                  : `Bayar ${formatRupiah(Math.ceil(subtotal / 3))} sekarang. Sisanya akan tagih secara otomatis tanggal 10 & 20.`}
-                {" "}Cicilan gratis tanpa biaya tambahan.
-              </p>
-            </div>
-          )}
+
         </div>
 
         {/* Sticky Bottom */}
@@ -352,15 +341,10 @@ export function PaySPP() {
           style={{ transform: "translateX(-50%)", background: "white", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)" }}>
           <div className="flex justify-between mb-1">
             <span style={{ color: "#8C8C8C", fontSize: "0.85rem" }}>
-              {cicilanOption === "penuh" ? "Total Pembayaran" : "Bayar Sekarang"}
+              Total Pembayaran
             </span>
             <span style={{ fontWeight: 800, color: "#1677FF", fontSize: "1.1rem" }}>{formatRupiah(firstPayment)}</span>
           </div>
-          {cicilanOption !== "penuh" && (
-            <p style={{ color: "#BFBFBF", fontSize: "0.75rem", marginBottom: "8px" }}>
-              dari total {formatRupiah(subtotal)}
-            </p>
-          )}
           {/* Midtrans Error */}
           {midtransError && (
             <div className="mb-3 px-4 py-3 rounded-2xl"
@@ -424,49 +408,6 @@ export function PaySPP() {
         </div>
 
         <div className="flex-1 px-6 py-5 overflow-y-auto pb-52 space-y-5">
-          {/* Opsi Cicilan */}
-          <div>
-            <p style={{ fontWeight: 700, color: "#242424", marginBottom: "12px" }}>Jenis Pembayaran</p>
-            <div className="space-y-3">
-              {CICILAN_OPTIONS.map((opt) => (
-                <button
-                  key={opt.key}
-                  onClick={() => setCicilanOption(opt.key)}
-                  className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl bg-white shadow-sm transition-all active:scale-[0.98]"
-                  style={{
-                    border: "2px solid",
-                    borderColor: cicilanOption === opt.key ? "#1677FF" : "transparent",
-                  }}
-                >
-                  <div
-                    className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0"
-                    style={{
-                      borderColor: cicilanOption === opt.key ? "#1677FF" : "#D9D9D9",
-                      background: cicilanOption === opt.key ? "#1677FF" : "transparent",
-                    }}
-                  >
-                    {cicilanOption === opt.key && <div className="w-2 h-2 rounded-full bg-white" />}
-                  </div>
-                  <div className="flex-1 text-left">
-                    <div className="flex items-center gap-2">
-                      <p style={{ fontWeight: 700, color: "#242424", fontSize: "0.9rem" }}>{opt.label}</p>
-                      {opt.badge && (
-                        <span
-                          className="px-2 py-0.5 rounded-full text-xs font-semibold"
-                          style={{ background: "#F6FFED", color: "#52C41A" }}
-                        >
-                          {opt.badge}
-                        </span>
-                      )}
-                    </div>
-                    <p style={{ color: "#8C8C8C", fontSize: "0.8rem" }}>{opt.sub}</p>
-                  </div>
-                  {cicilanOption === opt.key && <ChevronRight size={16} color="#1677FF" />}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Metode Pembayaran */}
           <div>
             <p style={{ fontWeight: 700, color: "#242424", marginBottom: "12px" }}>Metode Pembayaran</p>
@@ -512,7 +453,7 @@ export function PaySPP() {
         >
           <div className="flex justify-between mb-3">
             <span style={{ color: "#8C8C8C", fontSize: "0.9rem" }}>
-              {cicilanOption === "penuh" ? "Total Bayar" : "Bayar Sekarang"}
+              Total Bayar
             </span>
             <span style={{ fontWeight: 800, color: "#1677FF", fontSize: "1.05rem" }}>
               {formatRupiah(firstPayment)}

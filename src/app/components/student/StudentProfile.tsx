@@ -12,6 +12,34 @@ export function StudentProfile() {
   const [showITSupport, setShowITSupport] = useState(false);
   const [showPersonalData, setShowPersonalData] = useState(false);
   const [showSchoolInfo, setShowSchoolInfo] = useState(false);
+  
+  const [totalDonasi, setTotalDonasi] = useState(0);
+  const [unpaidCount, setUnpaidCount] = useState(0);
+  const [studentData, setStudentData] = useState<any>(null);
+
+  React.useEffect(() => {
+    async function loadData() {
+      if (!user) return;
+      const { Database } = await import("../../data/database");
+      const students = await Database.fetchStudentsSupabase();
+      const student = students.find((s: any) => s.userId === user.id || s.name === user.name);
+      if (student) setStudentData(student);
+
+      const payments = await Database.fetchPaymentsSupabase();
+      if (student) {
+        const studentPayments = payments.filter((p: any) => 
+          p.studentId === student.id && (p.status === "pending" || p.status === "unpaid")
+        );
+        setUnpaidCount(studentPayments.length);
+      }
+
+      const txns = await Database.fetchTransactionsSupabase();
+      const myDonations = txns.filter((t: any) => t.user_id === user.id && t.category === "Donasi");
+      const total = myDonations.reduce((acc: number, t: any) => acc + t.amount, 0);
+      setTotalDonasi(total);
+    }
+    loadData();
+  }, [user]);
 
   const MENU = [
     {
@@ -55,7 +83,7 @@ export function StudentProfile() {
                 className="px-2 py-0.5 rounded-full"
                 style={{ background: "rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.9)", fontSize: "0.72rem", fontWeight: 600 }}
               >
-                NISN: {user?.nisn ?? "0012345678"}
+                NISN: {studentData?.nisn || user?.nisn || "0012345678"}
               </span>
             </div>
           </div>
@@ -68,9 +96,9 @@ export function StudentProfile() {
           {/* Stats Grid */}
           <div className="grid grid-cols-3 mb-3 pb-3" style={{ borderBottom: "1px solid #F0F0F0" }}>
             {[
-              { label: "Kelas", value: user?.class ?? "XII IPA 2" },
+              { label: "Kelas", value: studentData?.class || user?.class || "XII IPA 2" },
               { label: "Status", value: "Aktif" },
-              { label: "Tagihan", value: "1 Tertunggak" },
+              { label: "Tagihan", value: `${unpaidCount} Tertunggak` },
             ].map((item, idx) => (
               <div
                 key={item.label}
@@ -85,7 +113,7 @@ export function StudentProfile() {
           {/* Total Donasi */}
           <div className="text-center">
             <p style={{ color: "#8C8C8C", fontSize: "0.72rem" }}>Total Donasi</p>
-            <p style={{ fontWeight: 800, color: "#1677FF", fontSize: "1.1rem" }}>Rp5.000.000</p>
+            <p style={{ fontWeight: 800, color: "#1677FF", fontSize: "1.1rem" }}>Rp {totalDonasi.toLocaleString("id-ID")}</p>
           </div>
         </div>
       </div>

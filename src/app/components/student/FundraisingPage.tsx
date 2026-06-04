@@ -21,9 +21,12 @@ export function FundraisingPage() {
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
 
   useEffect(() => {
-    // Load kampanye aktif dari database
-    const active = Database.getCampaigns().filter((c) => c.status === "active");
-    setCampaigns(active);
+    async function loadData() {
+      const data = await Database.fetchCampaignsSupabase();
+      const active = data.filter((c: any) => c.status === "active");
+      setCampaigns(active);
+    }
+    loadData();
   }, []);
 
   const filtered = campaigns.filter((c) => {

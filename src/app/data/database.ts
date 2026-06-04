@@ -757,6 +757,13 @@ export class Database {
   }
 
   // --- SUPABASE ASYNC METHODS FOR TRANSACTIONS, DONATIONS, SCHOLARSHIPS ---
+  static async fetchNotificationsSupabase(): Promise<any[]> {
+    const { supabase } = await import('../../lib/supabase');
+    const { data, error } = await supabase.from('notifications').select('*').order('created_at', { ascending: false });
+    if (error) { console.error('Error notifications:', error); return []; }
+    return data || [];
+  }
+
   static async fetchTransactionsSupabase(): Promise<any[]> {
     const { supabase } = await import('../../lib/supabase');
     const { data, error } = await supabase.from('transactions').select('*');

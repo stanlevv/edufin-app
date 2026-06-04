@@ -187,118 +187,78 @@ export function StudentDashboard() {
 
   // Load data dari database
   useEffect(() => {
-    if (!user) return;
+    async function loadData() {
+      if (!user) return;
 
-    const student = Database.getStudentByUserId(user.id);
-    if (!student) return;
+      const students = await Database.fetchStudentsSupabase();
+      const student = students.find((s: any) => s.userId === user.id || s.name === user.name);
+      if (!student) return;
 
-    // Load bills
-    const bills = Database.getBillsByStudentId(student.id);
-    // Prioritas: tagihan Tertunggak → jika tidak ada, ambil tagihan terbaru
-    const unpaidBill = bills.find((b) => b.status === "Tertunggak") ?? bills[0];
+      const payments = await Database.fetchPaymentsSupabase();
+      const studentPayments = payments.filter((p: any) => p.studentId === student.id);
+      
+      // Cari tagihan yang belum lunas (pending) atau ambil yang terbaru
+      const unpaidPayment = studentPayments.find((p: any) => p.status === "pending" || p.status === "unpaid") ?? studentPayments[0];
 
-    if (unpaidBill) {
-      setActiveBill({
-        month: `${unpaidBill.month} ${unpaidBill.year}`,
-        dueDate: new Date(unpaidBill.dueDate).toLocaleDateString("id-ID", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        }),
-        total: unpaidBill.total,
-        status: unpaidBill.status,
-      });
-      setBillBreakdown(
-        unpaidBill.items.map((item, idx) => ({
-          name: item.name,
-          value: item.amount,
-          color: ["#1677FF", "#FDD504", "#52C41A", "#EA4E0D"][idx % 4],
-        }))
-      );
-    }
-
-    // Monthly payment data (last 6 months)
-    const months = ["Des", "Jan", "Feb", "Mar", "Apr", "Mei"];
-    const monthlyBills = bills.slice(0, 6).reverse();
-    const monthlyPayments = months.map((month, idx) => {
-      const bill = monthlyBills[idx];
-      return {
-        month,
-        paid: bill?.status === "Lunas" ? bill.total : 0,
-        status: bill?.status === "Lunas" ? "lunas" : "belum",
-      };
-    });
-    setMonthlyData(monthlyPayments);
-
-    // Calculate payment streak (count consecutive paid bills from most recent)
-    let streak = 0;
-    for (let i = 0; i < bills.length && i < 6; i++) {
-      if (bills[i]?.status === "Lunas") {
-        streak++;
+      if (unpaidPayment) {
+        setActiveBill({
+          month: `${unpaidPayment.month || ""}`,
+          dueDate: unpaidPayment.dueDate
+            ? new Date(unpaidPayment.dueDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
+            : "Lihat detail",
+          total: unpaidPayment.amount,
+          status: (unpaidPayment.status === "completed" || unpaidPayment.status === "success") ? "Lunas" : "Tertunggak",
+        });
+        setBillBreakdown([
+          { name: "SPP Bulanan", value: unpaidPayment.amount, color: "#1677FF" }
+        ]);
       } else {
-        break;
+        // Tampilkan tagihan dummy jika belum ada data
+        setActiveBill({ month: "-", dueDate: "-", total: 0, status: "Lunas" });
       }
-    }
-    setPaymentStreak(streak);
 
-    // Load scholarship
-    const schRecipients = Database.getScholarshipsByStudentId(student.id);
-    const activeRecipient = schRecipients.find((r) => r.status === "active");
-    if (activeRecipient) {
-      const sch = Database.getScholarshipById(activeRecipient.scholarshipId);
-      if (sch) {
-        setActiveScholarship({ name: sch.name, amount: activeRecipient.amountPerMonth, endDate: activeRecipient.endDate });
+      const months = ["Des", "Jan", "Feb", "Mar", "Apr", "Mei"];
+      const monthlyDataToSet = months.map((m) => {
+        const p = studentPayments.find((px: any) => (px.month || "").startsWith(m));
+        return {
+          month: m,
+          paid: p && (p.status === "completed" || p.status === "success") ? p.amount : 0,
+          status: p && (p.status === "completed" || p.status === "success") ? "lunas" : "belum",
+        };
+      });
+      setMonthlyData(monthlyDataToSet);
+
+      let streak = 0;
+      for (const p of studentPayments) {
+        if (p.status === "completed" || p.status === "success") streak++;
+        else break;
       }
-    }
+      setPaymentStreak(streak);
 
-    // Load campaigns
-    const allCampaigns = Database.getCampaigns()
-      .filter((c) => c.status === "active")
-      .slice(0, 2)
-      .map((c) => {
+      const schRecipients = await Database.fetchScholarshipRecipientsSupabase(undefined);
+      const myRecipient = schRecipients.find((r: any) => r.studentId === student.id && r.status === "active");
+      if (myRecipient) {
+        const scholarships = await Database.fetchScholarshipsSupabase();
+        const sch = scholarships.find((s: any) => s.id === myRecipient.scholarshipId);
+        if (sch) {
+          setActiveScholarship({ name: sch.name, amount: myRecipient.amountPerMonth, endDate: myRecipient.endDate });
+        }
+      }
+
+      const allCampaigns = await Database.fetchCampaignsSupabase();
+      setCampaigns(allCampaigns.slice(0, 2).map((c: any) => {
         const endDate = new Date(c.endDate);
         const today = new Date();
         const daysLeft = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        return {
-          id: c.id,
-          title: c.title,
-          target: c.target,
-          collected: c.collected,
-          image: c.image,
-          school: c.school,
-          verified: c.verified,
-          daysLeft: Math.max(0, daysLeft),
-        };
-      });
-    setCampaigns(allCampaigns);
+        return { ...c, daysLeft: Math.max(0, daysLeft) };
+      }));
 
-    // Load notifications
-    const userNotifs = Database.getNotificationsByUserId(user.id)
-      .slice(0, 2)
-      .map((n) => {
-        const createdAt = new Date(n.createdAt);
-        const now = new Date();
-        const diffMs = now.getTime() - createdAt.getTime();
-        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-        let timeAgo = "";
-        if (diffDays > 0) {
-          timeAgo = `${diffDays} hari lalu`;
-        } else if (diffHours > 0) {
-          timeAgo = `${diffHours} jam lalu`;
-        } else {
-          timeAgo = "Baru saja";
-        }
-
-        return {
-          id: n.id,
-          text: n.title,
-          time: timeAgo,
-          unread: !n.read,
-        };
-      });
-    setNotifications(userNotifs);
+      const allNotifs = await Database.fetchNotificationsSupabase();
+      setNotifications(allNotifs.slice(0, 2).map((n: any) => {
+        return { id: n.id, text: n.title, time: "Baru saja", unread: false };
+      }));
+    }
+    loadData();
   }, [user]);
 
   const isLunas = activeBill?.status === "Lunas";
@@ -309,24 +269,14 @@ export function StudentDashboard() {
   const paidCount = monthlyData.filter(m => m.status === "lunas").length;
   const totalMonths = monthlyData.length;
 
-  // Tampilkan empty state jika tidak ada data tagihan sama sekali
-  if (!activeBill) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4 px-6" style={{ background: "#F3F6FB" }}>
-        <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "#EEF4FF" }}>
-          <CreditCard size={40} color="#1677FF" />
-        </div>
-        <div className="text-center">
-          <p style={{ fontWeight: 800, fontSize: "1.1rem", color: "#242424" }}>Belum Ada Tagihan</p>
-          <p style={{ color: "#8C8C8C", fontSize: "0.85rem", marginTop: "4px" }}>Tagihan SPP kamu akan muncul di sini</p>
-        </div>
-      </div>
-    );
-  }
+  // Tampilkan loading state jika user ada tapi activeBill null
+  // (bisa berarti masih loading atau memang tidak ada data)
+  const isLoading = !!user && activeBill === null;
+  const hasNoData = !user;
+
 
   const SHORTCUTS = [
     { icon: <Receipt size={20} />, label: "Bayar SPP", route: "/student/spp", bg: "#EEF4FF", fg: "#1677FF" },
-    { icon: <Wallet size={20} />, label: "Pinjaman", route: "/student/loan", bg: "#EEF4FF", fg: "#1677FF" },
     { icon: <HandHeart size={20} />, label: "Donasi", route: "/student/fundraising", bg: "#EEF4FF", fg: "#1677FF" },
     { icon: <History size={20} />, label: "Riwayat", route: "/student/history", bg: "#EEF4FF", fg: "#1677FF" },
   ];

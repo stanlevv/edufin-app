@@ -16,10 +16,24 @@ export function HistoryPage() {
   const [activeCat, setActiveCat] = useState("Semua");
 
   useEffect(() => {
-    if (!user) return;
-    const data = Database.getTransactionsByUserId(user.id);
-    // Urutkan terbaru dulu
-    setTransactions([...data].sort((a, b) => b.date.localeCompare(a.date)));
+    async function loadData() {
+      if (!user) return;
+      const data = await Database.fetchTransactionsSupabase();
+      const userTxns = data
+        .filter((t: any) => t.user_id === user.id)
+        .map((t: any) => ({
+          id: t.id,
+          title: t.category === "Donasi" ? "Donasi Kampanye" : "Pembayaran SPP",
+          description: t.description || `Transaksi ${t.category}`,
+          date: t.created_at,
+          amount: t.amount,
+          type: "out",
+          category: t.category,
+          status: t.status === "completed" ? "Berhasil" : "Pending"
+        }));
+      setTransactions([...userTxns].sort((a, b) => b.date.localeCompare(a.date)));
+    }
+    loadData();
   }, [user]);
 
   const filtered = transactions.filter((h) => activeCat === "Semua" || h.category === activeCat);

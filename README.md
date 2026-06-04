@@ -12,9 +12,6 @@ Platform manajemen keuangan sekolah berbasis React + Vite + Tailwind CSS v4.
 - Supabase JS Client
 
 ## Cara Jalankan
-VITE_MIDTRANS_CLIENT_KEY=Mid-client-el0zIHb1ZkIPvrjI
-VITE_SUPABASE_URL=https://pxqamlbdamrkwrdnbhmf.supabase.co
-VITE_SUPABASE_ANON_KEY=sb_publishable_kR-qLNL8nf-G4ReZTML1pg_MvXqiDLi
 
 ```bash
 # Install dependencies

@@ -1038,7 +1038,7 @@ export class Database {
     }));
   }
 
-  static async insertScholarshipRecipientSupabase(r: any): Promise<boolean> {
+  static async insertScholarshipRecipientSupabase(r: any): Promise<{success: boolean, error?: string}> {
     const { supabase } = await import('../../lib/supabase');
     const payload: any = {
       scholarship_id: r.scholarshipId,
@@ -1051,8 +1051,11 @@ export class Database {
     if (r.endDate) payload.end_date = r.endDate;
 
     const { error } = await supabase.from('scholarship_recipients').insert([payload]);
-    if (error) console.error("Error inserting recipient:", error);
-    return !error;
+    if (error) {
+      console.error("Error inserting recipient:", error);
+      return { success: false, error: error.message };
+    }
+    return { success: true };
   }
 
   static async deleteScholarshipRecipientSupabase(id: string): Promise<boolean> {

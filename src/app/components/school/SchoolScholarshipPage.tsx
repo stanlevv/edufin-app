@@ -287,9 +287,9 @@ export function SchoolScholarshipPage() {
   const handleSaveRecipient = async (r: any) => {
     setSaveError("");
     try {
-      const ok = await Database.insertScholarshipRecipientSupabase(r);
-      if (!ok) {
-        setSaveError("Gagal menambah penerima. Pastikan RLS policy sudah diatur.");
+      const result = await Database.insertScholarshipRecipientSupabase(r);
+      if (!result.success) {
+        setSaveError(result.error || "Gagal menambah penerima. Pastikan RLS policy sudah diatur.");
         return;
       }
       Database.fetchScholarshipRecipientsSupabase(selected?.id).then(setRecipients);

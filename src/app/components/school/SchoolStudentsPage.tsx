@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, Plus, Edit, Trash2, X, Users, CheckCircle, XCircle, BookOpen, Loader2, Clock, UserCheck, UserX } from "lucide-react";
+import { Search, Plus, Edit, Trash2, X, Users, CheckCircle, XCircle, BookOpen, Loader2, Clock, UserCheck, UserX, Mail } from "lucide-react";
 import { SchoolDesktopLayout } from "./SchoolDesktopLayout";
 import { Database, Student } from "../../data/database";
 import { useAuth } from "../../context/AuthContext";

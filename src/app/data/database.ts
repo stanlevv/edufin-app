@@ -17,6 +17,7 @@ export interface Student {
   address: string;
   sppAmount: number;
   status: "active" | "inactive";
+  registrationStatus?: "data_only" | "pending" | "active";
   verified: boolean;
 }
 
@@ -245,27 +246,28 @@ export class Database {
   // --- SUPABASE ASYNC METHODS FOR STUDENTS ---
   static async fetchStudentsSupabase(): Promise<Student[]> {
     const { supabase } = await import('../../lib/supabase');
-    const { data, error } = await supabase.from('students').select('*');
+    // Ambil SEMUA siswa termasuk data_only, pending, active
+    const { data, error } = await supabase.from('students').select('*').order('name', { ascending: true });
     if (error) {
       console.error('Error fetching students:', error);
       return [];
     }
-    // Map from DB schema to frontend Student schema
     return data.map((d: any) => ({
       id: d.id,
       userId: d.user_id || "",
       nisn: d.nisn,
       name: d.name,
-      email: "", // email is in users table, but frontend student model expects it
-      school: "", // removed from db, assume single school
+      email: d.email || "",
+      school: "",
       class: d.class,
       parentName: d.parent_name,
-      phone: d.phone || "",
-      parentPhone: d.parent_phone || "",
-      address: d.address,
+      phone: "",
+      parentPhone: "",
+      address: "",
       sppAmount: d.spp_amount,
       status: d.status,
-      verified: true
+      registrationStatus: d.registration_status || 'data_only',
+      verified: d.registration_status === 'active',
     }));
   }
 
@@ -276,11 +278,9 @@ export class Database {
       name: student.name,
       class: student.class,
       parent_name: student.parentName,
-      phone: student.phone || "",
-      parent_phone: student.parentPhone || "",
-      address: student.address || "",
       spp_amount: student.sppAmount || 725000,
       status: student.status || "active",
+      registration_status: "active",
       created_by: adminUserId
     }]);
     if (error) {
@@ -297,9 +297,6 @@ export class Database {
       name: student.name,
       class: student.class,
       parent_name: student.parentName,
-      phone: student.phone || "",
-      parent_phone: student.parentPhone || "",
-      address: student.address,
       spp_amount: student.sppAmount,
       status: student.status
     }).eq('id', student.id);
@@ -320,7 +317,159 @@ export class Database {
     }
     return true;
   }
+
+  // ─── Registration Flow Methods ────────────────────────────────────────────
+
+  /** Cari siswa berdasarkan NISN (untuk langkah registrasi mandiri) */
+  static async findStudentByNISN(nisn: string): Promise<any | null> {
+    const { supabase } = await import('../../lib/supabase');
+    const { data, error } = await supabase
+      .from('students')
+      .select('*')
+      .eq('nisn', nisn)
+      .single();
+    if (error || !data) return null;
+    return {
+      id: data.id,
+      nisn: data.nisn,
+      name: data.name,
+      class: data.class,
+      parentName: data.parent_name,
+      address: data.address,
+      sppAmount: data.spp_amount,
+      registrationStatus: data.registration_status || 'data_only',
+      userId: data.user_id,
+    };
+  }
+
+  /**
+   * Generate email edufin.app dari nama siswa
+   * Format: nama.depan@edufin.app
+   * Jika duplikat: nama.depan.4digitNISN@edufin.app
+   */
+  static generateEdufinEmail(name: string, nisn: string): string {
+    const clean = name
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // hapus aksen
+      .replace(/[^a-z\s]/g, '')    // hanya huruf & spasi
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)                 // ambil 2 kata pertama
+      .join('.');
+    return `${clean}@edufin.app`;
+  }
+
+  static async generateUniqueEdufinEmail(name: string, nisn: string): Promise<string> {
+    const base = Database.generateEdufinEmail(name, nisn);
+    const { supabase } = await import('../../lib/supabase');
+    // Cek apakah email sudah ada
+    const { data } = await supabase.from('students').select('edufin_email').eq('edufin_email', base);
+    if (!data || data.length === 0) return base;
+    // Duplikat → tambah 4 digit NISN terakhir
+    const suffix = nisn.slice(-4);
+    const [local] = base.split('@');
+    return `${local}.${suffix}@edufin.app`;
+  }
+
+  /** Siswa apply registrasi: update user_id, personal_email, edufin_email, dan set status pending */
+  static async applyStudentRegistration(
+    studentId: string,
+    userId: string,
+    personalEmail: string,
+    edufinEmail: string
+  ): Promise<boolean> {
+    const { supabase } = await import('../../lib/supabase');
+    const { error } = await supabase.from('students').update({
+      user_id: userId,
+      email: edufinEmail,           // login email = edufin.app
+      personal_email: personalEmail, // untuk notifikasi
+      edufin_email: edufinEmail,
+      registration_status: 'pending',
+      registered_at: new Date().toISOString(),
+    }).eq('id', studentId);
+    if (error) { console.error('Error applying registration:', error); return false; }
+    return true;
+  }
+
+  /** Admin konfirmasi siswa pending → active + kirim email notifikasi */
+  static async confirmStudentRegistration(studentId: string): Promise<boolean> {
+    const { supabase } = await import('../../lib/supabase');
+    
+    // Ambil data siswa dulu (untuk email notifikasi)
+    const { data: studentData } = await supabase
+      .from('students')
+      .select('name, personal_email, edufin_email')
+      .eq('id', studentId)
+      .single();
+
+    // Update status
+    const { error } = await supabase.from('students').update({
+      registration_status: 'active',
+      status: 'active',
+    }).eq('id', studentId);
+    if (error) { console.error('Error confirming student:', error); return false; }
+
+    // Kirim email notifikasi ke email pribadi siswa via Edge Function
+    if (studentData?.personal_email && studentData?.edufin_email) {
+      try {
+        await supabase.functions.invoke('send-confirmation-email', {
+          body: {
+            to: studentData.personal_email,
+            studentName: studentData.name,
+            edufinEmail: studentData.edufin_email,
+          }
+        });
+      } catch (e) {
+        console.warn('Email notification failed (non-critical):', e);
+      }
+    }
+
+    return true;
+  }
+
+  /** Admin tolak siswa pending → kembalikan ke data_only */
+  static async rejectStudentRegistration(studentId: string): Promise<boolean> {
+    const { supabase } = await import('../../lib/supabase');
+    const { error } = await supabase.from('students').update({
+      registration_status: 'data_only',
+      user_id: null,
+      email: null,
+      personal_email: null,
+      edufin_email: null,
+      registered_at: null,
+    }).eq('id', studentId);
+    if (error) { console.error('Error rejecting student:', error); return false; }
+    return true;
+  }
+
+  /** Ambil semua siswa pending untuk admin */
+  static async fetchPendingStudentsSupabase(): Promise<any[]> {
+    const { supabase } = await import('../../lib/supabase');
+    const { data, error } = await supabase
+      .from('students')
+      .select('*')
+      .eq('registration_status', 'pending')
+      .order('registered_at', { ascending: false });
+    if (error) { console.error('Error fetching pending students:', error); return []; }
+    return (data || []).map((d: any) => ({
+      id: d.id,
+      userId: d.user_id || '',
+      nisn: d.nisn,
+      name: d.name,
+      email: d.edufin_email || d.email || '',
+      personalEmail: d.personal_email || '',
+      edufinEmail: d.edufin_email || '',
+      class: d.class,
+      parentName: d.parent_name,
+      address: d.address || '',
+      sppAmount: d.spp_amount,
+      status: d.status,
+      registrationStatus: d.registration_status,
+      registeredAt: d.registered_at,
+    }));
+  }
   // -------------------------------------------
+
 
   // Bills
   static getBills(): Bill[] {

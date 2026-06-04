@@ -223,6 +223,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.error("[LOGIN] Gagal query public.users:", dbErr);
         }
 
+        // Jika siswa, cek registration_status di tabel students
+        if (role === 'siswa') {
+          const { data: studentData } = await supabase
+            .from('students')
+            .select('registration_status, name, nisn, class, parent_name')
+            .eq('user_id', data.user.id)
+            .single();
+
+          if (!studentData) {
+            await supabase.auth.signOut();
+            return { success: false, message: 'Data siswa tidak ditemukan. Hubungi admin sekolah Anda.' };
+          }
+
+          if (studentData.registration_status === 'pending') {
+            await supabase.auth.signOut();
+            return { success: false, message: 'Akun Anda sedang menunggu konfirmasi admin sekolah. Silakan coba lagi nanti.' };
+          }
+
+          if (studentData.registration_status === 'data_only') {
+            await supabase.auth.signOut();
+            return { success: false, message: 'Silakan daftar terlebih dahulu menggunakan NISN Anda.' };
+          }
+        }
+
         const supaUser: User = {
            id: data.user.id,
            email: data.user.email || email,

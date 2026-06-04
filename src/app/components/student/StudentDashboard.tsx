@@ -264,7 +264,8 @@ export function StudentDashboard() {
     loadData();
   }, [user]);
 
-  const isLunas = activeBill?.status === "Lunas";
+  const bill = activeBill ?? { month: "-", dueDate: "-", total: 0, status: "Lunas" };
+  const isLunas = bill.status === "Lunas";
   const totalBayarTahun = monthlyData.filter(m => m.status === "lunas").reduce((s, m) => s + m.paid, 0);
   const totalBill = billBreakdown.reduce((a, b) => a + b.value, 0);
 
@@ -272,11 +273,18 @@ export function StudentDashboard() {
   const paidCount = monthlyData.filter(m => m.status === "lunas").length;
   const totalMonths = monthlyData.length;
 
-  // Tampilkan loading state jika user ada tapi activeBill null
-  // (bisa berarti masih loading atau memang tidak ada data)
-  const isLoading = !!user && activeBill === null;
-  const hasNoData = !user;
-
+  // Show loading if user exists but activeBill hasn't been set yet
+  if (!!user && activeBill === null) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-white">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl animate-spin"
+            style={{ border: "3px solid #E6F0FF", borderTopColor: "#1677FF" }} />
+          <p style={{ color: "#8C8C8C", fontSize: "0.85rem" }}>Memuat data...</p>
+        </div>
+      </div>
+    );
+  }
 
   const SHORTCUTS = [
     { icon: <Receipt size={20} />, label: "Bayar SPP", route: "/student/spp", bg: "#EEF4FF", fg: "#1677FF" },
@@ -353,7 +361,7 @@ export function StudentDashboard() {
             <div className="flex items-center gap-1.5">
               <CreditCard size={13} color="rgba(255,255,255,0.8)" />
               <p style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.75rem" }}>
-                Tagihan SPP {activeBill.month}
+                Tagihan SPP {bill.month}
               </p>
             </div>
             <span className="px-2.5 py-0.5 rounded-full"
@@ -365,10 +373,10 @@ export function StudentDashboard() {
             </span>
           </div>
           <p style={{ color: "white", fontSize: "1.9rem", fontWeight: 900, letterSpacing: "-1px" }}>
-            {formatRupiah(activeBill.total)}
+            {formatRupiah(bill.total)}
           </p>
           <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.75rem", marginBottom: "12px" }}>
-            Jatuh tempo: {activeBill.dueDate}
+            Jatuh tempo: {bill.dueDate}
           </p>
           {!isLunas && (
             <div className="flex gap-2.5">
@@ -412,8 +420,8 @@ export function StudentDashboard() {
               },
               {
                 label: "Tagihan\nBulan Ini",
-                value: formatK(activeBill.total),
-                sub: activeBill.status,
+                value: formatK(bill.total),
+                sub: bill.status,
                 icon: <Clock size={16} color="#EA4E0D" />,
                 bg: "#FFF2EE",
                 accent: "#EA4E0D",
@@ -539,7 +547,7 @@ export function StudentDashboard() {
             <div className="flex items-center justify-between mb-3">
               <div>
                 <p style={{ fontWeight: 800, color: "#242424", fontSize: "0.92rem" }}>Rincian Biaya SPP</p>
-                <p style={{ color: "#8C8C8C", fontSize: "0.72rem" }}>Komponen tagihan {activeBill.month}</p>
+                <p style={{ color: "#8C8C8C", fontSize: "0.72rem" }}>Komponen tagihan {bill.month}</p>
               </div>
               <BookOpen size={18} color="#BFBFBF" />
             </div>

@@ -7,36 +7,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
-// ─── Mock NISN Database ───────────────────────────────────────────────────────
-const NISN_DB: Record<string, {
-  name: string; school: string; class: string;
-  nisn: string; parentName: string; address: string;
-}> = {
-  "0012345678": {
-    name: "Budi Santoso",
-    school: "SDN 3 Malang",
-    class: "X IPA 1",
-    nisn: "0012345678",
-    parentName: "Hendra Santoso",
-    address: "Jl. Veteran No.12, Malang",
-  },
-  "0087654321": {
-    name: "Citra Dewi Rahayu",
-    school: "SMPN 5 Batu",
-    class: "VIII B",
-    nisn: "0087654321",
-    parentName: "Dewi Rahayu",
-    address: "Jl. Diponegoro No.45, Batu",
-  },
-  "0099887766": {
-    name: "Ahmad Rizki Pratama",
-    school: "SMA Negeri 2 Kepanjen",
-    class: "XII IPA 2",
-    nisn: "0099887766",
-    parentName: "Rizki Purnama",
-    address: "Jl. Pahlawan No.7, Kepanjen",
-  },
-};
+import { Database } from "../../data/database";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Role = "siswa" | "donatur";
@@ -129,8 +100,10 @@ export function RegisterPage() {
   const [nisn, setNisn] = useState("");
   const [nisnError, setNisnError] = useState("");
   const [nisnLoading, setNisnLoading] = useState(false);
-  const [studentData, setStudentData] = useState<typeof NISN_DB[string] | null>(null);
-  const [email, setEmail] = useState("");
+  const [studentData, setStudentData] = useState<any | null>(null);
+  const [personalEmail, setPersonalEmail] = useState("");
+  const [edufinEmailPreview, setEdufinEmailPreview] = useState("");
+  const [email, setEmail] = useState(""); // kept for donor flow
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -154,29 +127,35 @@ export function RegisterPage() {
     if (step === "password") { setStep("verify"); return; }
   };
 
-  // ── NISN Lookup ──
-  const handleNisnLookup = () => {
+  // ── NISN Lookup (real Supabase) ──
+  const handleNisnLookup = async () => {
     const clean = nisn.replace(/\s/g, "");
     if (clean.length < 10) { setNisnError("NISN harus 10 digit."); return; }
     setNisnLoading(true);
     setNisnError("");
-    setTimeout(() => {
-      const data = NISN_DB[clean];
-      if (data) {
-        setStudentData(data);
-        setStep("verify");
-      } else {
-        setNisnError("NISN tidak ditemukan. Pastikan NISN sesuai dengan kartu pelajar.");
-      }
-      setNisnLoading(false);
-    }, 1600);
+    const data = await Database.findStudentByNISN(clean);
+    setNisnLoading(false);
+    if (!data) {
+      setNisnError("NISN tidak ditemukan. Hubungi admin sekolah Anda.");
+      return;
+    }
+    if (data.registrationStatus === 'pending') {
+      setNisnError("NISN ini sudah terdaftar dan sedang menunggu konfirmasi admin.");
+      return;
+    }
+    if (data.registrationStatus === 'active') {
+      setNisnError("NISN ini sudah memiliki akun aktif. Silakan login.");
+      return;
+    }
+    setStudentData(data);
+    setStep("verify");
   };
 
-  // ── Password Submit ──
+  // ── Password Submit (siswa) — register + apply pending ──
   const handlePasswordSubmit = async () => {
     let ok = true;
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setEmailError("Masukkan alamat email yang valid."); ok = false;
+    if (!personalEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(personalEmail)) {
+      setEmailError("Masukkan email pribadi yang valid (Gmail, Yahoo, dll)."); ok = false;
     } else setEmailError("");
     if (password.length < 8) {
       setPasswordError("Password minimal 8 karakter."); ok = false;
@@ -186,22 +165,48 @@ export function RegisterPage() {
     if (!ok) return;
 
     setSubmitLoading(true);
+
+    // 1. Generate email edufin.app unik
+    const edufinEmail = await Database.generateUniqueEdufinEmail(
+      studentData!.name,
+      studentData!.nisn
+    );
+    setEdufinEmailPreview(edufinEmail);
+
+    // 2. Buat akun Supabase Auth dengan email edufin.app
     const result = await register({
-      email,
+      email: edufinEmail,
       password,
       role: "siswa",
       name: studentData!.name,
       nisn: studentData!.nisn,
-      school: studentData!.school,
+      school: studentData!.class,
       class: studentData!.class,
       parentName: studentData!.parentName,
     });
-    setSubmitLoading(false);
 
     if (!result.success) {
       setEmailError(result.message);
+      setSubmitLoading(false);
       return;
     }
+
+    // 3. Dapatkan user ID
+    const { supabase } = await import('../../lib/supabase');
+    const { data: authData } = await supabase.auth.getUser();
+    const userId = authData?.user?.id;
+
+    if (userId && studentData?.id) {
+      // 4. Link siswa dengan user_id, simpan personal_email + edufin_email
+      await Database.applyStudentRegistration(
+        studentData.id,
+        userId,
+        personalEmail,
+        edufinEmail
+      );
+    }
+
+    setSubmitLoading(false);
     setStep("success");
   };
 
@@ -257,7 +262,7 @@ export function RegisterPage() {
         {role === "siswa" ? (
           <>
             <p className="text-center mb-2" style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.9rem" }}>
-              Data siswa <strong style={{ color: "white" }}>{studentData?.name}</strong> berhasil dikaitkan
+              Pendaftaran <strong style={{ color: "white" }}>{studentData?.name}</strong> berhasil dikirim
             </p>
             <div className="w-full rounded-2xl p-4 mb-4 mt-2"
               style={{ background: "rgba(255,255,255,0.18)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.3)" }}>
@@ -269,11 +274,35 @@ export function RegisterPage() {
                 <div>
                   <p style={{ color: "white", fontWeight: 800, fontSize: "0.92rem" }}>{studentData?.name}</p>
                   <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.75rem" }}>
-                    {studentData?.school} · {studentData?.class}
+                    Kelas {studentData?.class}
                   </p>
                 </div>
               </div>
             </div>
+            <div className="w-full rounded-2xl p-4 mb-4"
+              style={{ background: "rgba(255,255,255,0.15)", border: "1.5px dashed rgba(255,255,255,0.5)" }}>
+              <p className="text-center" style={{ color: "white", fontWeight: 700, fontSize: "0.95rem", marginBottom: "6px" }}>
+                ⏳ Menunggu Konfirmasi Admin
+              </p>
+              <p className="text-center" style={{ color: "rgba(255,255,255,0.85)", fontSize: "0.82rem", lineHeight: 1.6 }}>
+                Data Anda sedang ditinjau admin sekolah.<br/>
+                Setelah dikonfirmasi, cek email pribadi Anda:<br/>
+                <strong style={{ color: "white" }}>{personalEmail}</strong><br/>
+                untuk mendapatkan akun login EDUFIN Anda.
+              </p>
+            </div>
+            {/* Preview edufin email */}
+            {edufinEmailPreview && (
+              <div className="w-full rounded-2xl p-4 mb-4"
+                style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)" }}>
+                <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.72rem", textAlign: "center", marginBottom: "4px" }}>
+                  Akun EDUFIN Anda (setelah dikonfirmasi)
+                </p>
+                <p style={{ color: "white", fontWeight: 800, fontSize: "0.95rem", textAlign: "center", letterSpacing: "0.3px" }}>
+                  📧 {edufinEmailPreview}
+                </p>
+              </div>
+            )}
           </>
         ) : (
           <p className="text-center mb-4 mt-2" style={{ color: "rgba(255,255,255,0.85)", fontSize: "0.95rem" }}>
@@ -281,7 +310,8 @@ export function RegisterPage() {
           </p>
         )}
 
-        {/* Email verification notice for ALL roles */}
+        {/* Email verification notice */}
+        {role === "siswa" ? null : (
         <div className="w-full rounded-2xl p-4 mb-8"
           style={{ background: "rgba(255,255,255,0.15)", border: "1.5px dashed rgba(255,255,255,0.5)" }}>
           <p className="text-center" style={{ color: "white", fontWeight: 700, fontSize: "0.95rem", marginBottom: "4px" }}>
@@ -293,6 +323,7 @@ export function RegisterPage() {
             Silakan verifikasi email Anda sebelum masuk.
           </p>
         </div>
+        )}
 
         <button
           onClick={() => navigate("/login")}
@@ -708,15 +739,29 @@ export function RegisterPage() {
               <CheckCircle size={16} color="#52C41A" className="ml-auto flex-shrink-0" />
             </div>
 
-            <InputField
-              label="Alamat Email"
-              icon={<Mail size={18} />}
-              type="email"
-              placeholder="contoh@email.com"
-              value={email}
-              onChange={setEmail}
-              error={emailError}
-            />
+            {/* Personal email (untuk notifikasi) */}
+            <div>
+              <p style={{ fontSize: "0.82rem", fontWeight: 700, color: "#242424", marginBottom: "4px" }}>Email Pribadi</p>
+              <p style={{ fontSize: "0.72rem", color: "#8C8C8C", marginBottom: "7px" }}>Untuk menerima notifikasi konfirmasi akun (Gmail, Yahoo, dll)</p>
+              <InputField
+                icon={<Mail size={18} />}
+                type="email"
+                placeholder="contoh@gmail.com"
+                value={personalEmail}
+                onChange={(v) => { setPersonalEmail(v); setEmailError(""); }}
+                error={emailError}
+              />
+            </div>
+
+            {/* Preview akun edufin.app */}
+            <div className="rounded-2xl p-3.5"
+              style={{ background: "#EEF4FF", border: "1.5px solid #C5D8FF" }}>
+              <p style={{ fontSize: "0.7rem", color: "#4A6FA5", marginBottom: "4px", fontWeight: 600 }}>🎓 Akun Login EDUFIN Anda (otomatis)</p>
+              <p style={{ fontSize: "0.9rem", fontWeight: 800, color: "#1677FF" }}>
+                {Database.generateEdufinEmail(studentData?.name || "", studentData?.nisn || "")} 
+              </p>
+              <p style={{ fontSize: "0.68rem", color: "#8C8C8C", marginTop: "2px" }}>Email ini digunakan untuk login ke EDUFIN setelah dikonfirmasi admin</p>
+            </div>
 
             <div>
               <InputField

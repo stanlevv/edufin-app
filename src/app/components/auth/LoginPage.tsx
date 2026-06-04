@@ -272,17 +272,19 @@ export function LoginPage() {
       </div>
 
       {/* ── Floating Helpdesk Button ─────────────────────── */}
-      <button
-        onClick={() => setShowHelpdesk(true)}
-        className="fixed bottom-6 right-6 flex items-center gap-2 px-4 py-3 rounded-full shadow-lg transition-all active:scale-90 z-40"
-        style={{
-          background: "linear-gradient(135deg,#1677FF,#108EE9)",
-          boxShadow: "0 6px 24px rgba(22,119,255,0.4)",
-        }}
-      >
-        <HeadphonesIcon size={18} color="white" />
-        <span style={{ color: "white", fontSize: "0.8rem", fontWeight: 700 }}>Butuh Bantuan?</span>
-      </button>
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-[380px] z-40 pointer-events-none flex justify-end px-6">
+        <button
+          onClick={() => setShowHelpdesk(true)}
+          className="flex items-center gap-2 px-4 py-3 rounded-full shadow-lg transition-all active:scale-90 pointer-events-auto"
+          style={{
+            background: "linear-gradient(135deg,#1677FF,#108EE9)",
+            boxShadow: "0 6px 24px rgba(22,119,255,0.4)",
+          }}
+        >
+          <HeadphonesIcon size={18} color="white" />
+          <span style={{ color: "white", fontSize: "0.8rem", fontWeight: 700 }}>Butuh Bantuan?</span>
+        </button>
+      </div>
 
       {/* ── Helpdesk Bottom Sheet ────────────────────────── */}
       {showHelpdesk && (
@@ -298,7 +300,7 @@ export function LoginPage() {
           <div
             className="fixed bottom-0 left-1/2 z-50 w-full"
             style={{
-              maxWidth: 430,
+              maxWidth: 380,
               transform: "translateX(-50%)",
               background: "white",
               borderRadius: "28px 28px 0 0",

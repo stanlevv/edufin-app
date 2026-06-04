@@ -124,17 +124,18 @@ function ScholarshipModal({
 
 // ─── Recipient Form ────────────────────────────────────────────────────────────
 function RecipientModal({
-  scholarshipId, defaultAmount, existingIds, error, onClose, onSave,
+  scholarshipId, defaultAmount, existingIds, students, error, onClose, onSave,
 }: {
   scholarshipId: string;
   defaultAmount: number;
   existingIds: string[];
-  error?: string;
+  students: Student[];
+  error: string;
   onClose: () => void;
-  onSave: (r: ScholarshipRecipient) => void;
+  onSave: (r: any) => void;
 }) {
-  const students = Database.getStudents().filter((s) => !existingIds.includes(s.id) && s.status === "active");
-  const [studentId, setStudentId] = useState(students[0]?.id ?? "");
+  const availableStudents = students.filter((s) => !existingIds.includes(s.id) && s.status === "active");
+  const [studentId, setStudentId] = useState(availableStudents[0]?.id || "");
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [endDate, setEndDate] = useState("");
   const [amount, setAmount] = useState(defaultAmount);
@@ -156,7 +157,7 @@ function RecipientModal({
     });
   };
 
-  if (students.length === 0) {
+  if (availableStudents.length === 0) {
     return (
       <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl text-center">
@@ -184,7 +185,7 @@ function RecipientModal({
           <div>
             <label className="block text-xs font-semibold text-gray-600 mb-1.5">Pilih Siswa *</label>
             <select required value={studentId} onChange={(e) => setStudentId(e.target.value)} className={inp}>
-              {students.map((s) => (
+              {availableStudents.map((s) => (
                 <option key={s.id} value={s.id}>{s.name} — {s.class}</option>
               ))}
             </select>
@@ -566,6 +567,7 @@ export function SchoolScholarshipPage() {
             scholarshipId={selected.id}
             defaultAmount={selected.amountPerMonth}
             existingIds={recipients.filter((r) => r.scholarshipId === selected.id && r.status === "active").map((r) => r.studentId)}
+            students={students}
             error={saveError}
             onClose={() => { setShowRecipientModal(false); setSaveError(""); }}
             onSave={handleSaveRecipient}

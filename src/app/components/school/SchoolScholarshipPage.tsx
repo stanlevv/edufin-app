@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { SchoolDesktopLayout } from "./SchoolDesktopLayout";
 import { Database, Scholarship, ScholarshipRecipient, Student } from "../../data/database";
+import { useAuth } from "../../context/AuthContext";
 
 function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
@@ -62,70 +63,62 @@ function ScholarshipModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl">
-        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-2xl">
-          <h3 className="text-lg font-bold text-gray-800">{initial?.id ? "Edit Program Beasiswa" : "Tambah Program Beasiswa"}</h3>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg"><X size={18} /></button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Nama Program *</label>
-            <input required value={form.name || ""} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inp} placeholder="Contoh: Beasiswa Prestasi Akademik 2025" />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Deskripsi</label>
-            <textarea value={form.description || ""} onChange={(e) => setForm({ ...form, description: e.target.value })} className={inp} rows={2} placeholder="Syarat dan ketentuan penerima beasiswa" />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Subsidi / Bulan (Rp) *</label>
-              <input type="number" required value={form.amountPerMonth || ""} onChange={(e) => setForm({ ...form, amountPerMonth: parseInt(e.target.value) || 0 })} className={inp} placeholder="725000" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Durasi (Bulan)</label>
-              <input type="number" value={form.totalMonths || ""} onChange={(e) => setForm({ ...form, totalMonths: parseInt(e.target.value) || 12 })} className={inp} placeholder="12" min={1} max={48} />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Tanggal Mulai</label>
-              <input type="date" value={form.startDate || ""} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className={inp} />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Tanggal Berakhir</label>
-              <input type="date" value={form.endDate || ""} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className={inp} />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Sumber Dana</label>
-              <select value={form.source || "Dana BOS"} onChange={(e) => setForm({ ...form, source: e.target.value })} className={inp}>
-                {SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Maks. Penerima</label>
-              <input type="number" value={form.maxRecipients || ""} onChange={(e) => setForm({ ...form, maxRecipients: parseInt(e.target.value) || 1 })} className={inp} placeholder="5" min={1} />
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Status</label>
-            <select value={form.status || "active"} onChange={(e) => setForm({ ...form, status: e.target.value as ScholarshipStatus })} className={inp}>
-              <option value="active">Aktif</option>
-              <option value="completed">Selesai</option>
-              <option value="cancelled">Dibatalkan</option>
-            </select>
-          </div>
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-50">Batal</button>
-            <button type="submit" className="flex-1 px-4 py-2.5 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700">
-              {initial?.id ? "Simpan Perubahan" : "Tambah Program"}
-            </button>
-          </div>
-        </form>
+    <form onSubmit={handleSubmit} className="p-6 space-y-4">
+      <div>
+        <label className="block text-xs font-semibold text-gray-600 mb-1.5">Nama Program *</label>
+        <input required value={form.name || ""} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inp} placeholder="Contoh: Beasiswa Prestasi Akademik 2025" />
       </div>
-    </div>
+      <div>
+        <label className="block text-xs font-semibold text-gray-600 mb-1.5">Deskripsi</label>
+        <textarea value={form.description || ""} onChange={(e) => setForm({ ...form, description: e.target.value })} className={inp} rows={2} placeholder="Syarat dan ketentuan penerima beasiswa" />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 mb-1.5">Subsidi / Bulan (Rp) *</label>
+          <input type="number" required value={form.amountPerMonth || ""} onChange={(e) => setForm({ ...form, amountPerMonth: parseInt(e.target.value) || 0 })} className={inp} placeholder="725000" />
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 mb-1.5">Durasi (Bulan)</label>
+          <input type="number" value={form.totalMonths || ""} onChange={(e) => setForm({ ...form, totalMonths: parseInt(e.target.value) || 12 })} className={inp} placeholder="12" min={1} max={48} />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 mb-1.5">Tanggal Mulai</label>
+          <input type="date" value={form.startDate || ""} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className={inp} />
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 mb-1.5">Tanggal Berakhir</label>
+          <input type="date" value={form.endDate || ""} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className={inp} />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 mb-1.5">Sumber Dana</label>
+          <select value={form.source || "Dana BOS"} onChange={(e) => setForm({ ...form, source: e.target.value })} className={inp}>
+            {SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 mb-1.5">Maks. Penerima</label>
+          <input type="number" value={form.maxRecipients || ""} onChange={(e) => setForm({ ...form, maxRecipients: parseInt(e.target.value) || 1 })} className={inp} placeholder="5" min={1} />
+        </div>
+      </div>
+      <div>
+        <label className="block text-xs font-semibold text-gray-600 mb-1.5">Status</label>
+        <select value={form.status || "active"} onChange={(e) => setForm({ ...form, status: e.target.value as ScholarshipStatus })} className={inp}>
+          <option value="active">Aktif</option>
+          <option value="completed">Selesai</option>
+          <option value="cancelled">Dibatalkan</option>
+        </select>
+      </div>
+      <div className="flex gap-3 pt-2 pb-6">
+        <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-50">Batal</button>
+        <button type="submit" className="flex-1 px-4 py-2.5 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700">
+          {initial?.id ? "Simpan Perubahan" : "Tambah Program"}
+        </button>
+      </div>
+    </form>
   );
 }
 
@@ -221,11 +214,13 @@ function RecipientModal({
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export function SchoolScholarshipPage() {
+  const { user } = useAuth();
   const [scholarships, setScholarships] = useState<Scholarship[]>([]);
   const [recipients, setRecipients] = useState<ScholarshipRecipient[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [selected, setSelected] = useState<Scholarship | null>(null);
   const [search, setSearch] = useState("");
+  const [saveError, setSaveError] = useState("");
 
   const [showScholarshipModal, setShowScholarshipModal] = useState(false);
   const [editingScholarship, setEditingScholarship] = useState<Scholarship | null>(null);
@@ -264,10 +259,19 @@ export function SchoolScholarshipPage() {
   const totalCoverage = activeRecipients.reduce((sum, r) => sum + r.amountPerMonth, 0);
 
   const handleSaveScholarship = async (s: any) => {
-    // Only insert new scholarship (edit not fully supported yet in this migration script)
-    await Database.insertScholarshipSupabase(s, user?.id || "");
-    load();
-    setShowScholarshipModal(false);
+    setSaveError("");
+    try {
+      const ok = await Database.insertScholarshipSupabase(s, user?.id || "");
+      if (!ok) {
+        setSaveError("Gagal menyimpan beasiswa. Pastikan RLS policy sudah diatur di Supabase.");
+        return;
+      }
+      await load();
+      setShowScholarshipModal(false);
+    } catch (err: any) {
+      console.error("[SCHOLARSHIP SAVE ERROR]", err);
+      setSaveError(err.message || "Terjadi kesalahan.");
+    }
   };
 
   const handleDeleteScholarship = async (id: string) => {
@@ -523,11 +527,24 @@ export function SchoolScholarshipPage() {
 
       {/* Scholarship Modal */}
       {showScholarshipModal && (
-        <ScholarshipModal
-          initial={editingScholarship}
-          onClose={() => { setShowScholarshipModal(false); setEditingScholarship(null); }}
-          onSave={handleSaveScholarship}
-        />
+        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-[200] p-0 sm:p-4">
+          <div className="bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-xl max-h-[92vh] overflow-y-auto shadow-2xl">
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+              <h3 className="text-lg font-bold text-gray-800">{editingScholarship?.id ? "Edit Program Beasiswa" : "Tambah Program Beasiswa"}</h3>
+              <button onClick={() => { setShowScholarshipModal(false); setEditingScholarship(null); setSaveError(""); }} className="p-2 hover:bg-gray-100 rounded-lg"><X size={18} /></button>
+            </div>
+            {saveError && (
+              <div className="mx-6 mt-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
+                ⚠️ {saveError}
+              </div>
+            )}
+            <ScholarshipModal
+              initial={editingScholarship}
+              onClose={() => { setShowScholarshipModal(false); setEditingScholarship(null); setSaveError(""); }}
+              onSave={handleSaveScholarship}
+            />
+          </div>
+        </div>
       )}
 
       {/* Recipient Modal */}
@@ -541,9 +558,8 @@ export function SchoolScholarshipPage() {
         />
       )}
 
-      {/* Delete Scholarship Confirm */}
       {deleteScholarshipId && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[200] p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl text-center">
             <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4"><Trash2 size={24} color="#EF4444" /></div>
             <h3 className="text-lg font-bold text-gray-800 mb-2">Hapus Program Beasiswa?</h3>
@@ -556,9 +572,8 @@ export function SchoolScholarshipPage() {
         </div>
       )}
 
-      {/* Delete Recipient Confirm */}
       {deleteRecipientId && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[200] p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl text-center">
             <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4"><Trash2 size={24} color="#EF4444" /></div>
             <h3 className="text-lg font-bold text-gray-800 mb-2">Hapus Penerima?</h3>

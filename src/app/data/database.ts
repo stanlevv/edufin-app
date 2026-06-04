@@ -260,6 +260,8 @@ export class Database {
       school: "", // removed from db, assume single school
       class: d.class,
       parentName: d.parent_name,
+      phone: d.phone || "",
+      parentPhone: d.parent_phone || "",
       address: d.address,
       sppAmount: d.spp_amount,
       status: d.status,
@@ -274,6 +276,8 @@ export class Database {
       name: student.name,
       class: student.class,
       parent_name: student.parentName,
+      phone: student.phone || "",
+      parent_phone: student.parentPhone || "",
       address: student.address || "",
       spp_amount: student.sppAmount || 725000,
       status: student.status || "active",
@@ -293,6 +297,8 @@ export class Database {
       name: student.name,
       class: student.class,
       parent_name: student.parentName,
+      phone: student.phone || "",
+      parent_phone: student.parentPhone || "",
       address: student.address,
       spp_amount: student.sppAmount,
       status: student.status

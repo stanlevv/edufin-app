@@ -257,20 +257,11 @@ export function SchoolStudentsPage() {
                   <input required value={formData.class || ""} onChange={(e) => setFormData({ ...formData, class: e.target.value })} className={inputCls} placeholder="Contoh: X IPA 1" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">Email</label>
-                  <input type="email" value={formData.email || ""} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className={inputCls} placeholder="email@siswa.com" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1.5">No. HP Siswa</label>
                   <input value={formData.phone || ""} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className={inputCls} placeholder="081234567890" />
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">Nama Sekolah</label>
-                  <input value={formData.school || ""} onChange={(e) => setFormData({ ...formData, school: e.target.value })} className={inputCls} placeholder="SDN 3 Malang" />
-                </div>
               </div>
+              
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1.5">Nama Orang Tua *</label>

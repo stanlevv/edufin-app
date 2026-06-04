@@ -9,6 +9,8 @@ export interface Student {
   nisn: string;
   name: string;
   email: string;
+  edufinEmail?: string;
+  personalEmail?: string;
   school: string;
   class: string;
   parentName: string;
@@ -257,16 +259,18 @@ export class Database {
       userId: d.user_id || "",
       nisn: d.nisn,
       name: d.name,
-      email: d.email || "",
+      email: d.edufin_email || d.email || "",
+      edufinEmail: d.edufin_email || "",
+      personalEmail: d.personal_email || "",
       school: "",
       class: d.class,
       parentName: d.parent_name,
       phone: "",
       parentPhone: "",
-      address: "",
-      sppAmount: d.spp_amount,
+      address: d.address || "",
+      sppAmount: d.spp_amount || 725000,
       status: d.status,
-      registrationStatus: d.registration_status || 'data_only',
+      registrationStatus: d.registration_status,
       verified: d.registration_status === 'active',
     }));
   }
@@ -298,7 +302,10 @@ export class Database {
       class: student.class,
       parent_name: student.parentName,
       spp_amount: student.sppAmount,
-      status: student.status
+      status: student.status,
+      edufin_email: student.edufinEmail,
+      personal_email: student.personalEmail,
+      email: student.edufinEmail || student.email
     }).eq('id', student.id);
     
     if (error) {
@@ -306,6 +313,25 @@ export class Database {
       return false;
     }
     return true;
+  }
+
+  /** Update email & password langsung ke Supabase Auth (butuh admin bypass via edge function) */
+  static async updateStudentAuth(userId: string, edufinEmail?: string, newPassword?: string): Promise<boolean> {
+    const { supabase } = await import('../../lib/supabase');
+    try {
+      const payload: any = { userId };
+      if (edufinEmail) payload.email = edufinEmail;
+      if (newPassword) payload.password = newPassword;
+
+      const { error } = await supabase.functions.invoke('update-student-auth', {
+        body: payload
+      });
+      if (error) throw error;
+      return true;
+    } catch (e) {
+      console.error('Error updating auth details:', e);
+      return false;
+    }
   }
 
   static async deleteStudentSupabase(id: string): Promise<boolean> {

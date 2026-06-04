@@ -32,6 +32,7 @@ export function SchoolStudentsPage() {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [formData, setFormData] = useState<Partial<Student>>(EMPTY_FORM);
   const [password, setPassword] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const loadData = async () => {
@@ -58,12 +59,14 @@ export function SchoolStudentsPage() {
     setEditingStudent(null);
     setFormData({ ...EMPTY_FORM });
     setPassword("");
+    setAuthPassword("");
     setShowModal(true);
   };
 
   const handleEdit = (student: Student) => {
     setEditingStudent(student);
     setFormData({ ...student });
+    setAuthPassword("");
     setShowModal(true);
   };
 
@@ -89,10 +92,20 @@ export function SchoolStudentsPage() {
     setIsSaving(true);
 
     if (editingStudent) {
+      // 1. Update basic data di tabel students
       await Database.updateStudentSupabase({
         ...editingStudent,
         ...formData
       } as Student);
+
+      // 2. Jika punya userId, dan ada perubahan email edufin atau mau ganti password
+      if (editingStudent.userId && (formData.edufinEmail !== editingStudent.edufinEmail || authPassword)) {
+        await Database.updateStudentAuth(
+          editingStudent.userId,
+          formData.edufinEmail,
+          authPassword || undefined
+        );
+      }
     } else {
       // 1. Buat akun Supabase Auth
       if (formData.email && password) {
@@ -120,6 +133,7 @@ export function SchoolStudentsPage() {
     setShowModal(false);
     setFormData(EMPTY_FORM);
     setPassword("");
+    setAuthPassword("");
     setIsSaving(false);
   };
 
@@ -414,7 +428,7 @@ export function SchoolStudentsPage() {
                 </div>
               </div>
 
-              {!editingStudent && (
+              {!editingStudent ? (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1.5">Email Login *</label>
@@ -423,6 +437,21 @@ export function SchoolStudentsPage() {
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1.5">Password Login *</label>
                     <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className={inputCls} placeholder="Minimal 6 karakter" />
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">Email Login (Edufin)</label>
+                    <input type="email" value={formData.edufinEmail || ""} onChange={(e) => setFormData({ ...formData, edufinEmail: e.target.value })} className={inputCls} placeholder="nama@edufin.app" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">Ganti Password (Kosongkan jika tidak diganti)</label>
+                    <input type="password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} className={inputCls} placeholder="Ketik password baru" />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">Email Pribadi (Notifikasi)</label>
+                    <input type="email" value={formData.personalEmail || ""} onChange={(e) => setFormData({ ...formData, personalEmail: e.target.value })} className={inputCls} placeholder="email.pribadi@gmail.com" />
                   </div>
                 </div>
               )}

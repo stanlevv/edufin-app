@@ -192,7 +192,10 @@ export function StudentDashboard() {
 
       const students = await Database.fetchStudentsSupabase();
       const student = students.find((s: any) => s.userId === user.id || s.name === user.name);
-      if (!student) return;
+      if (!student) {
+        setActiveBill({ month: "-", dueDate: "-", total: 0, status: "Lunas" });
+        return;
+      }
 
       const payments = await Database.fetchPaymentsSupabase();
       const studentPayments = payments.filter((p: any) => p.studentId === student.id);

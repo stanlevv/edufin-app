@@ -343,32 +343,21 @@ export class Database {
   }
 
   /**
-   * Generate email edufin.app dari nama siswa
-   * Format: nama.depan@edufin.app
-   * Jika duplikat: nama.depan.4digitNISN@edufin.app
+   * Generate email edufin.app dari nama + 4 digit NISN terakhir
+   * Format: budisantoso5678@edufin.app
    */
   static generateEdufinEmail(name: string, nisn: string): string {
-    const clean = name
+    const cleanName = name
       .toLowerCase()
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // hapus aksen
-      .replace(/[^a-z\s]/g, '')    // hanya huruf & spasi
-      .trim()
-      .split(/\s+/)
-      .slice(0, 2)                 // ambil 2 kata pertama
-      .join('.');
-    return `${clean}@edufin.app`;
+      .replace(/[^a-z]/g, '');                           // hanya huruf
+    const last4 = nisn.slice(-4);
+    return `${cleanName}${last4}@edufin.app`;
   }
 
   static async generateUniqueEdufinEmail(name: string, nisn: string): Promise<string> {
-    const base = Database.generateEdufinEmail(name, nisn);
-    const { supabase } = await import('../../lib/supabase');
-    // Cek apakah email sudah ada
-    const { data } = await supabase.from('students').select('edufin_email').eq('edufin_email', base);
-    if (!data || data.length === 0) return base;
-    // Duplikat → tambah 4 digit NISN terakhir
-    const suffix = nisn.slice(-4);
-    const [local] = base.split('@');
-    return `${local}.${suffix}@edufin.app`;
+    // Format sudah unik karena pakai 4 digit NISN — langsung return
+    return Database.generateEdufinEmail(name, nisn);
   }
 
   /** Siswa apply registrasi: update user_id, personal_email, edufin_email, dan set status pending */
@@ -391,32 +380,38 @@ export class Database {
     return true;
   }
 
-  /** Admin konfirmasi siswa pending → active + kirim email notifikasi */
+  /** Admin konfirmasi siswa pending → active + buat akun edufin.app + kirim email notifikasi */
   static async confirmStudentRegistration(studentId: string): Promise<boolean> {
     const { supabase } = await import('../../lib/supabase');
     
-    // Ambil data siswa dulu (untuk email notifikasi)
+    // Ambil data siswa dulu
     const { data: studentData } = await supabase
       .from('students')
-      .select('name, personal_email, edufin_email')
+      .select('name, nisn, personal_email, edufin_email, user_id')
       .eq('id', studentId)
       .single();
 
-    // Update status
+    // Generate email edufin.app jika belum ada
+    const edufinEmail = studentData?.edufin_email ||
+      Database.generateEdufinEmail(studentData?.name || '', studentData?.nisn || '');
+
+    // Update status + simpan edufin_email
     const { error } = await supabase.from('students').update({
       registration_status: 'active',
       status: 'active',
+      edufin_email: edufinEmail,
     }).eq('id', studentId);
     if (error) { console.error('Error confirming student:', error); return false; }
 
-    // Kirim email notifikasi ke email pribadi siswa via Edge Function
-    if (studentData?.personal_email && studentData?.edufin_email) {
+    // Kirim ke Edge Function: update email Auth user → edufin.app + kirim notif ke personal email
+    if (studentData?.personal_email) {
       try {
         await supabase.functions.invoke('send-confirmation-email', {
           body: {
             to: studentData.personal_email,
             studentName: studentData.name,
-            edufinEmail: studentData.edufin_email,
+            edufinEmail,
+            userId: studentData.user_id, // untuk update email di Auth
           }
         });
       } catch (e) {

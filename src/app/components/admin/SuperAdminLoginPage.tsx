@@ -27,7 +27,7 @@ export function SuperAdminLoginPage() {
     setError("");
 
     // Hanya izinkan role superadmin
-    const result = await login(email.trim(), password, "superadmin");
+    const result = await login(email.trim(), password, ["superadmin"]);
     setLoading(false);
 
     if (result.success) {

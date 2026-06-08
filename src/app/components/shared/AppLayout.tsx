@@ -58,12 +58,29 @@ export function ProtectedRoute({
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const NO_NAV_PATHS = ["/", "/login", "/register"];
+const NO_NAV_PATHS = ["/", "/login", "/register", "/sekolah-portal-auth", "/super-console-auth"];
 
 // ─── AppLayoutInner ───────────────────────────────────────────────────────────
 function AppLayoutInner() {
   const { user } = useAuth();
   const location = useLocation();
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
+
+  useEffect(() => {
+    // Deteksi apakah perangkat adalah mobile / tablet berdasarkan User Agent atau Touch Capability
+    const checkMobile = () => {
+      const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+      const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+      const isMobileAgent = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+      
+      // Jika mendeteksi OS mobile atau perangkat layar sentuh
+      if (isMobileAgent || isTouch) {
+        setIsMobileDevice(true);
+      }
+    };
+    checkMobile();
+  }, []);
+
   // Hook SELALU dipanggil (Rules of Hooks) — role filter dilakukan di render
   // Redirect user yang sudah login dari halaman publik ke dashboard
   if (user && NO_NAV_PATHS.includes(location.pathname)) {
@@ -144,7 +161,7 @@ function AppLayoutInner() {
     >
       {/* Phone container */}
       <div
-        className="w-full max-w-[480px] min-h-[100dvh] relative flex flex-col bg-white shadow-2xl phone-scroll-container"
+        className={`w-full ${isMobileDevice ? 'max-w-full' : 'max-w-[480px]'} min-h-[100dvh] relative flex flex-col bg-white shadow-2xl phone-scroll-container`}
         style={{
           borderLeft: "1px solid #E8E8E8",
           borderRight: "1px solid #E8E8E8",

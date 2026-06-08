@@ -30,7 +30,7 @@ export function LoginPage() {
     if (!password) { setError("Masukkan kata sandi kamu."); return; }
     setLoading(true);
     setError("");
-    const result = await login(email.trim(), password);
+    const result = await login(email.trim(), password, ["siswa", "donatur"]);
     setLoading(false);
     if (result.success && result.role) {
       navigate(ROLE_DEST[result.role]);

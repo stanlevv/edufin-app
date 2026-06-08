@@ -76,14 +76,13 @@ export const router = createBrowserRouter([
   { path: "/database-docs", Component: withSuspense(DatabaseDocs) },
 
   // ─── Hidden Admin Routes (not linked anywhere in the app) ─────────────────
-  // Admin Sekolah Login
   { 
-    path: "/admin", 
+    path: "/sekolah-portal-auth", 
     element: <AuthProvider><AdminLoginPage /></AuthProvider> 
   },
   // Super Admin Login
   { 
-    path: "/superadmin", 
+    path: "/super-console-auth", 
     element: <AuthProvider><SuperAdminLoginPage /></AuthProvider> 
   },
   // Super Admin Dashboard (protected — role: superadmin)

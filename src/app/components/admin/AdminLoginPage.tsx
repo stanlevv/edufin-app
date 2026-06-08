@@ -18,7 +18,7 @@ export function AdminLoginPage() {
     setLoading(true);
     setError("");
     // Validasi hanya role 'sekolah' yang diizinkan masuk
-    const result = await login(email.trim(), password, "sekolah");
+    const result = await login(email.trim(), password, ["sekolah"]);
     setLoading(false);
     if (result.success) {
       navigate("/school");

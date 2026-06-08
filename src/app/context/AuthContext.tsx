@@ -30,7 +30,7 @@ interface RegisterPayload {
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string, requiredRole?: UserRole) => Promise<{ success: boolean; message: string; role?: UserRole }>;
+  login: (email: string, password: string, allowedRoles?: UserRole[]) => Promise<{ success: boolean; message: string; role?: UserRole }>;
   logout: () => void;
   register: (payload: RegisterPayload) => Promise<{ success: boolean; message: string }>;
   loginWithGoogle: () => Promise<{ success: boolean; message: string }>;
@@ -164,7 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (
     email: string,
     password: string,
-    requiredRole?: UserRole
+    allowedRoles?: UserRole[]
   ): Promise<{ success: boolean; message: string; role?: UserRole }> => {
     setIsLoading(true);
     try {
@@ -234,10 +234,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
            class: uData.class,
            parentName: uData.parentName
         };
-        // Validasi role jika requiredRole dispesifikasikan
-        if (requiredRole && supaUser.role !== requiredRole) {
+        // Validasi role jika allowedRoles dispesifikasikan
+        if (allowedRoles && !allowedRoles.includes(supaUser.role)) {
           await supabase.auth.signOut();
-          return { success: false, message: `Akses ditolak. Halaman ini hanya untuk ${requiredRole}.` };
+          return { success: false, message: `Akses ditolak. Akun ${supaUser.role} tidak diizinkan masuk melalui portal ini.` };
         }
         setUser(supaUser);
         return { success: true, message: "Login berhasil!", role: supaUser.role };

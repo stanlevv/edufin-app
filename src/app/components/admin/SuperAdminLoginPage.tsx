@@ -189,6 +189,7 @@ export function SuperAdminLoginPage() {
             {/* Boot sequence */}
             <div className="mb-4">
               {bootLines.map((line, i) => {
+                if (!line) return null;
                 const isOk = line.endsWith("OK");
                 const isReady = line.includes("ready");
                 return (

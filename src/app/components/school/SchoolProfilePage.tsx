@@ -3,11 +3,17 @@ import { useNavigate } from "react-router";
 import { School, MapPin, Phone, Mail, Shield, Edit, Save, X, User, Bell, Users, BarChart3 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { SchoolDesktopLayout } from "./SchoolDesktopLayout";
+import { supabase } from "../../lib/supabase";
+import { toast } from "sonner";
 
 export function SchoolProfilePage() {
   const navigate = useNavigate();
   const { logout, user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [schoolId, setSchoolId] = useState<string | null>(null);
+  
   const [formData, setFormData] = useState({
     schoolName: "SDN 3 Malang",
     npsn: "20533415",
@@ -18,12 +24,77 @@ export function SchoolProfilePage() {
     principalPhone: "081234567890",
     bankName: "Bank Mandiri",
     bankAccount: "1234567890",
-    bankAccountName: "SDN 3 Malang",
+    bankAccountName: "",
   });
 
-  const handleSave = () => {
-    // Save logic here
-    setIsEditing(false);
+  React.useEffect(() => {
+    async function fetchSchoolData() {
+      if (!user?.id) return;
+      try {
+        setLoading(true);
+        // Dapatkan school_id dari tabel school_admins untuk admin yang login
+        const { data: adminData } = await supabase
+          .from("school_admins")
+          .select("school_id")
+          .eq("user_id", user.id)
+          .single();
+
+        if (adminData?.school_id) {
+          setSchoolId(adminData.school_id);
+          const { data: schoolData } = await supabase
+            .from("schools")
+            .select("*")
+            .eq("id", adminData.school_id)
+            .single();
+
+          if (schoolData) {
+            setFormData({
+              schoolName: schoolData.name || "",
+              npsn: schoolData.npsn || "",
+              address: schoolData.address || "",
+              phone: schoolData.phone || "(Belum diisi)",
+              email: schoolData.email || "(Belum diisi)",
+              principal: schoolData.principal || "(Belum diisi)",
+              principalPhone: schoolData.principal_phone || "(Belum diisi)",
+              bankName: schoolData.bank_name || "",
+              bankAccount: schoolData.bank_account_number || "",
+              bankAccountName: schoolData.bank_account_name || "",
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Gagal memuat profil sekolah:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchSchoolData();
+  }, [user?.id]);
+
+  const handleSave = async () => {
+    if (!schoolId) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("schools")
+        .update({
+          name: formData.schoolName,
+          npsn: formData.npsn,
+          address: formData.address,
+          bank_name: formData.bankName,
+          bank_account_number: formData.bankAccount,
+          bank_account_name: formData.bankAccountName,
+        })
+        .eq("id", schoolId);
+
+      if (error) throw error;
+      toast.success("Profil sekolah berhasil disimpan!");
+      setIsEditing(false);
+    } catch (err: any) {
+      toast.error(err.message || "Gagal menyimpan profil sekolah.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -53,10 +124,11 @@ export function SchoolProfilePage() {
               </button>
               <button
                 onClick={handleSave}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-all"
+                disabled={saving}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-all disabled:opacity-50"
               >
                 <Save size={18} />
-                <span className="text-sm">Simpan</span>
+                <span className="text-sm">{saving ? "Menyimpan..." : "Simpan"}</span>
               </button>
             </div>
           )}

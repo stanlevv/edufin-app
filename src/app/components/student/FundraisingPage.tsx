@@ -3,7 +3,6 @@ import { useNavigate } from "react-router";
 import { ArrowLeft, Search, Heart, School, MapPin } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { Database, Campaign } from "../../data/database";
-import { CampaignSubmissionForm } from "../shared/CampaignSubmissionForm";
 
 function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
@@ -17,8 +16,6 @@ export function FundraisingPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("Semua");
-  const [showDonateForm, setShowDonateForm] = useState(false);
-  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
 
   useEffect(() => {
     async function loadData() {

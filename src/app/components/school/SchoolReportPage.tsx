@@ -5,7 +5,8 @@ import {
   Cell, PieChart, Pie, Tooltip
 } from "recharts";
 import { SchoolDesktopLayout } from "./SchoolDesktopLayout";
-import { Database, Bill } from "../../data/database";
+import { useAuth } from "../../context/AuthContext";
+import { supabase } from "../../lib/supabase";
 
 function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
@@ -15,42 +16,77 @@ const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "S
 const MONTHS_FULL = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 
 export function SchoolReportPage() {
+  const { user } = useAuth();
   const [period, setPeriod] = useState<"bulan" | "tahun">("bulan");
-  const [bills, setBills] = useState<Bill[]>([]);
-  const [students, setStudents] = useState<ReturnType<typeof Database.getStudents>>([]);
-
-  useEffect(() => {
-    setBills(Database.getBills());
-    setStudents(Database.getStudents());
-  }, []);
+  const [bills, setBills] = useState<any[]>([]);
+  const [totalSiswa, setTotalSiswa] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   // ─── Hitung statistik dari Database ───────────────────────────────────────
   const now = new Date();
   const currentMonth = MONTHS_FULL[now.getMonth()];
   const currentYear = now.getFullYear();
+  const currentMonthStr = `${currentMonth} ${currentYear}`;
+
+  useEffect(() => {
+    async function fetchData() {
+      if (!user?.id) return;
+      try {
+        setLoading(true);
+        const { data: adminData } = await supabase
+          .from("school_admins")
+          .select("school_id")
+          .eq("user_id", user.id)
+          .single();
+
+        if (adminData?.school_id) {
+          // Ambil bills
+          const { data: billsData } = await supabase
+            .from("bills")
+            .select("*")
+            .eq("school_id", adminData.school_id);
+
+          if (billsData) {
+            setBills(billsData);
+          }
+
+          // Ambil total siswa
+          const { count } = await supabase
+            .from("students")
+            .select("*", { count: "exact", head: true })
+            .eq("school_id", adminData.school_id);
+            
+          setTotalSiswa(count || 0);
+        }
+      } catch (err) {
+        console.error("Gagal memuat laporan:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, [user?.id]);
 
   // Bills bulan ini
-  const billsThisMonth = bills.filter(
-    (b) => b.month === currentMonth && b.year === currentYear
-  );
+  const billsThisMonth = bills.filter((b) => b.month === currentMonthStr);
 
-  const totalTagihan = billsThisMonth.reduce(
-    (s, b) => s + b.items.reduce((si, i) => si + i.amount, 0), 0
-  );
+  const totalTagihan = billsThisMonth.reduce((s, b) => s + (b.amount || 0), 0);
+  
   const totalTerkumpul = billsThisMonth
-    .filter((b) => b.status === "Lunas")
-    .reduce((s, b) => s + b.items.reduce((si, i) => si + i.amount, 0), 0);
+    .filter((b) => b.status === "lunas")
+    .reduce((s, b) => s + (b.amount || 0), 0);
+    
   const totalTertunggak = billsThisMonth
-    .filter((b) => b.status === "Tertunggak")
-    .reduce((s, b) => s + b.items.reduce((si, i) => si + i.amount, 0), 0);
+    .filter((b) => b.status === "terlambat")
+    .reduce((s, b) => s + (b.amount || 0), 0);
+    
   const totalCicilan = billsThisMonth
-    .filter((b) => b.status === "Cicilan")
-    .reduce((s, b) => s + b.items.reduce((si, i) => si + i.amount, 0), 0);
+    .filter((b) => b.status === "cicilan")
+    .reduce((s, b) => s + (b.amount || 0), 0);
 
-  const lunasSiswa = billsThisMonth.filter((b) => b.status === "Lunas").length;
-  const tertunggakSiswa = billsThisMonth.filter((b) => b.status === "Tertunggak").length;
-  const cicilanSiswa = billsThisMonth.filter((b) => b.status === "Cicilan").length;
-  const totalSiswa = students.length || 50;
+  const lunasSiswa = billsThisMonth.filter((b) => b.status === "lunas").length;
+  const tertunggakSiswa = billsThisMonth.filter((b) => b.status === "terlambat").length;
+  const cicilanSiswa = billsThisMonth.filter((b) => b.status === "cicilan").length;
   const payRate = totalSiswa > 0 ? Math.round((lunasSiswa / totalSiswa) * 100) : 0;
 
   // Chart bulanan — 5 bulan terakhir
@@ -58,7 +94,8 @@ export function SchoolReportPage() {
     const d = new Date(currentYear, now.getMonth() - (4 - i), 1);
     const m = MONTHS_FULL[d.getMonth()];
     const y = d.getFullYear();
-    const masuk = bills.filter((b) => b.month === m && b.year === y && b.status === "Lunas").length;
+    const str = `${m} ${y}`;
+    const masuk = bills.filter((b) => b.month === str && b.status === "lunas").length;
     return {
       id: MONTHS_SHORT[d.getMonth()].toLowerCase(),
       month: MONTHS_SHORT[d.getMonth()],
@@ -78,8 +115,9 @@ export function SchoolReportPage() {
   // Pertumbuhan vs bulan lalu
   const lastMonth = MONTHS_FULL[now.getMonth() === 0 ? 11 : now.getMonth() - 1];
   const lastYear = now.getMonth() === 0 ? currentYear - 1 : currentYear;
+  const lastMonthStr = `${lastMonth} ${lastYear}`;
   const lunasBulanLalu = bills.filter(
-    (b) => b.month === lastMonth && b.year === lastYear && b.status === "Lunas"
+    (b) => b.month === lastMonthStr && b.status === "lunas"
   ).length;
   const growth = lunasBulanLalu > 0
     ? Math.round(((lunasSiswa - lunasBulanLalu) / lunasBulanLalu) * 100)
@@ -95,7 +133,9 @@ export function SchoolReportPage() {
               Periode {currentMonth} {currentYear}
             </p>
           </div>
-          <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-all">
+          <button 
+            onClick={() => window.print()}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-all">
             <Download size={18} /> Ekspor Laporan
           </button>
         </div>

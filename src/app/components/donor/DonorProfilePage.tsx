@@ -6,6 +6,7 @@ import { ITSupportForm } from "../shared/ITSupportForm";
 import { DonorPersonalDataForm } from "./modals/DonorPersonalDataForm";
 import { DonationStatsForm } from "./modals/DonationStatsForm";
 import { DonorNotificationSettings } from "./modals/DonorNotificationSettings";
+import { supabase } from "../../lib/supabase";
 
 export function DonorProfilePage() {
   const navigate = useNavigate();
@@ -14,6 +15,35 @@ export function DonorProfilePage() {
   const [showPersonalData, setShowPersonalData] = useState(false);
   const [showDonationStats, setShowDonationStats] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
+  
+  const [stats, setStats] = useState({ total: 0, campaignsCount: 0 });
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  React.useEffect(() => {
+    async function fetchStats() {
+      if (!user?.id) return;
+      try {
+        const { data, error } = await supabase
+          .from("donations")
+          .select("amount, campaign_id")
+          .eq("donor_id", user.id)
+          .eq("status", "completed");
+
+        if (error) throw error;
+        
+        if (data) {
+          const total = data.reduce((sum, d) => sum + (d.amount || 0), 0);
+          const uniqueCampaigns = new Set(data.map(d => d.campaign_id)).size;
+          setStats({ total, campaignsCount: uniqueCampaigns });
+        }
+      } catch (err) {
+        console.error("Error fetching donation stats:", err);
+      } finally {
+        setLoadingStats(false);
+      }
+    }
+    fetchStats();
+  }, [user?.id]);
 
   const MENUS = [
     { icon: User, label: "Data Pribadi", sub: "Nama, email, nomor HP", action: () => setShowPersonalData(true) },
@@ -40,8 +70,8 @@ export function DonorProfilePage() {
         {/* Stats */}
         <div className="grid grid-cols-2 gap-2 mt-4">
           {[
-            { label: "Total Donasi", value: "Rp700.000" },
-            { label: "Kampanye", value: "4" },
+            { label: "Total Donasi", value: loadingStats ? "..." : `Rp ${(stats.total / 1000).toFixed(0)}k` },
+            { label: "Kampanye", value: loadingStats ? "..." : stats.campaignsCount.toString() },
           ].map(s => (
             <div key={s.label} className="rounded-2xl p-3 text-center"
               style={{ background: "rgba(255,255,255,0.18)", backdropFilter: "blur(10px)" }}>

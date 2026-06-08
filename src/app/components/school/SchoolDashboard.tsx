@@ -177,7 +177,7 @@ export function SchoolDashboard() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-4 gap-5 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {[
             { label: "Siswa Aktif", value: totalStudents, sub: `${students.length} terdaftar`, icon: <Users size={22} color="#1677FF" />, bg: "#EEF4FF", color: "#1677FF", path: "/school/students" },
             { label: "SPP Bulan Ini (Lunas)", value: lunas, sub: "Siswa sudah bayar", icon: <CheckCircle size={22} color="#52C41A" />, bg: "#F6FFED", color: "#52C41A", path: "/school/bills" },
@@ -209,9 +209,9 @@ export function SchoolDashboard() {
         </div>
 
         {activeTab === "overview" && (
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Chart */}
-            <div className="col-span-2 bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="lg:col-span-2 bg-white rounded-xl p-6 shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="font-bold text-gray-800">Persentase Kepatuhan SPP</h3>
@@ -319,7 +319,7 @@ export function SchoolDashboard() {
                   <AlertCircle size={18} color="#F97316" />
                   <h3 className="font-bold text-orange-700">Menunggu Persetujuan ({pendingCampaigns.length})</h3>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {pendingCampaigns.map((c) => (
                     <div key={c.id} className="bg-white rounded-xl p-4 shadow-sm border border-orange-100">
                       <div className="flex items-start gap-3 mb-3">

@@ -4,6 +4,8 @@ import { SchoolDesktopLayout } from "./SchoolDesktopLayout";
 import { Student } from "../../data/database";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
+import { InstallmentApprovalList } from "./InstallmentApprovalList";
+import { Skeleton } from "../ui/skeleton";
 
 function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
@@ -51,6 +53,9 @@ export function SchoolBillsPage() {
   const [genYear, setGenYear] = useState(new Date().getFullYear());
   const [isGenerating, setIsGenerating] = useState(false);
   const [genResult, setGenResult] = useState<{created: number; skipped: number} | null>(null);
+
+  // tab state
+  const [mainTab, setMainTab] = useState<"tagihan" | "pengajuan">("tagihan");
 
   // form state
   const [fStudentId, setFStudentId] = useState("");
@@ -249,37 +254,70 @@ export function SchoolBillsPage() {
 
   return (
     <SchoolDesktopLayout>
-      <div className="p-8">
-        {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-1">Manajemen Tagihan</h2>
-            <p className="text-sm text-gray-500">Buat, edit, dan kelola tagihan SPP seluruh siswa</p>
-          </div>
-          <div className="flex gap-3">
+      <div className="p-8 pb-20">
+        
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex bg-gray-100 p-1 rounded-xl">
             <button
-              onClick={() => { setGenResult(null); setShowGenerateModal(true); }}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700 transition-all shadow-sm"
+              onClick={() => setMainTab("tagihan")}
+              className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-colors ${
+                mainTab === "tagihan" ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              }`}
             >
-              <FileText size={18} /> <span className="text-sm">Generate Tagihan</span>
+              Daftar Tagihan & Pembayaran
             </button>
-            <button onClick={openCreate} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-all shadow-sm">
-              <Plus size={18} /> <span className="text-sm">Buat Manual</span>
+            <button
+              onClick={() => setMainTab("pengajuan")}
+              className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-colors flex items-center gap-2 ${
+                mainTab === "pengajuan" ? "bg-white text-orange-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Pengajuan Cicilan
+              <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full text-[10px]">Baru</span>
             </button>
           </div>
+          
+          {mainTab === "tagihan" && (
+            <div className="flex gap-3">
+              <button 
+                onClick={() => { setGenResult(null); setShowGenerateModal(true); }}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700 transition-all shadow-sm"
+              >
+                <FileText size={18} /> <span className="text-sm">Generate Tagihan</span>
+              </button>
+              <button 
+                onClick={openCreate}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-all shadow-sm"
+              >
+                <Plus size={18} /> <span className="text-sm">Buat Manual</span>
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        {mainTab === "pengajuan" ? (
+          <InstallmentApprovalList />
+        ) : (
+          <>
+            {/* Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
             <p className="text-xs text-gray-500 mb-1">Total Pemasukan</p>
-            <p className="text-2xl font-bold text-gray-800">{payments.length}</p>
+            {isLoading ? (
+              <Skeleton className="h-8 w-16 my-1" />
+            ) : (
+              <p className="text-2xl font-bold text-gray-800">{payments.length}</p>
+            )}
             <p className="text-xs text-blue-500 mt-1">{formatRupiah(stats.total)}</p>
           </div>
           {(["completed","pending","failed"] as PaymentStatus[]).map((s) => (
             <div key={s} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
               <p className="text-xs text-gray-500 mb-1">{STATUS_CFG[s].label}</p>
-              <p className="text-2xl font-bold" style={{ color: STATUS_CFG[s].color }}>{stats[s]}</p>
+              {isLoading ? (
+                <Skeleton className="h-8 w-16 my-1" />
+              ) : (
+                <p className="text-2xl font-bold" style={{ color: STATUS_CFG[s].color }}>{stats[s]}</p>
+              )}
               <div className="mt-2 h-1 rounded-full bg-gray-100">
                 <div className="h-1 rounded-full transition-all" style={{ background: STATUS_CFG[s].color, width: payments.length ? `${(stats[s] / payments.length) * 100}%` : "0%" }} />
               </div>
@@ -305,8 +343,8 @@ export function SchoolBillsPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <table className="w-full">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+          <table className="w-full min-w-[800px]">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Siswa</th>
@@ -319,10 +357,23 @@ export function SchoolBillsPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((p) => {
-                const sc = STATUS_CFG[p.status];
-                return (
-                  <tr key={p.id} className="border-t border-gray-100 hover:bg-gray-50 transition-all">
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, idx) => (
+                  <tr key={idx} className="border-t border-gray-100">
+                    <td className="px-6 py-4"><Skeleton className="h-10 w-full" /></td>
+                    <td className="px-6 py-4"><Skeleton className="h-6 w-16" /></td>
+                    <td className="px-6 py-4"><Skeleton className="h-6 w-24" /></td>
+                    <td className="px-6 py-4"><Skeleton className="h-6 w-24" /></td>
+                    <td className="px-6 py-4"><Skeleton className="h-6 w-24" /></td>
+                    <td className="px-6 py-4"><Skeleton className="h-6 w-20" /></td>
+                    <td className="px-6 py-4"><Skeleton className="h-8 w-20" /></td>
+                  </tr>
+                ))
+              ) : filtered.length > 0 ? (
+                filtered.map((p) => {
+                  const sc = STATUS_CFG[p.status];
+                  return (
+                    <tr key={p.id} className="border-t border-gray-100 hover:bg-gray-50 transition-all">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
@@ -360,16 +411,19 @@ export function SchoolBillsPage() {
                     </td>
                   </tr>
                 );
-              })}
+              })
+            ) : null}
             </tbody>
           </table>
-          {filtered.length === 0 && (
+          {!isLoading && filtered.length === 0 && (
             <div className="text-center py-16">
               <FileText size={40} className="mx-auto mb-3 text-gray-200" />
               <p className="text-gray-400 text-sm">Tidak ada tagihan ditemukan</p>
             </div>
           )}
         </div>
+          </>
+        )}
       </div>
 
       {/* Create/Edit Modal */}

@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router";
-import { Home, FileText, DollarSign, History, Settings, LogOut, Bell, User, Users, Receipt, Megaphone, Heart, ShieldCheck, GraduationCap, LayoutDashboard, CreditCard } from "lucide-react";
+import { Home, FileText, DollarSign, History, Settings, LogOut, Bell, User, Users, Receipt, Megaphone, Heart, ShieldCheck, GraduationCap, LayoutDashboard, CreditCard, Menu, X } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { NotificationDropdown } from "../shared/NotificationDropdown";
 
@@ -28,13 +28,22 @@ export function SchoolDesktopLayout({ children }: { children: React.ReactNode })
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
+      {/* Mobile Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <div className="w-64 bg-white shadow-md border-r border-gray-100 flex flex-col">
+      <div className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white shadow-md border-r border-gray-100 flex flex-col transform transition-transform duration-200 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         {/* Logo */}
-        <div className="p-5 border-b border-gray-100">
+        <div className="p-5 border-b border-gray-100 flex justify-between items-center">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white shadow-sm">
               <Receipt size={20} />
@@ -44,7 +53,15 @@ export function SchoolDesktopLayout({ children }: { children: React.ReactNode })
               <p className="text-xs text-gray-500">Admin Panel</p>
             </div>
           </div>
-          <div className="mt-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-50 border border-blue-100">
+          <button 
+            className="lg:hidden p-1 rounded-md hover:bg-gray-100 text-gray-500"
+            onClick={() => setIsSidebarOpen(false)}
+          >
+            <X size={20} />
+          </button>
+        </div>
+        <div className="px-5 pb-3 pt-3">
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-50 border border-blue-100 inline-flex">
             <ShieldCheck size={13} color="#1677FF" />
             <span className="text-xs font-semibold text-blue-600">Administrator</span>
           </div>
@@ -58,7 +75,10 @@ export function SchoolDesktopLayout({ children }: { children: React.ReactNode })
             return (
               <button
                 key={item.path}
-                onClick={() => navigate(item.path)}
+                onClick={() => {
+                  navigate(item.path);
+                  setIsSidebarOpen(false);
+                }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-left"
                 style={{
                   background: isActive ? "#EEF4FF" : "transparent",
@@ -95,14 +115,22 @@ export function SchoolDesktopLayout({ children }: { children: React.ReactNode })
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Bar */}
-        <div className="h-16 bg-white border-b border-gray-100 shadow-sm flex items-center justify-between px-8">
-          <div>
-            <h1 className="text-xl font-bold text-gray-800">{user?.school}</h1>
-            <p className="text-xs text-gray-500">Panel Administrasi Sekolah</p>
+        <div className="h-16 bg-white border-b border-gray-100 shadow-sm flex items-center justify-between px-4 lg:px-8">
+          <div className="flex items-center gap-4">
+            <button 
+              className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-gray-100 text-gray-600"
+              onClick={() => setIsSidebarOpen(true)}
+            >
+              <Menu size={24} />
+            </button>
+            <h1 className="text-lg lg:text-xl font-bold text-gray-800 hidden sm:block">
+              {NAV_ITEMS.find((n) => n.path === location.pathname)?.label || "Dashboard"}
+            </h1>
           </div>
-          <div className="flex items-center gap-3">
+          
+          <div className="flex items-center gap-2 lg:gap-4">
             <NotificationDropdown
               notifications={SCHOOL_NOTIFICATIONS}
               unreadCount={SCHOOL_NOTIFICATIONS.filter((n) => n.unread).length}

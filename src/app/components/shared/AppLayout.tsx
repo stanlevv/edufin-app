@@ -81,20 +81,6 @@ function AppLayoutInner() {
     checkMobile();
   }, []);
 
-  // Hook SELALU dipanggil (Rules of Hooks) — role filter dilakukan di render
-  // Redirect user yang sudah login dari halaman publik ke dashboard
-  if (user && NO_NAV_PATHS.includes(location.pathname)) {
-    const dashboardByRole: Record<string, string> = {
-      siswa: "/student",
-      sekolah: "/school",
-      donatur: "/donor",
-      superadmin: "/superadmin/dashboard",
-    };
-    return <Navigate to={dashboardByRole[user.role] ?? "/"} replace />;
-  }
-
-  const isSchoolAdmin = user?.role === "sekolah";
-
   // Supabase Realtime Subscription untuk notifikasi baru
   useEffect(() => {
     if (!user?.id) return;
@@ -118,6 +104,20 @@ function AppLayoutInner() {
       supabase.removeChannel(channel);
     };
   }, [user?.id]);
+
+  // Hook SELALU dipanggil (Rules of Hooks) — conditional return SETELAH semua hooks
+  // Redirect user yang sudah login dari halaman publik ke dashboard
+  if (user && NO_NAV_PATHS.includes(location.pathname)) {
+    const dashboardByRole: Record<string, string> = {
+      siswa: "/student",
+      sekolah: "/school",
+      donatur: "/donor",
+      superadmin: "/superadmin/dashboard",
+    };
+    return <Navigate to={dashboardByRole[user.role] ?? "/"} replace />;
+  }
+
+  const isSchoolAdmin = user?.role === "sekolah";
 
   const showNav =
     !!user &&

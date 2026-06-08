@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { ArrowLeft, Search, Heart, School, MapPin } from "lucide-react";
+import { ArrowLeft, Search, Heart, School, MapPin, Plus } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
+import { CampaignSubmissionForm } from "./modals/CampaignSubmissionForm";
 
 function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
@@ -16,9 +17,9 @@ export function FundraisingPage() {
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("Semua");
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
 
-  useEffect(() => {
-    async function loadData() {
+  const loadData = async () => {
       const { data } = await supabase.from('campaigns').select('*').eq('status', 'active');
       if (data) {
         setCampaigns(data.map(c => ({
@@ -38,7 +39,8 @@ export function FundraisingPage() {
           location: "Malang",
         })));
       }
-    }
+  };
+  useEffect(() => {
     loadData();
   }, []);
 
@@ -58,7 +60,16 @@ export function FundraisingPage() {
           <ArrowLeft size={20} color="white" />
         </button>
         <h1 style={{ color: "white", fontSize: "1.4rem", fontWeight: 800 }}>Galang Dana</h1>
-        <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.85rem" }}>Kampanye pendidikan aktif</p>
+        <div className="flex justify-between items-center">
+          <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.85rem" }}>Kampanye pendidikan aktif</p>
+          <button 
+            onClick={() => setShowSubmitModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+          >
+            <Plus size={14} color="white" />
+            <span className="text-white text-xs font-bold">Ajukan</span>
+          </button>
+        </div>
 
         {/* Search */}
         <div className="flex items-center gap-3 px-4 py-3 rounded-2xl mt-4"
@@ -152,11 +163,11 @@ export function FundraisingPage() {
                     <span style={{ fontSize: "0.78rem", color: "#8C8C8C" }}>{c.donors} donatur</span>
                   </div>
                   <button
-                    className="px-4 py-2 rounded-xl text-white"
+                    className="px-4 py-2 rounded-xl text-white transition-all active:scale-95"
                     style={{ background: "linear-gradient(135deg, #1677FF, #108EE9)", fontWeight: 600, fontSize: "0.82rem" }}
                     onClick={(e) => { e.stopPropagation(); navigate(`/student/campaign/${c.id}`); }}
                   >
-                    Donasi Sekarang
+                    Lihat Detail
                   </button>
                 </div>
               </div>
@@ -171,6 +182,15 @@ export function FundraisingPage() {
           </div>
         )}
       </div>
+
+      <CampaignSubmissionForm 
+        isOpen={showSubmitModal} 
+        onClose={() => setShowSubmitModal(false)} 
+        onSuccess={() => {
+          setShowSubmitModal(false);
+          loadData();
+        }} 
+      />
     </div>
   );
 }

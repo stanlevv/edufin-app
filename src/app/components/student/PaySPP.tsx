@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { ArrowLeft, CheckCircle, Download, ChevronRight, Building2, Smartphone, Store, Loader2 } from "lucide-react";
+import { STUDENT_STYLES } from "./StudentDashboard";
+import { RequestInstallmentModal } from "./modals/RequestInstallmentModal";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 
@@ -82,6 +84,7 @@ export function PaySPP() {
   const [selected, setSelected] = useState<string[]>([]);
   const [step, setStep] = useState<Step>("list");
   const [cicilanOption, setCicilanOption] = useState<CicilanOption>("penuh");
+  const [isInstallmentModalOpen, setIsInstallmentModalOpen] = useState(false);
   const [payMethod, setPayMethod] = useState("");
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentError, setPaymentError] = useState("");

@@ -27,6 +27,7 @@ Aplikasi EDUFIN dibagi menjadi 4 modul utama berdasarkan *Role* pengguna:
 
 ### D. Modul Super Admin
 - **Manajemen Tenant (Sekolah)**: Pendaftaran sekolah baru (Multi-tenant).
+- **Manajemen Admin Skalabel**: Super Admin dapat mendelegasikan atau mengangkat staf sekolah sebagai "Admin" dengan cukup memasukkan alamat email mereka.
 - **Monitoring Platform**: Melihat total GMV dan aktivitas lintas sekolah.
 
 ---
@@ -40,6 +41,9 @@ Terdapat 4 jenis `role` yang membedakan akses setiap user:
 2. `donatur`: Akses riwayat donasi.
 3. `sekolah` (Admin Sekolah): Akses dashboard sekolah.
 4. `superadmin`: Akses tertinggi platform.
+
+> [!NOTE]
+> **Integrasi OAuth (Google Login):** Pengguna yang mendaftar via Google secara otomatis diberikan *role* default sebagai `donatur`. Hal ini ditangani di level *database trigger* untuk mencegah kegagalan integrasi. Jika pengguna tersebut adalah Kepala Sekolah atau Bendahara, Super Admin dapat menaikkan peran (*promote*) pengguna tersebut menjadi `sekolah` melalui antarmuka Kelola Admin.
 
 ### Routing & Keamanan Frontend (React Router)
 - **Public Routes**: `/` (Home), `/register`, `/forgot-password`.
@@ -147,3 +151,35 @@ Desain Database menggunakan pendekatan **Multi-Tenant** di mana `school_id` menj
 - **1 Siswa** memiliki **1** Akun User (1:1).
 - **1 Siswa** memiliki **Banyak (N)** Tagihan Pembayaran (1:N).
 - **1 Sekolah** memiliki **Banyak (N)** Kampanye Galang Dana (1:N).
+
+---
+
+## 7. RIWAYAT PENGEMBANGAN FITUR (LOG PERUBAHAN)
+
+### Implementasi Form Onboarding Sekolah & Flow Cicilan (Telah Selesai)
+1. **Form Onboarding Sekolah (Super Admin)**: 
+   - Dibuat UI Modal `SchoolOnboardingModal.tsx` bagi Super Admin untuk meregistrasi tenant baru (NPSN, Jenjang, Nama, Alamat).
+   - Registrasi sekaligus mengatur akun admin pertama dari sekolah tersebut.
+   - Tombol pendaftaran diletakkan di *header* `SuperAdminDashboard.tsx`.
+2. **Flow Pengajuan Cicilan (Siswa)**:
+   - Dibuat UI Modal `RequestInstallmentModal.tsx` untuk memfasilitasi siswa/orang tua mengajukan cicilan pembayaran (2x atau 3x) beserta alasannya.
+   - Modifikasi `PaySPP.tsx` agar pembayaran *non-penuh* diarahkan ke permohonan approval alih-alih langsung ke Xendit Checkout.
+3. **Approval Cicilan (Admin Sekolah)**:
+   - Dibuat UI `InstallmentApprovalList.tsx` yang menampilkan daftar pengajuan cicilan berstatus *Pending*.
+   - Admin Sekolah dapat menyetujui atau menolak permohonan tersebut langsung dari tab *Pengajuan Cicilan* di halaman Manajemen Tagihan (`SchoolBillsPage.tsx`).
+4. **Perbaikan Integrasi & Syntax**:
+   - Menghubungkan Modal UI ke masing-masing *entry points* dengan perbaikan struktur fragment React (`<> </>`). Build proses dengan Vite dipastikan stabil.
+
+### Integrasi Backend (Supabase) & Optimasi Responsivitas
+1. **Integrasi Supabase RPC untuk Multi-tenant**:
+   - Membuat file migrasi SQL `0009_installments_and_tenant_rpc.sql`.
+   - Membuat fungsi `create_tenant_and_admin` (SECURITY DEFINER) untuk melakukan proses *bypass* registrasi tenant baru di Supabase Auth tanpa me-logout Super Admin yang sedang aktif.
+   - Menghubungkan `SchoolOnboardingModal.tsx` secara langsung dengan fungsi RPC tersebut.
+2. **Integrasi Flow Cicilan Penuh**:
+   - Menambahkan kolom `installment_status`, `installment_type`, dan `installment_reason` ke tabel `bills`.
+   - Mengubah status tabel `bills` langsung dari `RequestInstallmentModal.tsx` milik siswa.
+   - Mengambil data aktual pada `InstallmentApprovalList.tsx` untuk di-*approve* (membagi tagihan) atau di-*reject* oleh Admin Sekolah.
+3. **Penyempurnaan Responsivitas Layar (Tablet & Mobile)**:
+   - Modifikasi `SchoolDesktopLayout.tsx` dan `SuperAdminLayout.tsx` dengan menambahkan Hamburger Menu beserta *Mobile Sidebar Overlay*.
+   - Mengubah `grid-cols` pada `SchoolDashboard.tsx`, `SuperAdminDashboard.tsx`, dan `SchoolBillsPage.tsx` menjadi format responsif (`grid-cols-1`, `md:grid-cols-2`, `lg:grid-cols-4`).
+   - Membungkus tabel dengan `overflow-x-auto` agar mudah di-*scroll* secara horizontal pada layar *smartphone*.

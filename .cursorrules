@@ -1,0 +1,5 @@
+# EDUFIN AI Assistant Rules
+
+Whenever you implement a new feature, fix a bug, alter the architecture, or change the database schema, you **MUST** record and document those changes in `DOKUMENTASI_LAPORAN.md`.
+
+Do not leave the documentation outdated. Your final step before finishing a task should always be updating `DOKUMENTASI_LAPORAN.md` to reflect your work.

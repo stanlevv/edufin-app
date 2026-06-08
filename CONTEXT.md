@@ -190,3 +190,13 @@ Semua user-facing text menggunakan Bahasa Indonesia formal dengan tone yang rama
 3. **Email Notifications**: Automated emails untuk payment confirmations
 4. **Analytics Dashboard**: Advanced reporting untuk sekolah
 5. **Mobile Apps**: React Native wrapper untuk native experience
+
+---
+
+## 🤖 AI Agent Instructions (CRITICAL)
+
+All AI agents, coding assistants, or LLMs working on this project **MUST** abide by the following rule:
+
+**Documentation Requirement**: 
+Whenever you implement a new feature, fix a bug, alter the architecture, or change the database schema, you **MUST** record and document those changes in `DOKUMENTASI_LAPORAN.md`. 
+Do not leave the documentation outdated. Your final step before finishing a task should always be updating `DOKUMENTASI_LAPORAN.md` to reflect your work.

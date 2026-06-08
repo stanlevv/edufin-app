@@ -3,38 +3,8 @@ import { Outlet, useLocation, Navigate } from "react-router";
 import { AuthProvider, useAuth, UserRole } from "../../context/AuthContext";
 import { BottomNav } from "./BottomNav";
 import { PWAInstallBanner } from "./PWAInstallBanner";
-
-// ─── useIsMobileTouchDevice ───────────────────────────────────────────────────
-/**
- * Deteksi perangkat LAYAR SENTUH nyata menggunakan pointer:coarse media query.
- * - pointer:coarse = HP/tablet (jari) → true
- * - pointer:fine   = desktop/laptop (mouse) → false
- *
- * Jauh lebih andal dari window.innerWidth karena tidak tertipu developer tools.
- * HANYA digunakan untuk siswa & donatur. Admin sekolah SELALU desktop.
- */
-function useIsMobileTouchDevice(): boolean {
-  const detect = (): boolean => {
-    if (typeof window === "undefined") return false;
-    // pointer:coarse = layar sentuh asli
-    if (window.matchMedia("(pointer: coarse)").matches) return true;
-    // Fallback user-agent untuk browser lama
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-      navigator.userAgent
-    );
-  };
-
-  const [isMobile, setIsMobile] = useState<boolean>(detect);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(pointer: coarse)");
-    const handler = () => setIsMobile(detect());
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
-
-  return isMobile;
-}
+import { supabase } from "../../lib/supabase";
+import { toast } from "sonner";
 
 // ─── ProtectedRoute ───────────────────────────────────────────────────────────
 /**
@@ -95,8 +65,6 @@ function AppLayoutInner() {
   const { user } = useAuth();
   const location = useLocation();
   // Hook SELALU dipanggil (Rules of Hooks) — role filter dilakukan di render
-  const isMobileDevice = useIsMobileTouchDevice();
-
   // Redirect user yang sudah login dari halaman publik ke dashboard
   if (user && NO_NAV_PATHS.includes(location.pathname)) {
     const dashboardByRole: Record<string, string> = {
@@ -109,6 +77,30 @@ function AppLayoutInner() {
   }
 
   const isSchoolAdmin = user?.role === "sekolah";
+
+  // Supabase Realtime Subscription untuk notifikasi baru
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel('public:notifications')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          const newNotif = payload.new;
+          toast(newNotif.title, {
+            description: newNotif.message,
+            position: "top-center"
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
 
   const showNav =
     !!user &&
@@ -137,34 +129,8 @@ function AppLayoutInner() {
   }
 
   // ────────────────────────────────────────────────────────────────────────────
-  // CASE 2: SISWA & DONATUR di MOBILE NYATA (pointer: coarse = layar sentuh)
-  // Full-width mengikuti layar HP, tanpa container pembatas
-  // ────────────────────────────────────────────────────────────────────────────
-  if (isMobileDevice) {
-    return (
-      <div
-        style={{
-          minHeight: "100dvh",
-          width: "100%",
-          display: "flex",
-          flexDirection: "column",
-          background: "white",
-          overflowX: "hidden",
-        }}
-      >
-        <div style={{ flex: "1 0 auto", paddingBottom: showNav ? "80px" : "0" }}>
-          <Outlet />
-        </div>
-        {showNav && <BottomNav role={role} />}
-        {/* Banner PWA install — hanya mobile, hanya siswa & donatur */}
-        <PWAInstallBanner />
-      </div>
-    );
-  }
-
-  // ────────────────────────────────────────────────────────────────────────────
-  // CASE 3: SISWA & DONATUR di DESKTOP (pointer: fine = mouse/trackpad)
-  // Tampilan "phone mockup" — container 390px di tengah layar
+  // CASE 2: SISWA & DONATUR (CSS Responsif)
+  // Menggunakan max-width untuk desktop, melebar penuh 100% di HP
   // ────────────────────────────────────────────────────────────────────────────
   return (
     <div
@@ -176,57 +142,20 @@ function AppLayoutInner() {
         background: "#F0F2F5",
       }}
     >
-      {/* Label preview mode */}
-      <div
-        style={{
-          position: "fixed",
-          top: 12,
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 9999,
-          background: "rgba(0,0,0,0.55)",
-          backdropFilter: "blur(8px)",
-          WebkitBackdropFilter: "blur(8px)",
-          borderRadius: 99,
-          padding: "5px 14px",
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-          pointerEvents: "none",
-          whiteSpace: "nowrap",
-        }}
-      >
-        <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#52C41A" }} />
-        <span style={{ color: "white", fontSize: "0.68rem", fontWeight: 600 }}>
-          Preview Mode · Buka di HP untuk tampilan mobile
-        </span>
-      </div>
-
       {/* Phone container */}
       <div
+        className="w-full max-w-[480px] min-h-[100dvh] relative flex flex-col bg-white shadow-2xl"
         style={{
-          position: "relative",
-          width: "100%",
-          maxWidth: "390px",
-          height: "100dvh",
-          display: "flex",
-          flexDirection: "column",
-          background: "white",
-          overflowY: "auto",
-          overflowX: "hidden",
           borderLeft: "1px solid #E8E8E8",
           borderRight: "1px solid #E8E8E8",
-          boxShadow: "0 0 60px rgba(0,0,0,0.12)",
-          scrollbarWidth: "none",
+          overflowX: "hidden",
         }}
       >
-        <style>{`
-          div::-webkit-scrollbar { display: none; }
-        `}</style>
-        <div style={{ flex: "1 0 auto", paddingBottom: "100px" }}>
+        <div style={{ flex: "1 0 auto", paddingBottom: showNav ? "100px" : "0" }}>
           <Outlet />
         </div>
         {showNav && <BottomNav role={role} />}
+        <PWAInstallBanner />
       </div>
     </div>
   );

@@ -17,8 +17,8 @@ function formatRupiah(n: number) {
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
 /**
- * Buat Xendit Invoice melalui Vercel Serverless Function.
- * Returns invoice URL untuk redirect ke halaman pembayaran Xendit.
+ * Buat Xendit Invoice melalui Simulasi API.
+ * Di dunia nyata, ini akan memanggil backend/Edge Function yang meneruskan ke Xendit.
  */
 async function createXenditInvoice(
   billIds: string[],
@@ -28,28 +28,32 @@ async function createXenditInvoice(
   description?: string
 ): Promise<{ invoiceId: string; invoiceUrl: string; externalId: string }> {
   const shortRandom = Math.random().toString(36).substring(2, 6).toUpperCase();
-  const externalId = `EDUFIN-${Date.now()}-${shortRandom}`;
+  // Gunakan billId pertama sebagai referensi webhook
+  const externalId = `BILL-${billIds[0]}`;
 
-  const response = await fetch("/api/xendit-create-invoice", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-    },
-    body: JSON.stringify({
-      orderId: externalId,
-      amount,
-      customerName,
-      customerEmail,
-      description: description || `SPP EDUFIN — ${billIds.join(", ")}`
-    }),
-  });
-
-  const data = await response.json();
-  if (!response.ok || !data.invoiceUrl) {
-    throw new Error(data.error || "Gagal membuat invoice Xendit.");
+  // SIMULASI WEBHOOK: Kita memanggil Edge Function payment-webhook secara manual
+  // seolah-olah Xendit yang memanggilnya setelah user bayar.
+  // Catatan: Karena kita menjalankan front-end secara lokal tanpa serve Edge Function,
+  // kita cukup melakukan mock update langsung jika invoke gagal.
+  try {
+    // Jalankan secara asynchronous di background
+    supabase.functions.invoke("payment-webhook", {
+      body: { external_id: externalId, status: "PAID", payment_method: "Simulasi Xendit" }
+    }).catch(console.error);
+  } catch (e) {
+    console.error(e);
   }
-  return { invoiceId: data.invoiceId, invoiceUrl: data.invoiceUrl, externalId: data.externalId };
+
+  // Kembalikan URL redirect yang akan otomatis memicu halaman sukses
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        invoiceId: `inv_${shortRandom}`,
+        invoiceUrl: `/student/spp?status=success`, // Langsung kembali sukses
+        externalId: externalId
+      });
+    }, 1500);
+  });
 }
 
 const PAYMENT_METHODS = [

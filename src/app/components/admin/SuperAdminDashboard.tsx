@@ -68,22 +68,27 @@ export function SuperAdminDashboard() {
           { count: students },
           { count: donors },
           { count: campaigns },
-          { data: txns },
+          { data: bills },
+          { data: donations },
         ] = await Promise.all([
           supabase.from("schools").select("id", { count: "exact", head: true }),
           supabase.from("students").select("id", { count: "exact", head: true }),
           supabase.from("users").select("id", { count: "exact", head: true }).eq("role", "donatur"),
           supabase.from("campaigns").select("id", { count: "exact", head: true }).eq("status", "active"),
-          supabase.from("transactions").select("amount").eq("type", "in"),
+          supabase.from("bills").select("amount").eq("status", "lunas"),
+          supabase.from("donations").select("amount").eq("status", "completed"),
         ]);
 
-        const totalRevenue = txns?.reduce((sum: number, t: any) => sum + (t.amount || 0), 0) || 0;
+        const totalBills = bills?.reduce((sum: number, b: any) => sum + (b.amount || 0), 0) || 0;
+        const totalDonations = donations?.reduce((sum: number, d: any) => sum + (d.amount || 0), 0) || 0;
+        const totalRevenue = totalBills + totalDonations;
+        const totalTransactionsCount = (bills?.length || 0) + (donations?.length || 0);
 
         setStats({
           totalSchools: schools || 0,
           totalStudents: students || 0,
           totalDonors: donors || 0,
-          totalTransactions: txns?.length || 0,
+          totalTransactions: totalTransactionsCount,
           totalRevenue,
           activeCampaigns: campaigns || 0,
         });

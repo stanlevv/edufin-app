@@ -7,7 +7,7 @@ import { VitePWA } from "vite-plugin-pwa";
 function figmaAssetResolver() {
   return {
     name: "figma-asset-resolver",
-    resolveId(id) {
+    resolveId(id: string) {
       if (id.startsWith("figma:asset/")) {
         const filename = id.replace("figma:asset/", "");
         return path.resolve(__dirname, "src/assets", filename);
@@ -16,7 +16,7 @@ function figmaAssetResolver() {
   };
 }
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     figmaAssetResolver(),
     react(),
@@ -39,63 +39,111 @@ export default defineConfig({
         lang: "id",
         categories: ["finance", "education"],
         icons: [
-          {
-            src: "pwa-192x192.png",
-            sizes: "192x192",
-            type: "image/png",
-            purpose: "any",
-          },
-          {
-            src: "pwa-512x512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "any",
-          },
-          {
-            src: "pwa-512x512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "maskable",
-          },
-          {
-            src: "apple-touch-icon.png",
-            sizes: "180x180",
-            type: "image/png",
-            purpose: "any",
-          },
+          { src: "pwa-192x192.png",      sizes: "192x192", type: "image/png", purpose: "any" },
+          { src: "pwa-512x512.png",      sizes: "512x512", type: "image/png", purpose: "any" },
+          { src: "pwa-512x512.png",      sizes: "512x512", type: "image/png", purpose: "maskable" },
+          { src: "apple-touch-icon.png", sizes: "180x180", type: "image/png", purpose: "any" },
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        // Hanya cache file penting — kurangi precache bloat
+        globPatterns: ["**/*.{js,css,html,ico,png,woff2}"],
+        globIgnores: ["**/node_modules/**", "**/dist/**"],
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/(api|supabase)\//],
+        // Update langsung aktif tanpa tunggu tab ditutup
+        skipWaiting: true,
+        clientsClaim: true,
         runtimeCaching: [
           {
+            // Supabase API — NetworkFirst (data segar, fallback cache offline)
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
             handler: "NetworkFirst",
             options: {
               cacheName: "supabase-api-cache",
               expiration: { maxEntries: 50, maxAgeSeconds: 60 * 5 },
-              networkTimeoutSeconds: 10,
+              networkTimeoutSeconds: 8,
+            },
+          },
+          {
+            // Google Fonts — CacheFirst (jarang berubah, hemat bandwidth)
+            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "google-fonts-cache",
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 30 },
             },
           },
         ],
       },
-      devOptions: {
-        enabled: true,   // aktif saat npm run dev untuk testing PWA lokal
-        type: "module",
-      },
+      // Matikan PWA di dev — memperlambat HMR tanpa manfaat
+      devOptions: { enabled: false },
     }),
   ],
-  css: {
-    postcss: {
-      plugins: [],
+
+  // ─── Build Optimization ───────────────────────────────────────────────────
+  build: {
+    // Target browser modern — output lebih kecil, tidak butuh polyfill lama
+    target: "esnext",
+    // Sudah split manual — batas warning dinaikkan
+    chunkSizeWarningLimit: 500,
+    rollupOptions: {
+      output: {
+        // ── Manual Chunks ──────────────────────────────────────────────────
+        // Pisah vendor agar browser bisa cache masing-masing secara terpisah.
+        // Ketika kita update kode app, user tidak perlu re-download react/recharts dll.
+        manualChunks(id: string) {
+          // React core — paling sering di-cache, hampir tidak pernah berubah
+          if (id.includes("node_modules/react/") || id.includes("node_modules/react-dom/")) {
+            return "vendor-react";
+          }
+          // React Router
+          if (id.includes("node_modules/react-router")) {
+            return "vendor-router";
+          }
+          // Supabase SDK
+          if (id.includes("node_modules/@supabase")) {
+            return "vendor-supabase";
+          }
+          // Recharts + D3 — hanya dipakai di halaman admin desktop
+          if (id.includes("node_modules/recharts") || id.includes("node_modules/d3-")) {
+            return "vendor-recharts";
+          }
+          // Radix UI — banyak komponen shadcn pakai ini
+          if (id.includes("node_modules/@radix-ui")) {
+            return "vendor-radix";
+          }
+          // Tanstack React Query
+          if (id.includes("node_modules/@tanstack")) {
+            return "vendor-query";
+          }
+          // Lucide icons — banyak ikon, chunk terpisah
+          if (id.includes("node_modules/lucide-react")) {
+            return "vendor-icons";
+          }
+        },
+      },
     },
   },
+
+  // ─── esbuild: strip console.log & debugger di production ─────────────────
+  esbuild: {
+    // Hapus semua console.* dan debugger di production build
+    drop: mode === "production" ? ["console", "debugger"] : [],
+    // Hapus comment lisensi dari output (kurangi ukuran)
+    legalComments: "none",
+  },
+
+  css: {
+    postcss: { plugins: [] },
+  },
+
   resolve: {
     alias: { "@": path.resolve(__dirname, "./src") },
   },
+
   assetsInclude: ["**/*.svg", "**/*.csv"],
+
   test: {
     globals: true,
     environment: "jsdom",
@@ -108,4 +156,4 @@ export default defineConfig({
       exclude: ["node_modules/", "src/test/", "**/*.d.ts", "src/imports/"],
     },
   },
-});
+}));

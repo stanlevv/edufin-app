@@ -1,18 +1,29 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import { RouterProvider } from "react-router";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { router } from "./routes";
 import OfflineFallback from "./components/OfflineFallback";
 import { queryClient } from "../lib/queryClient";
+
+// DevTools hanya di-load saat development — tidak masuk production bundle
+const ReactQueryDevtools = import.meta.env.DEV
+  ? lazy(() =>
+      import("@tanstack/react-query-devtools").then((m) => ({
+        default: m.ReactQueryDevtools,
+      }))
+    )
+  : null;
 
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <OfflineFallback />
       <RouterProvider router={router} />
-      {/* DevTools hanya muncul saat development — tidak masuk production build */}
-      <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />
+      {ReactQueryDevtools && (
+        <Suspense fallback={null}>
+          <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />
+        </Suspense>
+      )}
     </QueryClientProvider>
   );
 }

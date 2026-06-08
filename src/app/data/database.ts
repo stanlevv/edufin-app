@@ -629,22 +629,30 @@ export class Database {
       console.error('Error fetching campaigns:', error);
       return [];
     }
-    return data.map((d: any) => ({
+    // Fallback end date: 30 hari dari sekarang jika tidak ada
+    const fallbackEndDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const FALLBACK_IMAGES = [
+      "https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&q=80&w=800",
+      "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&q=80&w=800",
+      "https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&q=80&w=800",
+      "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&q=80&w=800",
+    ];
+    return data.map((d: any, idx: number) => ({
       id: d.id,
       title: d.title,
       description: d.description,
       story: d.story || "",
-      target: d.target_amount,
-      collected: d.collected_amount,
-      category: d.category,
-      image: d.image_url || "",
-      school: "SMA Negeri 1 Jakarta", // Dummy for now
-      location: "Jakarta",
-      verified: true, // Assuming verified if it's in DB for now
+      target: d.target_amount || 0,
+      collected: d.collected_amount || 0,
+      category: d.category || "Fasilitas",
+      image: d.image_url || FALLBACK_IMAGES[idx % FALLBACK_IMAGES.length],
+      school: d.school_name || "SMA Negeri 1 Jakarta",
+      location: d.location || "Jakarta",
+      verified: true,
       status: d.status,
-      donors: 0,
+      donors: d.donors_count || 0,
       startDate: d.created_at,
-      endDate: d.end_date || "",
+      endDate: d.end_date || fallbackEndDate,
       updates: []
     }));
   }

@@ -18,6 +18,11 @@ export function CampaignDetail() {
   // Ambil kampanye dari Database bukan dari hardcoded Record
   const campaign = Database.getCampaignById(id ?? "");
 
+  // Hitung days left dari endDate
+  const daysLeft = campaign?.endDate
+    ? Math.max(0, Math.ceil((new Date(campaign.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : 0;
+
   const [donationAmount, setDonationAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [step, setStep] = useState<"detail" | "donate" | "success">("detail");
@@ -308,9 +313,9 @@ export function CampaignDetail() {
                 <Users size={14} color="#8C8C8C" />
                 <span style={{ color: "#8C8C8C", fontSize: "0.78rem" }}>{campaign.donors} donatur</span>
               </div>
-              <div className="flex items-center gap-1" style={{ color: campaign.daysLeft <= 10 ? "#F95654" : "#8C8C8C", fontSize: "0.78rem", fontWeight: campaign.daysLeft <= 10 ? 600 : 400 }}>
+              <div className="flex items-center gap-1" style={{ color: daysLeft <= 10 ? "#F95654" : "#8C8C8C", fontSize: "0.78rem", fontWeight: daysLeft <= 10 ? 600 : 400 }}>
                 <Clock size={14} />
-                <span>{campaign.daysLeft} hari lagi</span>
+                <span>{daysLeft} hari lagi</span>
               </div>
             </div>
           </div>

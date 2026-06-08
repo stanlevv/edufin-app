@@ -1,8 +1,8 @@
-﻿import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
-import { AuthProvider } from "../../context/AuthContext";
-import { StudentDashboard } from "./StudentDashboard";
+import { AuthProvider } from "../../../context/AuthContext";
+import { StudentDashboard } from "../StudentDashboard";
 import React from "react";
 
 function renderDashboard(role = "siswa") {

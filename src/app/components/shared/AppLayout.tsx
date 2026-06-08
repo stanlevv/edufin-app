@@ -79,6 +79,7 @@ export function ProtectedRoute({
       siswa: "/student",
       sekolah: "/school",
       donatur: "/donor",
+      superadmin: "/superadmin/dashboard",
     };
     return <Navigate to={dashboardByRole[user.role] ?? "/"} replace />;
   }
@@ -102,6 +103,7 @@ function AppLayoutInner() {
       siswa: "/student",
       sekolah: "/school",
       donatur: "/donor",
+      superadmin: "/superadmin/dashboard",
     };
     return <Navigate to={dashboardByRole[user.role] ?? "/"} replace />;
   }

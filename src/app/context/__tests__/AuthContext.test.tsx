@@ -1,7 +1,7 @@
-﻿import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
-import { AuthProvider, useAuth } from "../context/AuthContext";
+import { AuthProvider, useAuth } from "../AuthContext";
 import React from "react";
 
 // Mock component to test AuthContext

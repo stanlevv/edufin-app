@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 
 const SESSION_KEY = "edufin_session";
 
-export type UserRole = "siswa" | "sekolah" | "donatur";
+export type UserRole = "siswa" | "sekolah" | "donatur" | "superadmin";
 
 export interface User {
   id: string;
@@ -30,7 +30,7 @@ interface RegisterPayload {
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<{ success: boolean; message: string; role?: UserRole }>;
+  login: (email: string, password: string, requiredRole?: UserRole) => Promise<{ success: boolean; message: string; role?: UserRole }>;
   logout: () => void;
   register: (payload: RegisterPayload) => Promise<{ success: boolean; message: string }>;
   loginWithGoogle: () => Promise<{ success: boolean; message: string }>;
@@ -163,7 +163,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Login ───────────────────────────────────────────────
   const login = async (
     email: string,
-    password: string
+    password: string,
+    requiredRole?: UserRole
   ): Promise<{ success: boolean; message: string; role?: UserRole }> => {
     setIsLoading(true);
     try {
@@ -233,6 +234,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
            class: uData.class,
            parentName: uData.parentName
         };
+        // Validasi role jika requiredRole dispesifikasikan
+        if (requiredRole && supaUser.role !== requiredRole) {
+          await supabase.auth.signOut();
+          return { success: false, message: `Akses ditolak. Halaman ini hanya untuk ${requiredRole}.` };
+        }
         setUser(supaUser);
         return { success: true, message: "Login berhasil!", role: supaUser.role };
       }

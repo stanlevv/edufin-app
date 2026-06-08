@@ -32,6 +32,14 @@ import { RegisterPage } from "./components/auth/RegisterPage";
 import { ForgotPasswordPage } from "./components/auth/ForgotPasswordPage";
 import { ResetPasswordPage } from "./components/auth/ResetPasswordPage";
 
+// ─── Admin Pages (Hidden routes — not linked publicly) ────────────────────────
+import { AdminLoginPage } from "./components/admin/AdminLoginPage";
+import { SuperAdminLoginPage } from "./components/admin/SuperAdminLoginPage";
+import { AuthProvider } from "./context/AuthContext";
+const SuperAdminDashboard = lazy(() =>
+  import("./components/admin/SuperAdminDashboard").then(m => ({ default: m.SuperAdminDashboard })));
+
+
 // ─── Student Pages — LAZY (chunk: student) ───────────────────────────────────
 const StudentDashboard   = lazy(() => import("./components/student/StudentDashboard").then(m => ({ default: m.StudentDashboard })));
 const PaySPP             = lazy(() => import("./components/student/PaySPP").then(m => ({ default: m.PaySPP })));
@@ -66,6 +74,31 @@ export const router = createBrowserRouter([
   // Dev-only routes (no auth)
   { path: "/wireframes", Component: withSuspense(WireframeViewer) },
   { path: "/database-docs", Component: withSuspense(DatabaseDocs) },
+
+  // ─── Hidden Admin Routes (not linked anywhere in the app) ─────────────────
+  // Admin Sekolah Login
+  { 
+    path: "/admin", 
+    element: <AuthProvider><AdminLoginPage /></AuthProvider> 
+  },
+  // Super Admin Login
+  { 
+    path: "/superadmin", 
+    element: <AuthProvider><SuperAdminLoginPage /></AuthProvider> 
+  },
+  // Super Admin Dashboard (protected — role: superadmin)
+  {
+    path: "/superadmin/dashboard",
+    element: (
+      <AuthProvider>
+        <ProtectedRoute allowedRoles={["superadmin"]}>
+          <Suspense fallback={<PageLoader />}>
+            <SuperAdminDashboard />
+          </Suspense>
+        </ProtectedRoute>
+      </AuthProvider>
+    ),
+  },
 
   // Main app with AuthProvider via AppLayout
   {

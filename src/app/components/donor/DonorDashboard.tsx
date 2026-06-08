@@ -15,7 +15,7 @@ const CATEGORIES = ["Semua", "Beasiswa", "Fasilitas", "Perlengkapan", "Ujian"];
 
 export function DonorDashboard() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [search, setSearch] = useState("");
@@ -41,6 +41,12 @@ export function DonorDashboard() {
     const matchCat = activeCategory === "Semua" || c.category === activeCategory;
     return matchSearch && matchCat;
   });
+
+  // Helper: hitung days left dari endDate
+  function getDaysLeft(endDate: string): number {
+    if (!endDate) return 0;
+    return Math.max(0, Math.ceil((new Date(endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
@@ -174,7 +180,7 @@ export function DonorDashboard() {
                   <span>·</span>
                   <div className="flex items-center gap-1">
                     <Clock size={12} />
-                    <span>{c.daysLeft} hari lagi</span>
+                    <span>{getDaysLeft(c.endDate)} hari lagi</span>
                   </div>
                 </div>
 
@@ -214,14 +220,6 @@ export function DonorDashboard() {
             <p style={{ color: "#8C8C8C", marginTop: "12px" }}>Kampanye tidak ditemukan</p>
           </div>
         )}
-
-        <button
-          onClick={() => { logout(); navigate("/login"); }}
-          className="w-full py-3 rounded-2xl"
-          style={{ background: "#FFF2F0", color: "#F95654", fontWeight: 600, fontSize: "0.9rem" }}
-        >
-          Keluar dari Akun
-        </button>
       </div>
     </div>
   );

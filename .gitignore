@@ -1,8 +1,61 @@
+# ─── Dependencies ───────────────────────
 node_modules/
+.pnp
+.pnp.js
+
+# ─── Build Output ────────────────────────
 dist/
+dist-ssr/
+build/
+
+# ─── Environment & Secrets ───────────────
+# JANGAN pernah commit file ini ke Git!
 .env
 .env.local
 .env.*.local
+.env.production
+.env.staging
+*.pem
+*.key
+*.cert
+*.p12
+secrets/
+
+# ─── Logs ────────────────────────────────
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ─── Cache & Temp ────────────────────────
+.vite/
+.cache/
+.temp/
+*.tmp
+*.swp
+*.swo
+
+# ─── OS Files ────────────────────────────
 .DS_Store
 Thumbs.db
+desktop.ini
+
+# ─── IDE ─────────────────────────────────
+.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ─── File Sensitif / Lock Dokumen ────────
+# File lock Office (tanda dokumen sedang dibuka)
+~$*.docx
+~$*.xlsx
+~$*.pptx
+
+# ─── Test Coverage ───────────────────────
+coverage/
+.nyc_output/

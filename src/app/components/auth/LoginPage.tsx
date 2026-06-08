@@ -180,7 +180,10 @@ export function LoginPage() {
 
         {/* Forgot password */}
         <div className="text-right mb-6">
-          <button style={{ color: "#1677FF", fontSize: "0.82rem", fontWeight: 600 }}>
+          <button
+            onClick={() => navigate("/forgot-password")}
+            style={{ color: "#1677FF", fontSize: "0.82rem", fontWeight: 600 }}
+          >
             Lupa Kata Sandi?
           </button>
         </div>

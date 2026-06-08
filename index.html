@@ -19,7 +19,8 @@
     <link rel="dns-prefetch" href="https://api.xendit.co" />
 
     <!-- ─── PWA Theme ────────────────────────────────────────── -->
-    <meta name="theme-color" content="#1677FF" />
+    <meta name="theme-color" content="#0D5FD6" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0D5FD6" media="(prefers-color-scheme: dark)" />
     <meta name="mobile-web-app-capable" content="yes" />
 
     <!-- ─── iOS PWA Support ──────────────────────────────────── -->
@@ -37,8 +38,7 @@
       #root { height: 100%; }
       /* Hapus tap highlight di mobile */
       * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
-      /* Safe area notch iOS */
-      body { padding-top: env(safe-area-inset-top); }
+      /* Safe area notch iOS ditangani per komponen agar background header bisa tembus notch */
       /* Skeleton loader saat app pertama kali load */
       #root:empty::before {
         content: '';

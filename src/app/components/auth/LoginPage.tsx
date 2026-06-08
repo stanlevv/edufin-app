@@ -50,8 +50,11 @@ export function LoginPage() {
 
       {/* ── Header ─────────────────────────────────────────── */}
       <div
-        className="px-5 pt-12 pb-8 relative overflow-hidden"
-        style={{ background: "linear-gradient(145deg,#0D5FD6 0%,#108EE9 100%)" }}
+        className="px-5 pb-8 relative overflow-hidden"
+        style={{ 
+          background: "linear-gradient(145deg,#0D5FD6 0%,#108EE9 100%)",
+          paddingTop: "calc(env(safe-area-inset-top) + 3rem)"
+        }}
       >
         {/* Decoration */}
         <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full opacity-10"
@@ -85,7 +88,7 @@ export function LoginPage() {
       </div>
 
       {/* ── Body ───────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto px-5 pt-6 pb-10">
+      <div className="flex-1 overflow-y-auto px-5 pt-6" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 2.5rem)" }}>
 
         {/* ── Demo Pills ──────────────────────────────────── */}
         <div className="mb-5">

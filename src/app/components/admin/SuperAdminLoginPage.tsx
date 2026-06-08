@@ -137,18 +137,23 @@ export function SuperAdminLoginPage() {
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden"
       style={{ background: "#0A0A0A" }}>
 
+      {/* Global styles for autofill override */}
+      <style>{`
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover, 
+        input:-webkit-autofill:focus, 
+        input:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 30px #0D0D0D inset !important;
+            -webkit-text-fill-color: #22C55E !important;
+            transition: background-color 5000s ease-in-out 0s;
+        }
+      `}</style>
+
       {/* Scanline overlay */}
       <div className="pointer-events-none absolute inset-0 z-10"
         style={{
           background: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px)",
         }} />
-
-      {/* Subtle blue ambient glow top-left */}
-      <div className="pointer-events-none absolute -top-32 -left-32 w-96 h-96 rounded-full opacity-10"
-        style={{ background: "radial-gradient(circle, #1677FF, transparent)" }} />
-      {/* Bottom right amber glow */}
-      <div className="pointer-events-none absolute -bottom-24 -right-24 w-72 h-72 rounded-full opacity-5"
-        style={{ background: "radial-gradient(circle, #F59E0B, transparent)" }} />
 
       <div className="relative z-20 w-full max-w-2xl px-4 py-8">
 

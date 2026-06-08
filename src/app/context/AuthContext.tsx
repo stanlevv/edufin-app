@@ -39,7 +39,6 @@ interface AuthContextType {
 }
 
 import { supabase } from "../lib/supabase";
-import { Database } from "../data/database";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -103,34 +102,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // Persist session
+  // Persist session to localStorage (untuk cold start sebelum onAuthStateChange terpanggil)
   useEffect(() => {
     if (user) {
       localStorage.setItem(SESSION_KEY, JSON.stringify(user));
-
-      if (user.role === "siswa" && user.nisn) {
-        const students = Database.getStudents();
-        const existingStudent = students.find(s => s.nisn === user.nisn);
-        if (existingStudent && existingStudent.userId !== user.id) {
-          existingStudent.userId = user.id;
-          Database.saveStudent(existingStudent);
-        } else if (!existingStudent) {
-          Database.saveStudent({
-            id: `student-${Date.now()}`,
-            userId: user.id,
-            nisn: user.nisn,
-            name: user.name,
-            email: user.email,
-            school: user.school || "",
-            class: user.class || "",
-            parentName: user.parentName || "",
-            address: "",
-            sppAmount: 750000,
-            status: "active",
-            verified: true,
-          });
-        }
-      }
     } else {
       localStorage.removeItem(SESSION_KEY);
     }

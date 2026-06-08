@@ -1,18 +1,33 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Supabase configuration
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://pxqamlbdamrkwrdnbhmf.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_kR-qLNL8nf-G4ReZTML1pg_MvXqiDLi';
+// ============================================================
+// ✅ SECURE: Semua key wajib dari environment variables.
+// ❌ JANGAN pernah hardcode key di sini — berbahaya jika di-push ke Git!
+// Cara setup: copy .env.example → .env.local dan isi nilainya.
+// ============================================================
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-  console.warn('⚠️ Environment variables missing. Using fallback URL.');
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error(
+    '❌ Missing Supabase environment variables!\n' +
+    'Pastikan file .env.local ada dan berisi:\n' +
+    '  VITE_SUPABASE_URL=https://[project-id].supabase.co\n' +
+    '  VITE_SUPABASE_ANON_KEY=eyJ...'
+  );
 }
 
-// Create Supabase client
+// Singleton Supabase client — import dari sini, JANGAN buat ulang di file lain
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+  global: {
+    headers: {
+      'x-application-name': 'edufin-web',
+    },
   },
 });
 

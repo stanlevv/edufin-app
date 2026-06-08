@@ -1331,3 +1331,11 @@ POST   /functions/v1/send-parent-invite       # Send invite email ke orang tua
 5. ⏭️ **PWA Setup:** Configure Vite PWA plugin
 
 **Questions or feedback?** Contact: product@edufin.sch.id
+
+---
+
+## 12. DOKUMENTASI SISTEM (LAPORAN AKADEMIK)
+
+Sesuai dengan permintaan, dokumentasi lengkap mengenai **Fitur/Modul Website**, **Autentikasi & Keamanan**, **Struktur Project**, **Daftar Kebutuhan / Use Case**, **Perancangan Database (Tahapan Normalisasi UNF hingga 3NF)**, dan **Relasi Tabel** telah dicatat dan dirangkum ke dalam satu dokumen khusus.
+
+👉 Silakan buka file berikut: **[DOKUMENTASI_LAPORAN.md](./DOKUMENTASI_LAPORAN.md)**

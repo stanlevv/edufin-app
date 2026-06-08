@@ -1,9 +1,9 @@
 # Product Requirements Document (PRD)
 # EDUFIN - Platform Manajemen Keuangan Pendidikan
 
-**Version:** 1.0  
-**Last Updated:** 31 Mei 2025  
-**Status:** Draft  
+**Version:** 2.0  
+**Last Updated:** 7 Juni 2026  
+**Status:** Active  
 **Owner:** Product Team  
 
 ---
@@ -20,6 +20,7 @@
 8. [Security & Compliance](#8-security--compliance)
 9. [Timeline & Milestones](#9-timeline--milestones)
 10. [Risks & Mitigations](#10-risks--mitigations)
+11. [Appendix](#11-appendix)
 
 ---
 
@@ -27,20 +28,33 @@
 
 ### 1.1 Vision
 
-**EDUFIN** adalah platform manajemen keuangan pendidikan yang bertujuan menjadi **platform #1 untuk manajemen SPP di Indonesia**. Dimulai dengan implementasi di **SDN 3 Malang** sebagai pilot school, EDUFIN menghubungkan tiga stakeholder utama: **Siswa/Orang Tua**, **Sekolah**, dan **Donatur** dalam satu ekosistem pembayaran dan fundraising yang terintegrasi.
+**EDUFIN** adalah platform manajemen keuangan pendidikan yang bertujuan menjadi **platform #1 untuk manajemen SPP di Indonesia**. Dimulai dengan implementasi di **SDN 3 Malang** sebagai pilot school, EDUFIN menghubungkan empat stakeholder utama: **Siswa/Orang Tua**, **Sekolah (Admin)**, **Donatur**, dan **EDUFIN Super Admin** dalam satu ekosistem pembayaran dan fundraising yang terintegrasi.
 
-### 1.2 Current Scope
+### 1.2 Strategic Scope
 
-- **School:** SDN 3 Malang (single tenant)
-- **Students:** 100-500 siswa
-- **Users:** 3 roles (Admin Sekolah, Siswa/Orang Tua, Donatur)
-- **Core Function:** SPP payment tracking + Fundraising platform
+| Item | Detail |
+|------|--------|
+| **Pilot School** | SDN 3 Malang (single tenant untuk validasi) |
+| **Target 12 Bulan** | 50+ sekolah di Jawa Timur |
+| **Target Jenjang** | SD, SMP, SMA/SMK (semua jenjang) |
+| **Target Siswa** | Ratusan hingga ribuan siswa aktif |
+| **User Roles** | 4 roles (EDUFIN Super Admin, Admin Sekolah, Siswa/Orang Tua, Donatur) |
+| **Core Function** | SPP payment tracking + Fundraising platform |
 
 ### 1.3 Strategic Goals
 
 1. **Primary:** Menyelesaikan masalah tracking pembayaran SPP yang manual dan ribet
 2. **Secondary:** Menyediakan platform fundraising untuk siswa yang membutuhkan bantuan finansial
-3. **Long-term:** Menjadi standar platform keuangan sekolah di Indonesia
+3. **Medium-term:** Ekspansi ke 50+ sekolah di Jawa Timur
+4. **Long-term:** Menjadi standar platform keuangan sekolah di Indonesia
+
+### 1.4 Business Model
+
+**Gratis untuk semua pengguna** (fase saat ini — fokus ke adoption dan user growth):
+- Tidak ada subscription fee untuk sekolah
+- Tidak ada platform fee untuk donasi
+- Revenue model akan diputuskan setelah adoption terbukti
+- Project hybrid: mulai sebagai project akademik (MIT), roadmap ke startup nyata
 
 ---
 
@@ -68,6 +82,11 @@
 - ❌ Proses donasi ribet dan tidak trackable
 - ❌ Tidak ada update perkembangan setelah donasi
 
+#### **Pain Points - EDUFIN (Platform Level):**
+- ❌ Tidak ada visibilitas ke semua sekolah yang terdaftar
+- ❌ Tidak ada tools untuk onboarding sekolah baru
+- ❌ Tidak ada mekanisme suspend/moderate konten bermasalah
+
 ### 2.2 Opportunity
 
 Dengan digitalisasi proses pembayaran SPP dan fundraising, EDUFIN dapat:
@@ -75,6 +94,7 @@ Dengan digitalisasi proses pembayaran SPP dan fundraising, EDUFIN dapat:
 - ✅ Meningkatkan payment collection rate (on-time payment)
 - ✅ Memberikan transparency penuh ke semua stakeholder
 - ✅ Memfasilitasi akses pendidikan melalui fundraising
+- ✅ Scale ke seluruh Jawa Timur dengan arsitektur multi-tenant
 
 ---
 
@@ -82,16 +102,16 @@ Dengan digitalisasi proses pembayaran SPP dan fundraising, EDUFIN dapat:
 
 ### 3.1 Business Goals
 
-**Year 1 (SDN 3 Malang):**
+**Pilot (SDN 3 Malang):**
 - 📊 **Adoption Rate:** 80% siswa terdaftar & aktif menggunakan platform
 - 💰 **Payment Collection:** 90% pembayaran SPP on-time (sebelum jatuh tempo)
 - 🎯 **Campaign Success:** 50% kampanye fundraising mencapai target
 - ⏱️ **Admin Time Saved:** 70% reduction in manual recording time
 
-**Platform Metrics:**
-- 📈 **Monthly Active Users (MAU):** 300+ (siswa + orang tua + admin)
-- 💳 **Transaction Volume:** Rp 300-500 juta/bulan (SPP + donations)
-- 🎓 **Campaign Completion Rate:** 60% kampanye selesai dalam 30 hari
+**Year 1 (Jawa Timur - 50+ Sekolah):**
+- 🏫 **Schools Onboarded:** 50 sekolah aktif (SD + SMP + SMA/SMK)
+- 👥 **Monthly Active Users (MAU):** 5.000+ (siswa + orang tua + admin)
+- 💳 **Transaction Volume:** Rp 1-5 miliar/bulan (SPP + donations)
 
 ### 3.2 Technical Success Metrics
 
@@ -107,32 +127,33 @@ Dengan digitalisasi proses pembayaran SPP dan fundraising, EDUFIN dapat:
 
 **Security:**
 - 🔐 Zero data breaches
-- 🔒 PCI DSS compliance (via Midtrans)
+- 🔒 PCI DSS compliance (via Xendit)
 - 📧 Email verification for all users
 
 ### 3.3 User Satisfaction Metrics
 
 - ⭐ Net Promoter Score (NPS): > 50
 - 😊 User satisfaction: > 4.0/5.0
-- 📱 Mobile usability score: > 90/100 (Google PageSpeed)
+- 📱 PWA performance score: > 90/100 (Google PageSpeed)
 
 ---
 
 ## 4. USER PERSONAS
 
-### 4.1 Persona 1: Siswa/Orang Tua
+### 4.1 Persona 1: Orang Tua Siswa (Primary User)
 
 **Profile:**
 - **Name:** Ibu Siti (Orang Tua) / Ahmad (Siswa SMP)
-- **Age:** Orang tua: 35-45 tahun, Siswa: 13-15 tahun
-- **Device:** Smartphone Android (mayoritas), iOS (sebagian)
-- **Tech Literacy:** Medium (familiar dengan e-wallet, social media)
+- **Age:** Orang tua: 35-45 tahun, Siswa: 6-18 tahun (SD s/d SMA)
+- **Device:** Smartphone Android (mayoritas), iOS (sebagian kecil)
+- **Tech Literacy:** Medium (familiar dengan WhatsApp, e-wallet, social media)
 - **Internet:** 4G/WiFi, kadang 3G
+- **Platform:** Mobile PWA (primary), desktop web (secondary)
 
 **Goals:**
 - Bayar SPP dengan mudah dan cepat
 - Lihat status pembayaran real-time
-- Terima reminder sebelum jatuh tempo
+- Terima reminder sebelum jatuh tempo (via WhatsApp)
 - Request cicilan jika kesulitan finansial
 
 **Pain Points:**
@@ -142,11 +163,12 @@ Dengan digitalisasi proses pembayaran SPP dan fundraising, EDUFIN dapat:
 - Sulit komunikasi dengan sekolah
 
 **User Journey:**
-1. Login via mobile app/web
-2. Lihat tagihan SPP bulan ini
-3. Pilih metode pembayaran (QRIS/VA)
-4. Bayar & terima notifikasi sukses
-5. Download bukti pembayaran PDF
+1. Terima notifikasi WhatsApp "tagihan SPP bulan ini sudah tersedia"
+2. Login via mobile PWA (email + password)
+3. Lihat tagihan SPP bulan ini
+4. Pilih metode pembayaran (QRIS/VA/GoPay)
+5. Bayar & terima notifikasi sukses via WhatsApp
+6. Download bukti pembayaran PDF
 
 ---
 
@@ -156,14 +178,16 @@ Dengan digitalisasi proses pembayaran SPP dan fundraising, EDUFIN dapat:
 - **Name:** Ibu Dewi (Bendahara Sekolah)
 - **Age:** 40-55 tahun
 - **Device:** Laptop/Desktop (primary), Smartphone (secondary)
-- **Tech Literacy:** Medium (familiar with Excel, email)
+- **Tech Literacy:** Medium (familiar with Excel, email, WhatsApp)
 - **Work Hours:** 07:00 - 15:00 WIB
+- **Platform:** Desktop web (primary)
 
 **Goals:**
 - Track semua pembayaran SPP siswa
 - Generate laporan keuangan bulanan
 - Approve/reject kampanye fundraising
 - Kirim reminder otomatis ke siswa yang belum bayar
+- Manage multi-admin dengan permission berbeda
 
 **Pain Points:**
 - Manual recording di Excel prone to error
@@ -173,21 +197,21 @@ Dengan digitalisasi proses pembayaran SPP dan fundraising, EDUFIN dapat:
 
 **User Journey:**
 1. Login via desktop
-2. Lihat dashboard: total penerimaan, outstanding payments
+2. Lihat dashboard: total penerimaan, outstanding payments, pending campaigns
 3. Approve kampanye fundraising dari siswa
 4. Export laporan keuangan bulanan
-5. Kirim notifikasi reminder ke siswa
+5. Kirim notifikasi reminder ke siswa via WhatsApp blast
 
 ---
 
 ### 4.3 Persona 3: Donatur
 
 **Profile:**
-- **Name:** Pak Budi (Alumni / Masyarakat Umum)
+- **Name:** Pak Budi (Alumni / Masyarakat Umum / CSR)
 - **Age:** 25-50 tahun
 - **Device:** Smartphone (mobile-first)
 - **Tech Literacy:** Medium-High
-- **Motivation:** Charity, membantu pendidikan
+- **Motivation:** Charity, membantu pendidikan, CSR
 
 **Goals:**
 - Temukan kampanye siswa yang butuh bantuan
@@ -195,18 +219,34 @@ Dengan digitalisasi proses pembayaran SPP dan fundraising, EDUFIN dapat:
 - Track penggunaan donasi (transparency)
 - Terima update perkembangan kampanye
 
-**Pain Points:**
-- Tidak tahu siswa mana yang butuh bantuan
-- Tidak percaya dana terpakai dengan benar
-- Proses donasi ribet
-- Tidak ada update setelah donasi
+**User Journey:**
+1. Browse kampanye fundraising (public page - tanpa login)
+2. Pilih kampanye yang ingin didukung
+3. Donasi via QRIS/VA/GoPay (guest checkout OK, atau login)
+4. Terima konfirmasi donasi + receipt
+5. Dapat update via notifikasi saat kampanye selesai
+
+---
+
+### 4.4 Persona 4: EDUFIN Super Admin
+
+**Profile:**
+- **Name:** Tim EDUFIN (internal)
+- **Device:** Desktop (primary)
+- **Access:** Full platform visibility
+
+**Goals:**
+- Onboarding sekolah baru ke platform
+- Monitor aktivitas semua sekolah
+- Suspend sekolah/kampanye jika ada masalah
+- Lihat platform-wide analytics (GMV, aktif sekolah, dll)
 
 **User Journey:**
-1. Browse kampanye fundraising (public page)
-2. Pilih kampanye yang ingin didukung
-3. Donasi via QRIS/VA (guest checkout OK)
-4. Terima konfirmasi donasi + receipt
-5. Dapat update saat kampanye selesai
+1. Login via special super admin URL
+2. Lihat dashboard: jumlah sekolah aktif, total transaksi, kampanye aktif
+3. Onboard sekolah baru (create akun sekolah, set tenant)
+4. Review laporan dari sekolah
+5. Suspend/reactivate sekolah jika diperlukan
 
 ---
 
@@ -224,123 +264,160 @@ Menggunakan **MoSCoW Method** untuk prioritas:
 
 #### **MUST HAVE (P0)**
 
-**Auth-001: User Registration**
-- **Siswa:** Register dengan NISN + Email + Password
-- **Sekolah:** Register dengan NPSN + Credential (pre-created account)
-- **Donatur:** Register dengan Email + Password (atau guest checkout)
+**Auth-001: User Registration — Orang Tua/Siswa**
+- Login via **Email + Password** (NISN sebagai identifier profil, bukan untuk login)
+- Admin sekolah import CSV siswa (nama, NISN, kelas, nama ortu, email ortu, no. HP)
+- Sistem kirim **email undangan** ke email orang tua
+- Orang tua klik link undangan → set password sendiri
 - Email verification required untuk aktivasi akun
 
-**Auth-002: Login System**
-- Multi-role login (siswa, sekolah, donatur)
-- Session management dengan JWT tokens
+**Auth-002: User Registration — Sekolah**
+- Admin sekolah didaftarkan oleh EDUFIN Super Admin
+- Login dengan Email + Password
+- Multi-admin per sekolah dengan custom permissions
+- NPSN terdaftar sebagai identifier sekolah
+
+**Auth-003: User Registration — Donatur**
+- Register dengan Email + Password
+- Google OAuth sebagai alternatif (opsional)
+- Guest checkout tersedia (tanpa registrasi, untuk donasi)
+
+**Auth-004: Login System**
+- Multi-role login (orang tua/siswa, sekolah, donatur, super admin)
+- Session management dengan JWT tokens via Supabase Auth
 - "Remember me" functionality
 - Logout (clear session)
 
-**Auth-003: Password Management**
+**Auth-005: Password Management**
 - Forgot password (email reset link)
 - Password strength requirement (min 8 char, 1 uppercase, 1 number)
 - Change password (dalam profile settings)
 
 #### **SHOULD HAVE (P1)**
 
-**Auth-004: OAuth Integration**
-- Google OAuth untuk donatur
-- Facebook OAuth (optional)
+**Auth-006: Multi-Admin Permission System**
+- Admin sekolah dapat tambah admin lain dengan permission berbeda:
+  - **Full Admin:** CRUD semua fitur
+  - **Finance Only:** Hanya lihat & manage pembayaran
+  - **View Only:** Hanya baca laporan
+  - **Custom:** Pilih permission secara granular
+- Permission audit log
 
-**Auth-005: Two-Factor Authentication (2FA)**
-- SMS OTP untuk transaksi besar (> Rp 1 juta)
-- Email OTP sebagai alternatif
+**Auth-007: EDUFIN Super Admin Panel**
+- Akses via URL khusus (e.g., `/superadmin`)
+- Lihat semua tenant sekolah
+- Create/suspend/reactivate akun sekolah
+- Impersonate admin sekolah (untuk support)
 
 ---
 
-### 5.2 SPP Payment Management
+### 5.2 School Onboarding (Multi-Tenant)
+
+#### **MUST HAVE (P0)**
+
+**Onboard-001: EDUFIN Super Admin — Daftarkan Sekolah**
+- Input data sekolah: Nama, NPSN, Alamat, Kota, Jenjang (SD/SMP/SMA/SMK)
+- Create akun admin sekolah pertama (email + temp password)
+- Kirim email welcome + credential ke kepala sekolah
+- Tenant terisolasi di database (school_id sebagai tenant identifier)
+
+**Onboard-002: Admin Sekolah — Setup Sekolah**
+- Upload logo sekolah
+- Set rekening bank untuk pencairan donasi (nama bank, nomor rekening, atas nama)
+- Set default nominal SPP per kelas/jenjang
+- Configure late fee policy
+
+**Onboard-003: Bulk Import Siswa**
+- Upload file CSV/Excel dengan kolom wajib: Nama, NISN, Kelas, Tahun Ajaran, Nama Ortu, Email Ortu, No. HP Ortu
+- Preview data sebelum import
+- Validasi format (NISN 10 digit, email valid)
+- Kirim email undangan massal ke orang tua setelah import
+- Progress indicator saat import berlangsung
+
+---
+
+### 5.3 SPP Payment Management
 
 #### **MUST HAVE (P0)**
 
 **Pay-001: View Tagihan SPP**
-- Siswa lihat tagihan SPP per bulan
+- Siswa/orang tua lihat tagihan SPP per bulan
 - Status: Lunas, Belum Bayar, Terlambat, Cicilan
 - Detail: Amount, Due Date, Late Fee (if any)
 - History pembayaran sebelumnya
 
-**Pay-002: Payment Methods**
-- QRIS (via Midtrans)
-- Virtual Account BCA
-- Virtual Account Mandiri
-- Manual transfer bank (input bukti transfer, pending approval)
-- Cash payment (input by admin)
+**Pay-002: Payment Methods via Xendit**
+- **QRIS** (scan QR, berlaku semua bank/e-wallet)
+- **Virtual Account:** BCA, Mandiri, BNI, BRI
+- **E-Wallet:** GoPay, OVO, DANA
+- **Transfer Manual:** Siswa upload foto bukti transfer → admin verifikasi
+- **Cash:** Admin input manual sebagai paid
 
-**Pay-003: Payment Flow**
-- Select tagihan yang mau dibayar
-- Choose payment method
-- Redirect to payment gateway (QRIS/VA)
-- Payment confirmation webhook
-- Auto-update status pembayaran
-- Send notification (email + in-app)
+**Pay-003: Payment Flow (Xendit)**
+- Siswa select tagihan yang mau dibayar
+- Pilih payment method
+- Backend create Xendit invoice/payment request
+- Xendit tampilkan payment page atau instruksi VA
+- Xendit kirim webhook saat payment sukses
+- Auto-update status tagihan ke "Lunas"
+- Kirim notifikasi (WhatsApp + in-app)
 
 **Pay-004: Payment Receipt**
 - Digital receipt (PDF download)
-- Receipt contains: School name, Student name, Amount, Date, Payment method, Transaction ID
-- Send receipt via email
+- Receipt contains: Nama Sekolah, Nama Siswa, NISN, Kelas, Amount, Bulan SPP, Tanggal, Payment method, Transaction ID
+- Send receipt via WhatsApp (image/PDF)
 
-**Pay-005: Admin - Tagihan Management**
-- Create tagihan SPP untuk siswa (bulk/individual)
-- Set due date & amount per siswa
+**Pay-005: Admin — Tagihan Management**
+- Bulk create tagihan SPP untuk semua siswa (per kelas, atau semua)
+- Set due date & amount (dapat berbeda per siswa)
 - Edit tagihan (before payment)
 - Cancel tagihan (jika salah input)
 
-**Pay-006: Admin - Payment Verification**
+**Pay-006: Admin — Payment Verification**
 - Approve/reject manual transfer payment
-- View payment proof uploaded by student
+- View foto bukti transfer yang di-upload siswa
 - Mark as paid (for cash payment)
+- Input catatan untuk rejected payment
 
 #### **SHOULD HAVE (P1)**
 
-**Pay-007: Payment Reminder**
-- Auto email reminder 7 hari sebelum due date
-- Auto email reminder 1 hari sebelum due date
-- Auto email notification saat terlambat bayar
+**Pay-007: Payment Reminder via WhatsApp**
+- Auto-send WhatsApp reminder 7 hari sebelum due date
+- Auto-send WhatsApp reminder 1 hari sebelum due date
+- Auto-send WhatsApp notification saat terlambat bayar
+- Admin bisa trigger manual blast reminder per kelas/semua siswa
 
 **Pay-008: Late Payment Fee**
-- Auto-calculate late fee (configurable by admin)
-- Add late fee to outstanding amount
-- Waive late fee (admin override)
+- Admin configure late fee policy (fixed atau percentage)
+- Auto-calculate late fee saat due date terlewat
+- Tampilkan komponen late fee terpisah di tagihan
+- Admin bisa waive late fee secara manual
 
 **Pay-009: Bulk Operations**
-- Bulk create tagihan untuk semua siswa
-- Bulk send reminder
-- Bulk export payment data
-
-#### **COULD HAVE (P2)**
-
-**Pay-010: Recurring Payment**
-- Auto-generate tagihan SPP setiap bulan
-- Recurring payment setup (auto-debit)
-
-**Pay-011: Payment Plan Customization**
-- Custom amount per siswa (e.g., beasiswa siswa bayar lebih rendah)
-- Multi-tier SPP (based on class/grade)
+- Bulk create tagihan untuk semua siswa sekaligus
+- Bulk send reminder WhatsApp
+- Bulk export payment data (Excel/PDF)
 
 ---
 
-### 5.3 Cicilan (Installment) Management
+### 5.4 Cicilan (Installment) Management
 
 #### **MUST HAVE (P0)**
 
 **Inst-001: Request Cicilan**
-- Siswa request cicilan untuk tagihan tertentu
-- Input: Number of periods (2x, 3x, 4x, max 6x)
-- Input: Reason (optional)
-- Submit request to school for approval
+- Orang tua/siswa request cicilan untuk tagihan tertentu
+- Input: Jumlah periode (2x, 3x, 4x, max 6x)
+- Input: Alasan permohonan (optional tapi recommended)
+- Submit request ke sekolah untuk approval
 
 **Inst-002: Approve/Reject Cicilan**
 - Admin review installment request
-- Approve → auto-split tagihan menjadi X periods
-- Reject → send notification dengan reason
+- Approve → auto-split tagihan menjadi X periode dengan due date per periode
+- Reject → send notifikasi WhatsApp ke orang tua dengan alasan
 
 **Inst-003: Installment Payment**
-- Siswa lihat cicilan per periode
-- Bayar per periode (same payment flow as regular SPP)
+- Orang tua lihat cicilan per periode
+- Bayar per periode (same payment flow as regular SPP via Xendit)
 - Track progress (e.g., "Periode 2/4 telah dibayar")
 
 **Inst-004: Installment Status**
@@ -349,96 +426,88 @@ Menggunakan **MoSCoW Method** untuk prioritas:
 
 #### **SHOULD HAVE (P1)**
 
-**Inst-005: Installment Fee**
-- Admin configurable: Fixed fee atau percentage
-- Default: No fee (for MVP)
-
-**Inst-006: Installment Default Handling**
-- Grace period: 7 hari setelah due date
-- Auto-send reminder saat mendekati due date
-- Convert kembali ke full payment jika default
+**Inst-005: Installment Default Handling**
+- Grace period: 7 hari setelah due date cicilan
+- Auto-send WhatsApp reminder saat mendekati due date cicilan
+- Admin notification jika cicilan default
 
 ---
 
-### 5.4 Fundraising/Campaign Management
+### 5.5 Fundraising/Campaign Management
 
 #### **MUST HAVE (P0)**
 
 **Camp-001: Create Campaign**
-- Siswa create campaign dengan:
+- Siswa (via orang tua) create campaign dengan:
   - Title
-  - Description (why need help)
-  - Target amount
-  - Campaign duration (default: 30 hari)
-  - Category (e.g., Buku Pelajaran, Seragam, Study Tour)
-- Upload supporting document (optional: surat keterangan tidak mampu)
+  - Description (kenapa butuh bantuan)
+  - Target amount (minimum Rp 100.000, tidak ada maksimum)
+  - Campaign duration (min 7 hari, max 90 hari)
+  - Category (Buku Pelajaran, Seragam, Study Tour, Biaya Ujian, dll)
+- Upload dokumen pendukung (opsional: foto, surat keterangan tidak mampu)
 
 **Camp-002: Campaign Approval Flow**
 - Siswa submit campaign → status "Pending"
-- Admin review campaign
-- Admin approve → status "Approved" (go live)
-- Admin reject → status "Rejected" + rejection reason
+- **Admin Sekolah** review campaign (single approval — admin sekolah adalah gatekeeper utama)
+- Admin approve → status "Approved" (go live di halaman publik)
+- Admin reject → status "Rejected" + alasan rejection dikirim via WhatsApp
 
-**Camp-003: Browse Campaigns**
-- Public page: Donatur browse semua approved campaigns
-- Filter by: Category, Target amount, Progress
-- Sort by: Newest, Most funded, Urgent (ending soon)
-- Search by student name or campaign title
+**Camp-003: Browse Campaigns (Public)**
+- Public page: Donatur browse semua approved campaigns dari semua sekolah
+- Filter by: Kategori, Sekolah, Jenjang, Progress (% funded)
+- Sort by: Terbaru, Paling banyak didukung, Mendekati deadline
+- Search by: Nama siswa, judul kampanye, nama sekolah
 
 **Camp-004: Donate to Campaign**
 - Donatur pilih campaign
 - Input donation amount (min Rp 10.000)
-- Choose payment method (QRIS/VA)
-- Complete payment
-- Terima receipt + thank you email
+- Pilih metode pembayaran (QRIS/VA/GoPay via Xendit)
+- Guest checkout OK (no login required)
+- Terima receipt + WhatsApp/email thank you
 
 **Camp-005: Campaign Progress Tracking**
-- Real-time progress bar (% funded)
-- List of donors (anonymous option available)
+- Real-time progress bar (% funded dari target)
+- List donors (anonymous option tersedia)
 - Donation history & timeline
-- Auto-close campaign when target reached
+- Auto-close campaign saat target tercapai atau expired
 
 **Camp-006: Fund Disbursement**
-- Admin request disbursement saat campaign selesai
-- Transfer ke rekening sekolah
+- Dana terkumpul → masuk ke rekening sekolah (via Xendit disbursement)
+- Admin sekolah request disbursement saat campaign selesai
 - Mark campaign as "Completed"
-- Send notification ke siswa & donors
+- Kirim notifikasi WhatsApp ke siswa & donors
 
 #### **SHOULD HAVE (P1)**
 
-**Camp-007: Campaign Updates**
-- Siswa post update (e.g., "Terima kasih, buku sudah dibeli")
-- Upload photo proof (e.g., foto buku yang dibeli)
-- Send notification ke semua donors
+**Camp-007: Campaign Updates dari Siswa**
+- Siswa/orang tua post update progress (e.g., "Terima kasih, buku sudah dibeli")
+- Upload foto bukti penggunaan dana
+- Kirim notifikasi WhatsApp ke semua donors yang sudah donasi
 
-**Camp-008: Donation Receipt & Tax Deduction**
-- Official donation receipt (for tax deduction)
-- Include: Donor name, Amount, School info, Tax ID
+**Camp-008: Anonymous Donation**
+- Donatur pilih: Publik (nama ditampilkan) atau Anonim
+- Anonim: Tampil sebagai "Donatur Anonim" di halaman kampanye
 
-**Camp-009: Anonymous Donation**
-- Donatur pilih: Public (nama ditampilkan) atau Anonymous
-- Anonymous: Tampil sebagai "Donatur Anonim"
+**Camp-009: EDUFIN Super Admin — Campaign Moderation**
+- Super admin bisa suspend kampanye yang terindikasi fraud
+- Alert otomatis jika campaign dari sekolah yang di-suspend
 
 #### **COULD HAVE (P2)**
 
-**Camp-010: Recurring Donation**
-- Monthly recurring donation to specific campaign
-- Auto-debit setup
-
-**Camp-011: Campaign Sharing**
-- Share campaign link via WhatsApp, Facebook, Twitter
-- Campaign page optimized for social media preview
+**Camp-010: Campaign Sharing**
+- Share campaign link via WhatsApp langsung
+- Campaign page optimized untuk social media preview (Open Graph)
 
 ---
 
-### 5.5 Admin Dashboard & Reporting
+### 5.6 Admin Dashboard & Reporting
 
 #### **MUST HAVE (P0)**
 
-**Dash-001: Dashboard Overview**
+**Dash-001: Dashboard Overview (Per Sekolah)**
 - Summary cards:
-  - Total Siswa (aktif, non-aktif)
-  - Total Penerimaan SPP (bulan ini)
+  - Total Siswa (aktif)
+  - Total Penerimaan SPP bulan ini
   - Outstanding Payments (belum bayar + terlambat)
   - Pending Campaigns (waiting approval)
 - Chart: Persentase pembayaran per bulan (bar chart)
@@ -446,25 +515,25 @@ Menggunakan **MoSCoW Method** untuk prioritas:
 
 **Dash-002: Student Management**
 - CRUD students:
-  - Add student (NISN, Name, Class, Email, Phone, Parent info, SPP amount)
-  - Edit student info
-  - Deactivate student (graduated/pindah)
-  - View student detail (payment history, campaigns)
-- Bulk import students (CSV/Excel upload)
+  - Add student manual (NISN, Nama, Kelas, Tahun Ajaran, Email Ortu, No. HP Ortu)
+  - Bulk import via CSV
+  - Edit data siswa
+  - Deactivate student (lulus/pindah)
+  - View student detail (payment history, campaigns, cicilan)
 - Export student list (Excel)
 
 **Dash-003: Payment Report**
-- Filter by: Date range, Status, Class, Payment method
-- View: Table view (student name, amount, status, date)
+- Filter by: Date range, Status, Kelas, Payment method
+- View: Table (Nama Siswa, NISN, Kelas, Bulan, Amount, Status, Tanggal Bayar)
 - Export: Excel/PDF
 
 **Dash-004: Campaign Report**
-- View all campaigns: Pending, Approved, Rejected, Completed
-- Stats: Total raised, Success rate
+- View all campaigns milik sekolah ini: Pending, Approved, Rejected, Completed
+- Stats: Total terkumpul, Success rate
 - Export campaign data
 
 **Dash-005: Transaction History**
-- View all transactions (SPP + Donations)
+- View semua transaksi (SPP + Donations) dari sekolah ini
 - Filter by: Date, Type, Status
 - Export transaction log
 
@@ -472,98 +541,97 @@ Menggunakan **MoSCoW Method** untuk prioritas:
 
 **Dash-006: Financial Summary Report**
 - Monthly revenue breakdown (SPP vs Donations)
-- Outstanding amount by class
-- Payment method distribution (QRIS vs VA vs Cash)
-- Export as PDF (printable report)
+- Outstanding amount by kelas
+- Payment method distribution (QRIS vs VA vs E-wallet vs Cash)
+- Export as PDF (printable untuk kepala sekolah)
 
-**Dash-007: Analytics Dashboard**
-- Payment collection rate trend (month-over-month)
-- Late payment trend
-- Campaign conversion rate
-- Donor retention rate
-
-#### **COULD HAVE (P2)**
-
-**Dash-008: Notifications Management**
-- Bulk send announcement to all students
-- Target specific class
-- Schedule notification (send later)
-
-**Dash-009: School Profile Settings**
-- Edit school info (name, address, contact)
-- Bank account settings
-- Upload school logo
-- Configure SPP amount default
+**Dash-007: WhatsApp Blast**
+- Kirim pesan massal ke semua siswa/orang tua
+- Target specific kelas
+- Template pesan (reminder SPP, pengumuman, dll)
 
 ---
 
-### 5.6 Notifications System
+### 5.7 EDUFIN Super Admin Dashboard
 
 #### **MUST HAVE (P0)**
 
-**Notif-001: Email Notifications**
-- Payment confirmation (siswa)
-- Payment received (admin)
-- Campaign approved/rejected (siswa)
-- New donation received (siswa + admin)
-- Installment request approved/rejected (siswa)
+**Super-001: Platform Overview Dashboard**
+- Total sekolah terdaftar (aktif/suspended)
+- Total siswa aktif di semua sekolah
+- Platform GMV (total transaksi bulan ini)
+- Total kampanye aktif
 
-**Notif-002: In-App Notifications**
-- Bell icon with unread count
-- Notification center: List all notifications
+**Super-002: School Management**
+- Daftar semua sekolah (nama, NPSN, kota, jenjang, status)
+- Onboard sekolah baru
+- Edit data sekolah
+- Suspend / Reactivate sekolah
+- View detail sekolah (transaksi, siswa, admin)
+
+**Super-003: Platform Moderation**
+- View semua kampanye aktif di semua sekolah
+- Suspend kampanye yang terindikasi fraud
+- View laporan dari pengguna
+
+---
+
+### 5.8 Notifications System
+
+#### **MUST HAVE (P0)**
+
+**Notif-001: WhatsApp Notifications (via Fonnte/Wablas)**
+- Konfirmasi pembayaran SPP (ke orang tua)
+- Tagihan SPP baru tersedia (ke orang tua)
+- Payment reminder 7 hari & 1 hari sebelum due date
+- Cicilan request approved/rejected
+- Campaign approved/rejected (ke orang tua)
+- Donasi diterima (ke orang tua siswa pemilik campaign)
+- Receipt donasi (ke donatur)
+
+**Notif-002: In-App Notifications (Bell Icon)**
+- Bell icon dengan unread count
+- Notification center: List semua notifikasi
 - Mark as read/unread
 - Delete notification
+- Kategori: Info, Success, Warning, Urgent
 
 #### **SHOULD HAVE (P1)**
 
-**Notif-003: Payment Reminders**
-- Auto-send email 7 days before due date
-- Auto-send email 1 day before due date
-- Auto-send email when overdue
-
-**Notif-004: WhatsApp Notifications (via API)**
-- Send receipt via WhatsApp
-- Send reminder via WhatsApp
-- Requires WhatsApp Business API integration
-
-#### **COULD HAVE (P2)**
-
-**Notif-005: Push Notifications (PWA)**
+**Notif-003: Push Notifications (PWA)**
 - Browser push notifications
-- Mobile app push (jika ada native app)
+- Opt-in saat install PWA
+- Sama dengan konten WhatsApp notifications
+
+**Notif-004: Email Notifications**
+- Backup channel jika WhatsApp gagal
+- Payment receipt (PDF attachment)
+- Email undangan onboarding orang tua baru
 
 ---
 
-### 5.7 User Profile & Settings
+### 5.9 User Profile & Settings
 
 #### **MUST HAVE (P0)**
 
-**Prof-001: View Profile**
-- Siswa: NISN, Name, Class, Email, Phone, Parent info
-- Admin: Name, Email, School info
-- Donatur: Name, Email, Total donations
+**Prof-001: View Profile — Orang Tua/Siswa**
+- Profil Siswa: NISN, Nama, Kelas, Nama Ortu, Email, No. HP
+- Riwayat pembayaran SPP
+- Riwayat kampanye
 
-**Prof-002: Edit Profile**
-- Update: Name, Email, Phone
-- Cannot edit: NISN (immutable)
+**Prof-002: View Profile — Admin Sekolah**
+- Nama, Email, Jabatan, Sekolah, Permission level
+- Manage admin lain (jika Full Admin)
+
+**Prof-003: Edit Profile**
+- Update: Nama, Email, No. HP
 - Email change requires re-verification
+- Tidak bisa edit: NISN (immutable)
 
-**Prof-003: Change Password**
+**Prof-004: Change Password**
 - Enter old password
-- Enter new password (with strength indicator)
+- Enter new password (dengan strength indicator)
 - Confirm new password
-
-#### **SHOULD HAVE (P1)**
-
-**Prof-004: Upload Avatar**
-- Upload profile photo
-- Crop/resize image
-- Default: Generated initials avatar
-
-**Prof-005: Notification Preferences**
-- Toggle: Email notifications ON/OFF
-- Toggle: In-app notifications ON/OFF
-- Select notification types (payment, campaign, etc.)
 
 ---
 
@@ -577,271 +645,313 @@ Menggunakan **MoSCoW Method** untuk prioritas:
 - **Styling:** Tailwind CSS v4
 - **Charts:** Recharts
 - **Icons:** Lucide React
-- **State Management:** React Context API + useState
+- **State Management:** React Context API + useState + React Query (untuk server state)
 - **Forms:** React Hook Form + Zod validation
 - **HTTP Client:** Fetch API (native)
+- **PWA:** Vite PWA plugin (service worker, manifest, offline cache)
 
 #### **Backend**
 - **Database:** Supabase (PostgreSQL)
 - **Authentication:** Supabase Auth + JWT
-- **Storage:** Supabase Storage (for file uploads)
-- **Edge Functions:** Supabase Edge Functions (Deno runtime)
-- **Fallback:** LocalStorage (offline mode)
+- **Storage:** Supabase Storage (file upload: bukti transfer, foto kampanye, logo sekolah)
+- **Edge Functions:** Supabase Edge Functions (Deno runtime) — untuk webhook & business logic
 
 #### **Payment Gateway**
-- **Provider:** Midtrans
-- **Methods:** QRIS, Virtual Account (BCA, Mandiri)
-- **Integration:** Snap.js (frontend) + Server-side webhook
+- **Provider:** Xendit (pengganti Midtrans)
+- **Methods:** QRIS, Virtual Account (BCA, Mandiri, BNI, BRI), E-wallet (GoPay, OVO, DANA), Manual transfer, Cash
+- **Integration:** Xendit Invoice API (frontend redirect) + Webhook (backend)
+- **Disbursement:** Xendit Disbursement API (pencairan dana kampanye ke rekening sekolah)
 
-#### **Email Service**
-- **Provider:** Supabase (built-in email) atau SendGrid
-- **Templates:** HTML email templates
+#### **WhatsApp Notifications**
+- **Provider:** Fonnte atau Wablas (WhatsApp Business API)
+- **Trigger:** Server-side via Supabase Edge Functions
+- **Templates:** Pesan terstandarisasi per event type
 
 #### **Hosting & Deployment**
-- **Frontend:** Vercel / Netlify
+- **Frontend:** Vercel
 - **Backend:** Supabase (managed)
 - **Domain:** Custom domain (e.g., edufin.sch.id)
-- **SSL:** Auto SSL via hosting provider
+- **SSL:** Auto SSL via Vercel + Supabase
 
 ---
 
-### 6.2 Database Schema (Key Tables)
+### 6.2 Multi-Tenancy Architecture
 
-#### **users**
+```
+Architecture: Single Database, Shared Tables dengan school_id
+
+sekolah_1 → school_id: uuid-a
+sekolah_2 → school_id: uuid-b
+...
+
+Semua table utama (students, bills, campaigns, dll) memiliki kolom school_id
+Row Level Security (RLS) Supabase memastikan setiap sekolah hanya bisa akses data mereka sendiri
+Super Admin bypass RLS menggunakan service_role key
+```
+
+**Tenant Isolation:**
+- Supabase RLS policy: `WHERE school_id = auth.jwt() -> 'school_id'`
+- Super Admin menggunakan `service_role` key (bypass RLS)
+- Setiap JWT token menyertakan `school_id` dan `role` sebagai custom claims
+
+---
+
+### 6.3 Database Schema (Key Tables)
+
+#### **schools (Tenant Master)**
 ```sql
 - id: uuid (PK)
-- email: string (unique)
-- password_hash: string
-- role: enum ('siswa', 'sekolah', 'donatur')
-- verified: boolean
+- npsn: string (unique, 8 digits)
+- name: string
+- address: text
+- city: string
+- province: string
+- level: enum ('sd', 'smp', 'sma', 'smk')
+- logo_url: string (nullable)
+- bank_name: string
+- bank_account_number: string
+- bank_account_name: string
+- xendit_account_id: string (nullable, for disbursement)
+- status: enum ('active', 'suspended')
 - created_at: timestamp
-- updated_at: timestamp
+```
+
+#### **school_admins**
+```sql
+- id: uuid (PK)
+- user_id: uuid (FK → auth.users)
+- school_id: uuid (FK → schools)
+- name: string
+- email: string
+- role: string
+- permissions: jsonb (e.g., {"finance": true, "students": true, "campaigns": true})
+- is_super_admin: boolean (default false)
+- created_at: timestamp
 ```
 
 #### **students**
 ```sql
 - id: uuid (PK)
-- user_id: uuid (FK → users)
-- nisn: string (unique, 10 digits)
+- school_id: uuid (FK → schools)
+- user_id: uuid (FK → auth.users, nullable — linked saat orang tua accept invite)
+- nisn: string (10 digits)
 - name: string
-- class: string
-- phone: string
+- class: string (e.g., "7A", "10 IPA 1")
+- grade: integer (kelas ke berapa)
+- academic_year: string (e.g., "2025/2026")
 - parent_name: string
+- parent_email: string
 - parent_phone: string
 - address: text
-- spp_amount: integer (default SPP amount)
-- status: enum ('aktif', 'nonaktif')
+- spp_amount: integer
+- status: enum ('aktif', 'nonaktif', 'lulus')
+- invite_sent_at: timestamp (nullable)
+- invite_accepted_at: timestamp (nullable)
 - created_at: timestamp
 ```
 
 #### **bills**
 ```sql
 - id: uuid (PK)
+- school_id: uuid (FK → schools)
 - student_id: uuid (FK → students)
 - amount: integer
-- month: string (e.g., "Mei 2025")
+- late_fee: integer (default 0)
+- month: string (e.g., "Juni 2026")
 - due_date: date
 - status: enum ('lunas', 'belum_bayar', 'terlambat', 'cicilan')
 - paid_date: timestamp (nullable)
-- payment_method: enum ('qris', 'va_bca', 'va_mandiri', 'transfer', 'tunai')
-- transaction_id: string (nullable, from payment gateway)
+- payment_method: enum ('qris', 'va_bca', 'va_mandiri', 'va_bni', 'va_bri', 'gopay', 'ovo', 'dana', 'transfer', 'tunai')
+- xendit_invoice_id: string (nullable)
+- xendit_payment_url: string (nullable)
+- transfer_proof_url: string (nullable — untuk manual transfer)
+- notes: text (nullable)
 - created_at: timestamp
 ```
 
 #### **installments**
 ```sql
 - id: uuid (PK)
+- school_id: uuid (FK → schools)
 - bill_id: uuid (FK → bills)
+- student_id: uuid (FK → students)
 - total_periods: integer
-- current_period: integer
+- current_period: integer (default 0)
 - amount_per_period: integer
-- next_due_date: date
-- status: enum ('active', 'completed', 'defaulted')
+- reason: text (nullable)
+- status: enum ('pending_approval', 'active', 'completed', 'defaulted', 'rejected')
+- rejection_reason: text (nullable)
 - created_at: timestamp
+```
+
+#### **installment_periods**
+```sql
+- id: uuid (PK)
+- installment_id: uuid (FK → installments)
+- period_number: integer
+- amount: integer
+- due_date: date
+- paid_date: timestamp (nullable)
+- status: enum ('belum_bayar', 'lunas', 'terlambat')
+- xendit_invoice_id: string (nullable)
 ```
 
 #### **campaigns**
 ```sql
 - id: uuid (PK)
+- school_id: uuid (FK → schools)
 - student_id: uuid (FK → students)
 - title: string
 - description: text
 - target_amount: integer
 - current_amount: integer (default 0)
 - category: string
-- status: enum ('pending', 'approved', 'rejected', 'completed', 'cancelled')
+- status: enum ('pending', 'approved', 'rejected', 'completed', 'expired', 'suspended')
 - rejection_reason: text (nullable)
+- suspension_reason: text (nullable, diisi super admin)
 - start_date: date
 - end_date: date
+- documents: jsonb (array of file URLs)
 - created_at: timestamp
 - approved_at: timestamp (nullable)
+- completed_at: timestamp (nullable)
 ```
 
 #### **donations**
 ```sql
 - id: uuid (PK)
 - campaign_id: uuid (FK → campaigns)
-- donor_id: uuid (FK → users, nullable for guest)
+- donor_user_id: uuid (FK → auth.users, nullable for guest)
 - donor_name: string
+- donor_email: string
+- donor_phone: string (nullable)
 - amount: integer
 - message: text (nullable)
-- is_anonymous: boolean
-- payment_status: enum ('pending', 'success', 'failed')
-- transaction_id: string (nullable)
+- is_anonymous: boolean (default false)
+- payment_status: enum ('pending', 'success', 'failed', 'expired')
+- xendit_invoice_id: string (nullable)
+- xendit_payment_url: string (nullable)
 - created_at: timestamp
 ```
 
 #### **notifications**
 ```sql
 - id: uuid (PK)
-- user_id: uuid (FK → users)
+- user_id: uuid (FK → auth.users)
+- school_id: uuid (FK → schools, nullable)
 - title: string
 - message: text
 - type: enum ('info', 'success', 'warning', 'urgent')
+- category: enum ('payment', 'campaign', 'installment', 'system')
 - read: boolean (default false)
+- action_url: string (nullable — deep link ke halaman terkait)
 - created_at: timestamp
 ```
 
-#### **transactions**
+#### **whatsapp_logs**
 ```sql
 - id: uuid (PK)
-- type: enum ('spp_payment', 'donation', 'installment_payment')
-- related_id: uuid (FK → bills or donations)
-- amount: integer
-- status: enum ('pending', 'success', 'failed')
-- payment_method: string
-- transaction_id: string (from payment gateway)
+- recipient_phone: string
+- message: text
+- event_type: string (e.g., 'payment_reminder', 'payment_success', 'campaign_approved')
+- status: enum ('queued', 'sent', 'failed')
+- error_message: text (nullable)
+- sent_at: timestamp (nullable)
 - created_at: timestamp
 ```
 
 ---
 
-### 6.3 API Architecture
+### 6.4 API Architecture
 
-#### **REST API Structure**
-
-**Base URL:** `https://api.edufin.sch.id/v1` (atau Supabase URL)
+**Base:** Supabase REST API + Edge Functions
 
 **Authentication:**
 - Bearer token in `Authorization` header
-- JWT token from Supabase Auth
+- JWT token dari Supabase Auth (berisi `school_id`, `role`, `permissions` sebagai custom claims)
 
-**Key Endpoints:**
+**Key Edge Functions:**
 
 ```
-# Authentication
-POST   /auth/register
-POST   /auth/login
-POST   /auth/logout
-POST   /auth/forgot-password
-POST   /auth/reset-password
+# Payment
+POST   /functions/v1/xendit-create-invoice    # Create Xendit invoice untuk SPP/cicilan
+POST   /functions/v1/xendit-webhook           # Handle Xendit webhook callback
+POST   /functions/v1/xendit-disbursement      # Request pencairan dana kampanye
 
-# Students (Admin only)
-GET    /students
-POST   /students
-GET    /students/:id
-PUT    /students/:id
-DELETE /students/:id
+# WhatsApp
+POST   /functions/v1/whatsapp-send            # Send WhatsApp message
+POST   /functions/v1/whatsapp-blast           # Bulk WhatsApp blast
 
-# Bills
-GET    /bills                    # List all bills (admin) or my bills (student)
-POST   /bills                    # Create bill (admin)
-GET    /bills/:id
-PUT    /bills/:id
-DELETE /bills/:id
+# Scheduled Jobs
+POST   /functions/v1/payment-reminder-cron    # Daily cron untuk payment reminders
+POST   /functions/v1/campaign-expiry-cron     # Daily cron untuk expire campaigns
 
-# Payments
-POST   /payments/initiate        # Initiate payment (returns payment URL)
-POST   /payments/webhook         # Midtrans webhook callback
-GET    /payments/:id/receipt     # Download receipt PDF
-
-# Installments
-POST   /installments/request     # Student request installment
-PUT    /installments/:id/approve # Admin approve installment
-PUT    /installments/:id/reject  # Admin reject installment
-
-# Campaigns
-GET    /campaigns                # List campaigns (public or admin view)
-POST   /campaigns                # Create campaign (student)
-GET    /campaigns/:id
-PUT    /campaigns/:id/approve    # Admin approve
-PUT    /campaigns/:id/reject     # Admin reject
-
-# Donations
-POST   /donations                # Make donation
-GET    /donations/campaign/:id   # List donations for campaign
-
-# Reports
-GET    /reports/payments         # Payment report (admin)
-GET    /reports/campaigns        # Campaign report (admin)
-GET    /reports/financial        # Financial summary (admin)
-
-# Notifications
-GET    /notifications            # Get my notifications
-PUT    /notifications/:id/read   # Mark as read
-DELETE /notifications/:id
+# Onboarding
+POST   /functions/v1/import-students-csv      # Process CSV import & send invites
+POST   /functions/v1/send-parent-invite       # Send invite email ke orang tua
 ```
 
 ---
 
-### 6.4 Payment Integration (Midtrans)
+### 6.5 Payment Integration (Xendit)
 
-#### **Flow:**
+#### **Flow — SPP Payment:**
 
-1. **Frontend:** User klik "Bayar"
-2. **Backend:** Create transaction di Midtrans
+1. **Frontend:** User klik "Bayar SPP"
+2. **Backend (Edge Function):** Create Xendit Invoice
    ```javascript
-   POST https://app.sandbox.midtrans.com/snap/v1/transactions
+   POST https://api.xendit.co/v2/invoices
    {
-     "transaction_details": {
-       "order_id": "BILL-001-20250531",
-       "gross_amount": 725000
+     "external_id": "BILL-{billId}-{timestamp}",
+     "amount": 725000,
+     "description": "SPP Ahmad Fauzi - Juni 2026",
+     "invoice_duration": 86400,  // 24 jam
+     "customer": {
+       "given_names": "Ibu Siti",
+       "email": "siti@email.com",
+       "mobile_number": "+6281234567890"
      },
-     "customer_details": {
-       "first_name": "Ahmad Fauzi",
-       "email": "ahmad@example.com",
-       "phone": "081234567890"
-     }
+     "payment_methods": ["QRIS", "BCA", "MANDIRI", "BNI", "BRI", "GOPAY", "OVO", "DANA"]
    }
    ```
-3. **Backend:** Return `snap_token` to frontend
-4. **Frontend:** Show Midtrans Snap popup
-   ```javascript
-   window.snap.pay(snapToken, {
-     onSuccess: (result) => { /* update status */ },
-     onPending: (result) => { /* wait for payment */ },
-     onError: (result) => { /* handle error */ },
-     onClose: () => { /* user closed popup */ }
-   })
-   ```
-5. **Midtrans:** Send webhook to backend when payment success
-6. **Backend:** Update bill status to "lunas"
-7. **Backend:** Send notification to student & admin
+3. **Backend:** Simpan `invoice_id` & `invoice_url` ke tabel `bills`
+4. **Frontend:** Redirect ke Xendit invoice page (atau embed via iframe)
+5. **Xendit:** Kirim webhook saat payment sukses
+6. **Backend:** Update bill status ke "Lunas", kirim WhatsApp notifikasi
+
+#### **Flow — Disbursement Kampanye:**
+
+1. Admin sekolah klik "Request Pencairan" di campaign yang selesai
+2. Backend create Xendit Disbursement ke rekening sekolah
+3. Update campaign status ke "Completed"
+4. Kirim WhatsApp notifikasi ke siswa & semua donors
 
 #### **Webhook Verification:**
-- Verify signature hash dari Midtrans
-- Check transaction status
+- Verify `x-callback-token` dari Xendit (secret token)
+- Check `status` dari payload
 - Update database atomically
 
 ---
 
-### 6.5 LocalStorage Fallback Strategy
+### 6.6 PWA Configuration
 
-#### **When to Use LocalStorage:**
-- User offline (no internet connection)
-- Supabase unavailable (downtime)
-- Demo mode (no database setup)
+**Service Worker:**
+- Cache strategy: Cache-first untuk assets statis
+- Network-first untuk API calls
+- Background sync untuk actions saat offline
 
-#### **What to Store:**
-- User session (JWT token)
-- Cached bills & payment history
-- Draft campaign (before submit)
-- Notification history
+**Manifest:**
+- App name: "EDUFIN"
+- Short name: "EDUFIN"
+- Start URL: `/`
+- Display: `standalone`
+- Theme color: `#1677FF`
+- Icons: 192x192, 512x512
 
-#### **Sync Strategy:**
-- On reconnect: Sync local changes to Supabase
-- Conflict resolution: Server wins (last write wins)
-- Show "Offline Mode" indicator in UI
+**Offline Capability:**
+- Siswa bisa lihat tagihan & riwayat bayar saat offline (dari cache)
+- Tidak bisa bayar saat offline (perlu koneksi ke Xendit)
+- Show "Mode Offline" indicator
 
 ---
 
@@ -849,28 +959,37 @@ DELETE /notifications/:id
 
 ### 7.1 Platform Strategy
 
-#### **Siswa/Donatur: Mobile-First**
-- **Primary:** Mobile web (responsive)
-- **Secondary:** Desktop web (same responsive design)
-- **Future:** PWA (installable, offline-capable)
+#### **Siswa/Orang Tua: Mobile PWA (Primary)**
+- **Primary Platform:** Mobile PWA (installable, offline-capable, push notifications)
+- **Secondary:** Desktop web (responsive)
 
 **Mobile Design Principles:**
 - Max container width: 430px
 - Base font size: 14px
 - Touch-friendly buttons: min 44px height
-- Bottom navigation for easy thumb reach
+- Bottom navigation untuk easy thumb reach
 - Swipeable cards/modals
+- PWA install prompt
 
-#### **Admin Sekolah: Desktop-First**
+#### **Donatur: Mobile Web (Primary)**
+- **Primary:** Mobile web (public campaign browsing)
+- Tidak perlu install PWA untuk guest checkout
+- Optimized untuk share via WhatsApp
+
+#### **Admin Sekolah: Desktop Web (Primary)**
 - **Primary:** Desktop web (full-width layout)
 - **Secondary:** Tablet (responsive sidebar)
-- **Not optimized for:** Mobile (admin use desktop)
+- **Not optimized for:** Mobile
 
 **Desktop Design Principles:**
-- Sidebar navigation (fixed)
+- Sidebar navigation (fixed, collapsible)
 - Multi-column layouts (2-4 columns)
-- Data tables for large datasets
-- Keyboard shortcuts (future enhancement)
+- Data tables dengan sorting & filtering
+- Keyboard-friendly
+
+#### **EDUFIN Super Admin: Desktop Web**
+- Dedicated super admin UI
+- Platform-level dashboard
 
 ---
 
@@ -878,22 +997,21 @@ DELETE /notifications/:id
 
 #### **Color Palette:**
 - **Primary Blue:** `#1677FF` (CTA, links, active states)
-- **Success Green:** `#52C41A` (lunas, approved, positive actions)
+- **Success Green:** `#52C41A` (lunas, approved, positive)
 - **Warning Orange:** `#FD9A16` (pending, belum bayar, alerts)
 - **Danger Red:** `#F95654` (terlambat, rejected, errors)
-- **Purple:** `#722ED1` (stats, charts, growth indicators)
-- **Gray Scale:** `#F5F7FA` (background), `#8C8C8C` (text secondary)
+- **Purple:** `#722ED1` (stats, charts, growth)
+- **Gray Scale:** `#F5F7FA` (background), `#8C8C8C` (secondary text)
 
 #### **Typography:**
-- **Font Family:** System font stack (sans-serif)
+- **Font Family:** Inter (Google Fonts)
 - **Base Size:** 14px (mobile), 16px (desktop)
 - **Headings:** Bold, 1.5x-2x base size
-- **Body:** Regular, 14-16px
 
 #### **Components:**
-- **Buttons:** Rounded corners (8px), solid color, hover effects
-- **Cards:** White background, subtle shadow, 12px border radius
-- **Inputs:** Border, focus state, error state
+- **Buttons:** Rounded corners (8px), solid color, hover states, loading state
+- **Cards:** White bg, subtle shadow (0 2px 8px rgba(0,0,0,0.08)), 12px radius
+- **Inputs:** Border (1px #d9d9d9), focus state (blue border), error state (red)
 - **Status Badges:** Color-coded, rounded pill shape
 
 ---
@@ -901,33 +1019,33 @@ DELETE /notifications/:id
 ### 7.3 Localization
 
 #### **Language:**
-- **Primary:** Bahasa Indonesia
-- **Future:** English (for international donors)
+- **Primary:** Bahasa Indonesia (semua UI teks)
+- **Future:** English (untuk donatur internasional)
 
 #### **Regional Settings:**
 - **Timezone:** WIB (UTC+7)
-- **Date Format:** DD/MM/YYYY atau "31 Mei 2025"
-- **Currency:** Rupiah (Rp) dengan format: `Rp 1.000.000`
-- **Number Format:** Dot separator untuk ribuan: `1.000.000`
+- **Date Format:** "7 Juni 2026" atau DD/MM/YYYY
+- **Currency:** Rupiah (Rp) — format: `Rp 1.000.000`
+- **Number Format:** Dot separator — `1.000.000`
 
 ---
 
 ### 7.4 Accessibility
 
-#### **Target:** WCAG 2.1 Level AA (recommended standard)
+**Target:** WCAG 2.1 Level AA
 
 **Key Requirements:**
 - Color contrast ratio: 4.5:1 minimum
 - Keyboard navigation support
 - Screen reader friendly (semantic HTML)
-- Alt text for images
-- Error messages clear and specific
+- Alt text untuk semua images
+- Error messages jelas dan spesifik
 - Form labels properly associated
 
-#### **Performance:**
-- **Target:** 3G network compatibility
-- **Minimum:** 4G recommended for payment flow
-- **Offline:** View-only mode for cached data
+**Network Performance:**
+- Target: 3G compatible (data-light pages)
+- Payment flow: 4G minimum recommended
+- PWA offline: View-only mode dari cached data
 
 ---
 
@@ -936,174 +1054,173 @@ DELETE /notifications/:id
 ### 8.1 Data Privacy
 
 #### **Compliance:**
-- **UU PDP (Indonesia):** Personal data protection law
-- **GDPR (if applicable):** For international donors
-- **Internal Policy:** Minimal data collection, clear consent
+- **UU PDP (Indonesia):** Personal data protection law — wajib comply
+- **GDPR:** Jika ada donatur internasional
 
 #### **Data Handling:**
-- **Minors (< 18 years):** Parental/school consent implied via school enrollment
-- **Retention:** Transaction data: 5 years, Personal data: Until account deletion
-- **Right to be Forgotten:** User can request data deletion (GDPR compliance)
+- **Minors (< 18 tahun):** Consent via orang tua (implied dalam proses onboarding — email undangan ke orang tua)
+- **Retention:** Transaction data: 5 tahun, Personal data: Sampai akun dihapus
+- **Right to be Forgotten:** Orang tua bisa request penghapusan data anak
 
 ---
 
 ### 8.2 Financial Compliance
 
 #### **EDUFIN's Role:**
-- **Technology Provider** (not payment facilitator)
-- All payments processed via **Midtrans** (licensed payment gateway)
-- No direct money handling by EDUFIN platform
-
-#### **KYC Requirements:**
-
-**Sekolah:**
-- ✅ NPSN verification
-- ✅ Bank account verification (for disbursement)
-- ✅ Principal/admin identity verification
-
-**Siswa:**
-- ✅ NISN verification (against school records)
-- ✅ Email verification
-- ❌ No ID card required (minor)
-
-**Donatur:**
-- ✅ Email verification
-- ❌ No KYC for donations < Rp 1 juta
-- ✅ Phone verification for donations > Rp 1 juta (optional)
+- **Technology Provider** (bukan payment facilitator)
+- Semua pembayaran diproses via **Xendit** (licensed payment gateway OJK)
+- EDUFIN tidak menyimpan atau mengelola uang secara langsung
+- Dana kampanye ditransfer langsung dari Xendit ke rekening sekolah
 
 ---
 
 ### 8.3 Security Measures
 
 #### **Infrastructure Security:**
-- ✅ SSL/TLS encryption (HTTPS only)
-- ✅ Supabase Row Level Security (RLS) enabled
-- ✅ API rate limiting (prevent DDoS)
-- ✅ CORS policy (restrict origins)
+- ✅ SSL/TLS encryption (HTTPS only, enforce di Vercel)
+- ✅ Supabase Row Level Security (RLS) — isolasi data per sekolah
+- ✅ API rate limiting (Supabase built-in + edge function limits)
+- ✅ CORS policy (restrict origins ke domain EDUFIN)
 
 #### **Application Security:**
 - ✅ Password hashing (bcrypt via Supabase Auth)
-- ✅ JWT token expiration (24 hours)
-- ✅ SQL injection prevention (Supabase ORM)
-- ✅ XSS protection (React escaping)
-- ✅ CSRF tokens (for sensitive actions)
+- ✅ JWT token expiration (configurable, default 1 jam access token)
+- ✅ Refresh token rotation
+- ✅ SQL injection prevention (Supabase PostgREST parameterized queries)
+- ✅ XSS protection (React auto-escaping)
 
 #### **Payment Security:**
-- ✅ PCI DSS compliance (via Midtrans)
-- ✅ No card data stored locally
-- ✅ Payment webhook signature verification
-- ✅ Transaction ID uniqueness validation
+- ✅ PCI DSS compliance (via Xendit — no card data stored by EDUFIN)
+- ✅ Xendit webhook signature verification (`x-callback-token`)
+- ✅ Idempotency check (prevent duplicate payment processing)
+- ✅ Order ID uniqueness validation
 
 #### **Data Backup:**
 - ✅ Daily automated backups (Supabase)
-- ✅ Point-in-time recovery (7 days retention)
-- ✅ Disaster recovery plan (restore from backup)
+- ✅ Point-in-time recovery (Supabase Pro: 7 hari)
+- ✅ Disaster recovery plan
 
 ---
 
 ## 9. TIMELINE & MILESTONES
 
-### 9.1 MVP Development Phases
+**Status:** Ongoing project — no fixed deadline
 
-**Status:** Flexible timeline (no fixed deadline)
+### 9.1 Development Phases
 
-#### **Phase 1: Foundation (Weeks 1-4)**
-- ✅ Setup project structure (React + Tailwind + Supabase)
+#### **Phase 1: Foundation — Multi-Tenant Architecture (Current)**
+- ✅ Setup project (React + Tailwind + Supabase)
 - ✅ Authentication system (register, login, logout)
-- ✅ User roles implementation (siswa, sekolah, donatur)
-- ✅ Basic dashboard layouts (mobile & desktop)
-- ✅ Database schema design & implementation
+- ✅ Basic user roles (siswa, sekolah, donatur)
+- ✅ Basic dashboard layouts
+- [ ] Refactor database schema untuk multi-tenancy (add `school_id` everywhere)
+- [ ] Implement Supabase RLS policies per tenant
+- [ ] EDUFIN Super Admin panel (basic)
+- [ ] School onboarding flow
 
-**Deliverable:** Working auth system + empty dashboards
-
----
-
-#### **Phase 2: SPP Payment Core (Weeks 5-8)**
-- [ ] Tagihan management (CRUD by admin)
-- [ ] View tagihan (student side)
-- [ ] Midtrans integration (QRIS + VA)
-- [ ] Payment flow (initiate → pay → confirm)
-- [ ] Payment history & receipt
-
-**Deliverable:** End-to-end SPP payment working
+**Deliverable:** Multi-tenant architecture working, super admin bisa onboard sekolah baru
 
 ---
 
-#### **Phase 3: Cicilan & Notifications (Weeks 9-10)**
+#### **Phase 2: Onboarding & Student Management**
+- [ ] Bulk CSV import siswa
+- [ ] Email invitation system (orang tua)
+- [ ] Multi-admin per sekolah dengan custom permissions
+- [ ] Student profile lengkap
+- [ ] Admin sekolah CRUD students
+
+**Deliverable:** SDN 3 Malang onboarding selesai dengan semua siswa dan orang tua aktif
+
+---
+
+#### **Phase 3: SPP Payment via Xendit**
+- [ ] Xendit integration (Invoice API + Webhook)
+- [ ] Tagihan management (admin CRUD)
+- [ ] Payment flow (QRIS, VA, E-wallet)
+- [ ] Manual transfer flow (upload bukti)
+- [ ] Cash payment input (admin)
+- [ ] Payment receipt (PDF + WhatsApp)
+- [ ] WhatsApp notifications (payment success, reminder)
+
+**Deliverable:** End-to-end SPP payment working dengan Xendit
+
+---
+
+#### **Phase 4: Cicilan & Notifications**
 - [ ] Installment request flow
 - [ ] Installment approval (admin)
-- [ ] Installment payment tracking
-- [ ] Email notification system
-- [ ] In-app notifications
+- [ ] Installment payment per periode
+- [ ] WhatsApp reminder system (cron-based)
+- [ ] In-app notification center
+- [ ] PWA push notifications
 
-**Deliverable:** Installment feature + notification system
+**Deliverable:** Cicilan feature + full notification system
 
 ---
 
-#### **Phase 4: Fundraising/Campaign (Weeks 11-14)**
-- [ ] Campaign creation (student)
-- [ ] Campaign approval (admin)
-- [ ] Public campaign browsing
-- [ ] Donation flow
+#### **Phase 5: Fundraising Platform**
+- [ ] Campaign creation (siswa/orang tua)
+- [ ] Campaign approval (admin sekolah)
+- [ ] Public campaign browsing (semua sekolah)
+- [ ] Donation flow via Xendit
+- [ ] Xendit disbursement ke rekening sekolah
 - [ ] Campaign progress tracking
-- [ ] Fund disbursement
+- [ ] Campaign updates (foto proof)
+- [ ] Super admin moderation tools
 
-**Deliverable:** Full fundraising platform
+**Deliverable:** Full fundraising platform live
 
 ---
 
-#### **Phase 5: Reporting & Analytics (Weeks 15-16)**
-- [ ] Admin dashboard analytics
-- [ ] Payment reports (filter, export)
+#### **Phase 6: Reporting & Analytics**
+- [ ] Admin dashboard analytics (per sekolah)
+- [ ] Payment reports (filter, export Excel/PDF)
 - [ ] Campaign reports
 - [ ] Financial summary
-- [ ] Transaction history
+- [ ] Super admin platform analytics
 
-**Deliverable:** Complete admin reporting tools
+**Deliverable:** Complete reporting tools
 
 ---
 
-#### **Phase 6: Polish & Testing (Weeks 17-18)**
+#### **Phase 7: PWA & Polish**
+- [ ] PWA configuration (service worker, manifest, offline cache)
+- [ ] Performance optimization (lazy loading, code splitting)
 - [ ] UI/UX refinement
 - [ ] Bug fixes
-- [ ] Performance optimization
 - [ ] Security audit
-- [ ] User acceptance testing (UAT) with SDN 3 Malang
+- [ ] UAT dengan SDN 3 Malang
 
-**Deliverable:** Production-ready MVP
-
----
-
-#### **Phase 7: Deployment & Launch (Week 19)**
-- [ ] Production deployment (Vercel + Supabase)
-- [ ] Domain setup & SSL
-- [ ] Data migration (if any existing data)
-- [ ] User training (admin sekolah)
-- [ ] Soft launch (beta testing with limited users)
-
-**Deliverable:** Live platform
+**Deliverable:** Production-ready PWA
 
 ---
 
-### 9.2 Post-MVP Roadmap
+#### **Phase 8: Multi-School Expansion (Jawa Timur)**
+- [ ] Onboarding toolkit untuk sekolah baru (docs, training video)
+- [ ] Self-service onboarding (sekolah bisa daftar sendiri)
+- [ ] Scale testing (simulasi 50+ sekolah concurrent)
+- [ ] Customer support channel setup
 
-#### **v1.1 (Post-Launch + 1 month)**
-- [ ] WhatsApp notifications integration
-- [ ] Bulk operations (admin)
-- [ ] Advanced filtering & search
-- [ ] Mobile app (PWA conversion)
+**Deliverable:** Platform ready untuk 50+ sekolah di Jawa Timur
 
-#### **v1.2 (Post-Launch + 3 months)**
-- [ ] Recurring payments (auto-debit)
-- [ ] Multiple payment methods (e-wallet: GoPay, OVO, DANA)
-- [ ] Campaign sharing (social media integration)
-- [ ] Donor leaderboard & recognition
+---
 
-#### **v2.0 (Long-term: Multi-School Platform)**
-- [ ] Multi-tenancy architecture
-- [ ] School onboarding flow
-- [ ] Platform admin dashboard
-- [ ] White-label option for schools
+### 9.2 Post-Expansion Roadmap
+
+#### **v2.0 — Revenue Model**
+- [ ] Define dan implement business model (subscription/platform fee)
+- [ ] Billing system untuk sekolah (jika subscription)
+- [ ] Advanced analytics untuk super admin
+
+#### **v2.1 — Ecosystem Features**
+- [ ] Recurring payment (auto-debit bulanan)
+- [ ] Integrasi dengan sistem akademik (nilai, absensi)
+- [ ] API untuk sekolah yang mau integrasi dengan sistem existing
+
+#### **v3.0 — National Expansion**
+- [ ] Ekspansi ke luar Jawa Timur
+- [ ] White-label untuk dinas pendidikan kabupaten/kota
+- [ ] Mobile native app (React Native)
 
 ---
 
@@ -1113,11 +1230,12 @@ DELETE /notifications/:id
 
 | Risk | Impact | Probability | Mitigation |
 |------|--------|-------------|------------|
-| **Midtrans integration failure** | High | Low | Use sandbox mode for testing; have fallback to manual payment |
-| **Supabase downtime** | High | Low | LocalStorage fallback; monitor uptime; have backup plan |
-| **Payment webhook not received** | Medium | Medium | Implement retry mechanism; manual verification by admin |
-| **Database performance** | Medium | Low | Use indexes; optimize queries; cache frequently accessed data |
-| **Security breach** | High | Low | Regular security audits; follow OWASP best practices; use Supabase RLS |
+| **Xendit API changes/downtime** | High | Low | Monitor Xendit status page; fallback ke manual transfer sementara; test di sandbox |
+| **Supabase RLS misconfiguration** | High | Medium | Comprehensive testing per role; security audit sebelum launch |
+| **WhatsApp API blocked/limited** | Medium | Medium | Backup via email; gunakan Fonnte (resmi) untuk avoid spam |
+| **PWA not supported** | Low | Low | Fallback ke mobile web biasa tanpa install prompt |
+| **CSV import data corrupt** | Medium | Medium | Validasi ketat saat import; preview sebelum confirm; rollback capability |
+| **Supabase downtime** | High | Low | LocalStorage cache untuk view-only; monitor uptime |
 
 ---
 
@@ -1125,11 +1243,11 @@ DELETE /notifications/:id
 
 | Risk | Impact | Probability | Mitigation |
 |------|--------|-------------|------------|
-| **Low user adoption** | High | Medium | User training; onboarding assistance; gather feedback early |
-| **Payment gateway fees too high** | Medium | Low | Negotiate rates with Midtrans; consider alternative gateways |
-| **Donors don't trust platform** | High | Medium | Transparency (show campaign updates); social proof (testimonials) |
-| **Admin resistance to change** | Medium | Medium | Involve admin early in design; provide comprehensive training |
-| **Regulatory compliance issues** | High | Low | Consult legal expert; follow OJK guidelines; use licensed payment gateway |
+| **Low school adoption** | High | Medium | Start dengan SDN 3 Malang sebagai success story; testimonial; demo hands-on |
+| **Orang tua resistance** | Medium | Medium | UI super simple; training di sekolah; WA support group per sekolah |
+| **Donor trust** | High | Medium | Transparency penuh (campaign updates, foto bukti); school verification badge |
+| **Admin sekolah tidak mau ganti dari Excel** | High | High | Import dari Excel existing; migration assistance; tunjukkan time-saving |
+| **Regulatory issue (OJK)** | High | Low | EDUFIN sebagai tech provider; Xendit yang licensed; consult legal expert |
 
 ---
 
@@ -1137,10 +1255,10 @@ DELETE /notifications/:id
 
 | Risk | Impact | Probability | Mitigation |
 |------|--------|-------------|------------|
-| **Lack of technical support** | Medium | Low | Document everything; provide admin training; have support channel (WhatsApp/email) |
-| **Data loss** | High | Very Low | Daily backups; test restore procedure; have disaster recovery plan |
-| **User error (wrong payment amount)** | Low | Medium | Clear UI; confirmation dialogs; allow payment cancellation (before processing) |
-| **Campaign fraud** | Medium | Low | School approval required; verify documents; monitor suspicious activity |
+| **Campaign fraud** | High | Low | School approval required; document verification; super admin moderation |
+| **Disbursement ke rekening salah** | High | Low | Double-confirm rekening sekolah saat setup; admin re-enter rekening saat request disbursement |
+| **Data breach** | High | Very Low | RLS ketat; encrypt sensitive data; regular audit; responsible disclosure policy |
+| **Scale issues saat 50+ sekolah** | Medium | Medium | Load testing sebelum ekspansi; optimize query dengan index; cache heavy queries |
 
 ---
 
@@ -1148,28 +1266,55 @@ DELETE /notifications/:id
 
 ### 11.1 Glossary
 
-- **SPP:** Sumbangan Pembinaan Pendidikan (monthly school fee in Indonesia)
-- **NISN:** Nomor Induk Siswa Nasional (national student ID number, 10 digits)
-- **NPSN:** Nomor Pokok Sekolah Nasional (national school ID number, 8 digits)
+- **SPP:** Sumbangan Pembinaan Pendidikan (monthly school fee)
+- **NISN:** Nomor Induk Siswa Nasional (national student ID, 10 digits)
+- **NPSN:** Nomor Pokok Sekolah Nasional (national school ID, 8 digits)
 - **QRIS:** Quick Response Code Indonesian Standard (unified QR payment)
-- **VA:** Virtual Account (bank transfer via unique account number)
+- **VA:** Virtual Account (bank transfer via unique virtual account number)
 - **Cicilan:** Installment payment plan
 - **Kampanye:** Fundraising campaign
-- **Donatur:** Donor (person who donates to campaign)
+- **Donatur:** Donor
+- **Tenant:** Satu sekolah dalam arsitektur multi-tenant
+- **PWA:** Progressive Web App (web app yang bisa di-install di smartphone)
+- **RLS:** Row Level Security (Supabase feature untuk isolasi data per user/tenant)
+- **Xendit:** Payment gateway Indonesia (pengganti Midtrans dalam arsitektur EDUFIN v2)
 
-### 11.2 References
+### 11.2 Key Decisions Log (dari Grill-Me Session — 7 Juni 2026)
+
+| Keputusan | Pilihan |
+|-----------|---------|
+| Target ekspansi 12 bulan | 50+ sekolah di Jawa Timur |
+| Jenjang target | SD + SMP + SMA/SMK |
+| Business model | Gratis semua (fokus adoption dulu) |
+| Payment gateway | **Xendit** (ganti dari Midtrans) |
+| Payment methods | QRIS, VA (BCA/Mandiri/BNI/BRI), GoPay/OVO/DANA, Transfer Manual, Cash |
+| Admin per sekolah | Multi-admin dengan custom permissions |
+| Campaign approval | Single approval — admin sekolah |
+| Dana kampanye | Masuk rekening sekolah (sekolah salurkan ke siswa) |
+| Student registration | Admin import CSV → sistem kirim email undangan ke orang tua |
+| Student login | Email + Password (NISN sebagai identifier profil, bukan login) |
+| Donatur login | Email + Password atau Google OAuth atau Guest checkout |
+| Platform siswa | **PWA** (Progressive Web App) |
+| Notifikasi | **WhatsApp** (primary) + In-app + PWA push |
+| Super Admin | Ada — EDUFIN tim bisa manage semua sekolah |
+| Timeline | Ongoing (no fixed deadline) |
+| Project status | Hybrid — akademik dengan roadmap ke startup |
+
+### 11.3 References
 
 - **CONTEXT.md:** Domain vocabulary & architecture decisions
-- **Database Schema:** See Section 6.2
-- **API Endpoints:** See Section 6.3
-- **Midtrans Documentation:** https://docs.midtrans.com
+- **DESIGN_SYSTEM.md:** UI component specifications
+- **TECH_STACK.md:** Detailed technology decisions
+- **Xendit Documentation:** https://docs.xendit.co
 - **Supabase Documentation:** https://supabase.com/docs
+- **Fonnte Documentation:** https://fonnte.com/docs (WhatsApp API)
 
-### 11.3 Change Log
+### 11.4 Change Log
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 1.0 | 2025-05-31 | Product Team | Initial PRD based on GRILL-ME session |
+| 1.0 | 2025-05-31 | Product Team | Initial PRD |
+| 2.0 | 2026-06-07 | Product Team | Major update: Xendit, PWA, multi-tenant, WhatsApp notif, multi-admin, EDUFIN super admin, expansion ke 50+ sekolah Jawa Timur |
 
 ---
 
@@ -1179,8 +1324,10 @@ DELETE /notifications/:id
 
 ## 📌 Next Steps
 
-1. ✅ **Review PRD:** Stakeholders review & approve this document
-2. ⏭️ **Convert to Issues:** Create `ISSUES.md` with GitHub Issues breakdown
-3. 🚀 **Start Development:** Begin Phase 1 (Foundation)
+1. ✅ **PRD v2.0 Complete** — dokumen ini
+2. ⏭️ **Refactor ke Multi-Tenant:** Tambahkan `school_id` ke semua tabel + RLS policies
+3. ⏭️ **Migrasi ke Xendit:** Ganti semua Midtrans integration ke Xendit
+4. ⏭️ **Implement WhatsApp:** Integrasi Fonnte/Wablas untuk notifikasi
+5. ⏭️ **PWA Setup:** Configure Vite PWA plugin
 
 **Questions or feedback?** Contact: product@edufin.sch.id

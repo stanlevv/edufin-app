@@ -9,75 +9,47 @@ function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
 }
 
-// ─── Midtrans Service ────────────────────────────────────────────────────────────────
+// ─── Xendit Service ───────────────────────────────────────────────────────────
+// Xendit menggunakan model redirect (bukan popup JS seperti Midtrans Snap).
+// Alur: Buat invoice → User di-redirect ke halaman Xendit → Bayar →
+// Xendit redirect kembali ke success/failed URL yang kita tentukan.
 
-// Declare Midtrans snap globally (loaded via CDN in index.html)
-declare global {
-  interface Window {
-    snap?: {
-      pay: (
-        snapToken: string,
-        options: {
-          onSuccess?: (result: any) => void;
-          onPending?: (result: any) => void;
-          onError?: (result: any) => void;
-          onClose?: () => void;
-        }
-      ) => void;
-    };
-  }
-}
-
-const MIDTRANS_CLIENT_KEY = import.meta.env.VITE_MIDTRANS_CLIENT_KEY as string;
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
-/** Load Midtrans Snap.js script dynamically */
-function loadMidtransSnap(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (window.snap) { resolve(); return; }
-    const scriptId = "midtrans-snap-js";
-    if (document.getElementById(scriptId)) { resolve(); return; }
-    const script = document.createElement("script");
-    script.id = scriptId;
-    script.src = "https://app.sandbox.midtrans.com/snap/snap.js";
-    script.setAttribute("data-client-key", MIDTRANS_CLIENT_KEY || "");
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Gagal memuat Midtrans Snap"));
-    document.head.appendChild(script);
-  });
-}
-
-async function createMidtransTransaction(
-  billIds: number[],
+/**
+ * Buat Xendit Invoice melalui Vercel Serverless Function.
+ * Returns invoice URL untuk redirect ke halaman pembayaran Xendit.
+ */
+async function createXenditInvoice(
+  billIds: string[],
   amount: number,
   customerName: string,
-  customerEmail: string
-): Promise<{ snapToken: string; orderId: string }> {
-  // Midtrans membatasi order_id maksimal 50 karakter.
-  // Gunakan timestamp dan random string pendek agar selalu unik dan di bawah 50 char.
+  customerEmail: string,
+  description?: string
+): Promise<{ invoiceId: string; invoiceUrl: string; externalId: string }> {
   const shortRandom = Math.random().toString(36).substring(2, 6).toUpperCase();
-  const orderId = `EDUFIN-${Date.now()}-${shortRandom}`;
-  // Di lingkungan produksi (Vercel), kita cukup memanggil endpoint /api
-  // yang akan dilayani oleh Vercel Serverless Functions.
-  const serverBase = "/api/midtrans-create-transaction";
+  const externalId = `EDUFIN-${Date.now()}-${shortRandom}`;
 
-  if (!serverBase) throw new Error("Server URL tidak tersedia.");
-
-  const response = await fetch(serverBase, {
+  const response = await fetch("/api/xendit-create-invoice", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
     },
-    body: JSON.stringify({ orderId, amount, customerName, customerEmail, billId: billIds[0] }),
+    body: JSON.stringify({
+      orderId: externalId,
+      amount,
+      customerName,
+      customerEmail,
+      description: description || `SPP EDUFIN — ${billIds.join(", ")}`
+    }),
   });
 
   const data = await response.json();
-  if (!response.ok || !data.snapToken) {
-    throw new Error(data.message || "Gagal membuat transaksi.");
+  if (!response.ok || !data.invoiceUrl) {
+    throw new Error(data.error || "Gagal membuat invoice Xendit.");
   }
-  return { snapToken: data.snapToken, orderId };
+  return { invoiceId: data.invoiceId, invoiceUrl: data.invoiceUrl, externalId: data.externalId };
 }
 
 const PAYMENT_METHODS = [
@@ -88,7 +60,17 @@ const PAYMENT_METHODS = [
 ];
 
 type CicilanOption = "penuh" | "2x" | "3x";
-type Step = "list" | "checkout" | "confirm" | "success";
+type Step = "list" | "checkout" | "confirm" | "success" | "failed";
+
+// Data order yang disimpan saat redirect ke Xendit
+type PendingOrder = {
+  externalId: string;
+  amount: number;
+  bills: { id: string; month: string; year: number }[];
+  studentId: string;
+  paymentMethod: string;
+  timestamp: number;
+};
 
 export function PaySPP() {
   const navigate = useNavigate();
@@ -98,11 +80,37 @@ export function PaySPP() {
   const [step, setStep] = useState<Step>("list");
   const [cicilanOption, setCicilanOption] = useState<CicilanOption>("penuh");
   const [payMethod, setPayMethod] = useState("");
-  const [midtransLoading, setMidtransLoading] = useState(false);
-  const [midtransError, setMidtransError] = useState("");
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
   const [loadingBills, setLoadingBills] = useState(true);
   const [studentId, setStudentId] = useState<string>("");
   const [sppAmount, setSppAmount] = useState<number>(750000);
+  const [pendingOrder, setPendingOrder] = useState<PendingOrder | null>(null);
+
+  // ─── Handle redirect balik dari Xendit ──────────────────────────────────────
+  // Xendit me-redirect kembali ke: /student/spp?status=success atau ?status=failed
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const xenditStatus = params.get("status");
+
+    if (xenditStatus === "success" || xenditStatus === "failed") {
+      // Bersihkan query param dari URL agar tidak loop jika refresh
+      window.history.replaceState({}, document.title, window.location.pathname);
+
+      // Ambil data order dari sessionStorage
+      const savedOrder = sessionStorage.getItem("xendit_pending_order");
+      if (savedOrder) {
+        try {
+          const order: PendingOrder = JSON.parse(savedOrder);
+          setPendingOrder(order);
+          sessionStorage.removeItem("xendit_pending_order");
+        } catch (_) {}
+      }
+
+      // Langsung set step ke success atau failed
+      setStep(xenditStatus === "success" ? "success" : "failed");
+    }
+  }, []);
 
   // ── Load Bills dengan fallback berlapis ──
   useEffect(() => {
@@ -275,62 +283,42 @@ export function PaySPP() {
     loadData();
   }, [user]);
 
-  // ─── Midtrans Payment Handler ───────────────────────────────────────────────
-  const handleMidtransPayment = async () => {
-    setMidtransLoading(true);
-    setMidtransError("");
+  // ─── Xendit Payment Handler ────────────────────────────────────────────────
+  // Xendit menggunakan redirect: user diarahkan ke halaman Xendit untuk bayar,
+  // lalu setelah selesai di-redirect kembali ke URL success/failed kita.
+  const handleXenditPayment = async () => {
+    setPaymentLoading(true);
+    setPaymentError("");
     try {
-      // 1. Load Snap.js dynamically
-      await loadMidtransSnap();
+      const billDescription = selectedBills
+        .map((b) => `SPP ${b.month} ${b.year}`)
+        .join(", ");
 
-      // 2. Get snap token from backend
-      const { snapToken } = await createMidtransTransaction(
+      const { invoiceUrl, externalId } = await createXenditInvoice(
         selectedBills.map((b) => b.id),
         firstPayment,
         user?.name || "Siswa",
-        user?.email || "siswa@edufin.id"
+        user?.email || "siswa@edufin.app",
+        billDescription
       );
 
-      // 3. Open Midtrans Snap popup
-      if (!window.snap) {
-        throw new Error("Midtrans Snap tidak tersedia. Periksa koneksi internet.");
-      }
+      // Simpan referensi sementara di sessionStorage
+      // agar bisa ditampilkan di halaman sukses setelah redirect kembali
+      sessionStorage.setItem('xendit_pending_order', JSON.stringify({
+        externalId,
+        amount: firstPayment,
+        bills: selectedBills.map(b => ({ id: b.id, month: b.month, year: b.year })),
+        studentId: studentId || user?.id,
+        paymentMethod: selectedMethod?.label || 'Xendit',
+        timestamp: Date.now(),
+      }));
 
-      window.snap.pay(snapToken, {
-        onSuccess: async (_result: any) => {
-          try {
-            for (const bill of selectedBills) {
-              const [monthName, yearStr] = bill.month.split(' ');
-              await Database.insertPaymentSupabase({
-                studentId: studentId || user?.id,
-                month: monthName,
-                year: yearStr || new Date().getFullYear().toString(),
-                amount: bill.items.reduce((s: any, i: any) => s + i.amount, 0),
-                method: selectedMethod?.label || 'Midtrans QRIS/VA',
-                status: 'completed'
-              });
-            }
-          } catch (e) {
-            console.error("Gagal menyimpan riwayat pembayaran ke database", e);
-          }
-          setMidtransLoading(false);
-          setStep("success"); // show receipt
-        },
-        onPending: (_result: any) => {
-          setMidtransLoading(false);
-          setMidtransError("Pembayaran pending — selesaikan di aplikasi bank/e-wallet kamu.");
-        },
-        onError: (_result: any) => {
-          setMidtransLoading(false);
-          setMidtransError("Pembayaran gagal. Silakan coba lagi.");
-        },
-        onClose: () => {
-          setMidtransLoading(false);
-        },
-      });
+      // Redirect user ke halaman pembayaran Xendit
+      // Di sana user bisa pilih QRIS, Virtual Account, GoPay, OVO, dll.
+      window.location.href = invoiceUrl;
     } catch (err: any) {
-      setMidtransLoading(false);
-      setMidtransError(err.message || "Gagal memulai pembayaran. Coba lagi.");
+      setPaymentLoading(false);
+      setPaymentError(err.message || "Gagal memulai pembayaran. Coba lagi.");
     }
   };
 
@@ -350,26 +338,36 @@ export function PaySPP() {
 
   const selectedMethod = PAYMENT_METHODS.find((m) => m.id === payMethod);
 
-  // ─── SUCCESS ───────────────────────────────────────────────────────────────
+  // ─── SUCCESS ───────────────────────────────────────────────────
+  // Data diambil dari pendingOrder (sessionStorage) jika balik dari redirect Xendit,
+  // atau dari state lokal jika flow normal (tanpa redirect).
   if (step === "success") {
+    const orderBills = pendingOrder?.bills ?? selectedBills.map(b => ({ id: b.id, month: b.month, year: b.year }));
+    const orderAmount = pendingOrder?.amount ?? firstPayment;
+    const orderMethod = pendingOrder?.paymentMethod ?? selectedMethod?.label ?? "Xendit";
+    const orderExternalId = pendingOrder?.externalId ?? receiptNo;
+    const orderTime = pendingOrder ? new Date(pendingOrder.timestamp) : now;
+
     return (
       <div className="flex flex-col min-h-screen bg-white">
         <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
-          <div className="w-24 h-24 rounded-full flex items-center justify-center mb-6" style={{ background: "#F6FFED" }}>
+          {/* Icon */}
+          <div className="w-24 h-24 rounded-full flex items-center justify-center mb-6"
+            style={{ background: "#F6FFED" }}>
             <CheckCircle size={52} color="#52C41A" />
           </div>
           <h2 style={{ fontSize: "1.5rem", fontWeight: 800, color: "#242424", marginBottom: "8px", textAlign: "center" }}>
-            Pembayaran Berhasil!
+            Pembayaran Berhasil! 🎉
           </h2>
-          <p style={{ color: "#8C8C8C", textAlign: "center", marginBottom: "32px", fontSize: "0.9rem" }}>
+          <p style={{ color: "#8C8C8C", textAlign: "center", marginBottom: "24px", fontSize: "0.9rem" }}>
             SPP kamu telah berhasil dibayarkan
           </p>
 
           {/* E-Receipt */}
           <div className="w-full rounded-3xl overflow-hidden shadow-md" style={{ border: "1px solid #F0F0F0" }}>
             <div className="px-5 py-4" style={{ background: "linear-gradient(135deg, #1677FF, #108EE9)" }}>
-              <p style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.8rem" }}>No. Kwitansi</p>
-              <p style={{ color: "white", fontWeight: 700 }}>{receiptNo}</p>
+              <p style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.75rem" }}>No. Transaksi</p>
+              <p style={{ color: "white", fontWeight: 700, fontSize: "0.88rem" }}>{orderExternalId}</p>
             </div>
             <div className="px-5 py-4 space-y-3">
               <div className="flex justify-between">
@@ -378,45 +376,35 @@ export function PaySPP() {
               </div>
               <div className="flex justify-between">
                 <span style={{ color: "#8C8C8C", fontSize: "0.85rem" }}>NISN</span>
-                <span style={{ fontWeight: 600, color: "#242424", fontSize: "0.85rem" }}>{user?.nisn}</span>
+                <span style={{ fontWeight: 600, color: "#242424", fontSize: "0.85rem" }}>{user?.nisn ?? "-"}</span>
               </div>
               <div className="flex justify-between">
-                <span style={{ color: "#8C8C8C", fontSize: "0.85rem" }}>Bulan Bayar</span>
+                <span style={{ color: "#8C8C8C", fontSize: "0.85rem" }}>Bulan Dibayar</span>
                 <span style={{ fontWeight: 600, color: "#242424", fontSize: "0.85rem" }}>
-                  {selectedBills.map((b) => b.month).join(", ")}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span style={{ color: "#8C8C8C", fontSize: "0.85rem" }}>Jenis Bayar</span>
-                <span style={{ fontWeight: 600, color: "#242424", fontSize: "0.85rem" }}>
-                  Penuh
+                  {orderBills.map(b => b.month).join(", ")}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span style={{ color: "#8C8C8C", fontSize: "0.85rem" }}>Metode</span>
-                <span style={{ fontWeight: 600, color: "#242424", fontSize: "0.85rem" }}>
-                  {selectedMethod?.label}
-                </span>
+                <span style={{ fontWeight: 600, color: "#242424", fontSize: "0.85rem" }}>{orderMethod}</span>
               </div>
               <div className="flex justify-between">
                 <span style={{ color: "#8C8C8C", fontSize: "0.85rem" }}>Waktu</span>
                 <span style={{ fontWeight: 600, color: "#242424", fontSize: "0.85rem" }}>
-                  {now.toLocaleString("id-ID")}
+                  {orderTime.toLocaleString("id-ID")}
                 </span>
               </div>
               <div className="h-px" style={{ background: "#F0F0F0" }} />
               <div className="flex justify-between">
-                <span style={{ fontWeight: 700, color: "#242424" }}>
-                  Total Dibayar
-                </span>
-                <span style={{ fontWeight: 800, color: "#1677FF" }}>{formatRupiah(firstPayment)}</span>
+                <span style={{ fontWeight: 700, color: "#242424" }}>Total Dibayar</span>
+                <span style={{ fontWeight: 800, color: "#1677FF", fontSize: "1.05rem" }}>{formatRupiah(orderAmount)}</span>
               </div>
             </div>
           </div>
 
           <button
             onClick={() => window.print()}
-            className="w-full mt-4 py-3.5 rounded-2xl flex items-center justify-center gap-2"
+            className="w-full mt-4 py-3.5 rounded-2xl flex items-center justify-center gap-2 active:scale-95 transition-all"
             style={{ background: "#F5F7FA", color: "#1677FF", fontWeight: 600 }}
           >
             <Download size={18} />
@@ -424,8 +412,57 @@ export function PaySPP() {
           </button>
           <button
             onClick={() => navigate("/student")}
-            className="w-full mt-3 py-3.5 rounded-2xl text-white"
-            style={{ background: "linear-gradient(135deg, #1677FF, #108EE9)", fontWeight: 700 }}
+            className="w-full mt-3 py-4 rounded-2xl text-white active:scale-95 transition-all"
+            style={{ background: "linear-gradient(135deg, #1677FF, #108EE9)", fontWeight: 700, boxShadow: "0 6px 20px rgba(22,119,255,0.3)" }}
+          >
+            Kembali ke Beranda
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── FAILED ──────────────────────────────────────────────────
+  if (step === "failed") {
+    return (
+      <div className="flex flex-col min-h-screen bg-white">
+        <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+          <div className="w-24 h-24 rounded-full flex items-center justify-center mb-6"
+            style={{ background: "#FFF2EE" }}>
+            <span style={{ fontSize: "3rem" }}>❌</span>
+          </div>
+          <h2 style={{ fontSize: "1.4rem", fontWeight: 800, color: "#242424", marginBottom: "8px", textAlign: "center" }}>
+            Pembayaran Gagal
+          </h2>
+          <p style={{ color: "#8C8C8C", textAlign: "center", marginBottom: "8px", fontSize: "0.9rem", lineHeight: 1.6 }}>
+            Pembayaran dibatalkan atau gagal diproses oleh Xendit.
+            Tagihan kamu belum berubah, tidak ada biaya yang dipotong.
+          </p>
+
+          {/* Info box */}
+          <div className="w-full mt-4 px-4 py-4 rounded-2xl" style={{ background: "#FFF2EE", border: "1px solid #FFBDAD" }}>
+            <p style={{ fontSize: "0.8rem", color: "#EA4E0D", lineHeight: 1.6 }}>
+              💡 Jika saldo sudah terpotong tapi status belum berubah, tunggu beberapa menit atau hubungi{" "}
+              <strong>support@edufin.id</strong> dengan menyertakan ID transaksi.
+            </p>
+            {pendingOrder && (
+              <p style={{ fontSize: "0.75rem", color: "#EA4E0D", marginTop: "8px", fontWeight: 600 }}>
+                ID Transaksi: {pendingOrder.externalId}
+              </p>
+            )}
+          </div>
+
+          <button
+            onClick={() => setStep("list")}
+            className="w-full mt-5 py-4 rounded-2xl text-white active:scale-95 transition-all"
+            style={{ background: "linear-gradient(135deg, #1677FF, #108EE9)", fontWeight: 700, boxShadow: "0 6px 20px rgba(22,119,255,0.3)" }}
+          >
+            Coba Bayar Lagi
+          </button>
+          <button
+            onClick={() => navigate("/student")}
+            className="w-full mt-3 py-3.5 rounded-2xl active:scale-95 transition-all"
+            style={{ background: "#F5F7FA", color: "#595959", fontWeight: 600 }}
           >
             Kembali ke Beranda
           </button>
@@ -507,22 +544,22 @@ export function PaySPP() {
               {formatRupiah(cicilanOption === "2x" ? Math.ceil(subtotal / 2) : cicilanOption === "3x" ? Math.ceil(subtotal / 3) : firstPayment)}
             </span>
           </div>
-          {midtransError && (
+          {paymentError && (
             <div className="mb-3 px-4 py-3 rounded-2xl"
               style={{ background: "#FFF2EE", border: "1px solid #FFBDAD" }}>
-              <p style={{ color: "#EA4E0D", fontSize: "0.82rem" }}>⚠️ {midtransError}</p>
+              <p style={{ color: "#EA4E0D", fontSize: "0.82rem" }}>⚠️ {paymentError}</p>
             </div>
           )}
           <button
-            onClick={handleMidtransPayment}
-            disabled={midtransLoading}
+            onClick={handleXenditPayment}
+            disabled={paymentLoading}
             className="w-full py-4 rounded-2xl text-white disabled:opacity-70 flex items-center justify-center gap-2"
             style={{ background: "linear-gradient(135deg, #1677FF, #108EE9)", fontWeight: 700, fontSize: "1rem" }}
           >
-            {midtransLoading ? (
-              <><Loader2 size={18} className="animate-spin" /> Membuka Pembayaran...</>
+            {paymentLoading ? (
+              <><Loader2 size={18} className="animate-spin" /> Menyiapkan Pembayaran...</>
             ) : (
-              "Bayar via Midtrans"
+              "Bayar via Xendit"
             )}
           </button>
         </div>

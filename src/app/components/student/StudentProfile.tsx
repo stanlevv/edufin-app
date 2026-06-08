@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import { User, School, Receipt, ChevronRight, LogOut, HeadphonesIcon } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { supabase } from "../../lib/supabase";
 import { ITSupportForm } from "../shared/ITSupportForm";
 import { PersonalDataForm } from "./modals/PersonalDataForm";
 import { SchoolInfoForm } from "./modals/SchoolInfoForm";
@@ -19,24 +20,21 @@ export function StudentProfile() {
 
   React.useEffect(() => {
     async function loadData() {
-      if (!user) return;
-      const { Database } = await import("../../data/database");
-      const students = await Database.fetchStudentsSupabase();
-      const student = students.find((s: any) => s.userId === user.id || s.name === user.name);
+      if (!user?.id) return;
+
+      const { data: student } = await supabase.from('students').select('*').eq('user_id', user.id).maybeSingle();
       if (student) setStudentData(student);
 
-      const payments = await Database.fetchPaymentsSupabase();
       if (student) {
-        const studentPayments = payments.filter((p: any) => 
-          p.studentId === student.id && (p.status === "pending" || p.status === "unpaid")
-        );
-        setUnpaidCount(studentPayments.length);
+        const { data: payments } = await supabase.from('payments').select('id').eq('student_id', student.id).in('status', ['pending', 'unpaid']);
+        if (payments) setUnpaidCount(payments.length);
       }
 
-      const txns = await Database.fetchTransactionsSupabase();
-      const myDonations = txns.filter((t: any) => t.user_id === user.id && t.category === "Donasi");
-      const total = myDonations.reduce((acc: number, t: any) => acc + t.amount, 0);
-      setTotalDonasi(total);
+      const { data: txns } = await supabase.from('transactions').select('amount').eq('user_id', user.id).eq('category', 'Donasi');
+      if (txns) {
+        const total = txns.reduce((acc: number, t: any) => acc + t.amount, 0);
+        setTotalDonasi(total);
+      }
     }
     loadData();
   }, [user]);

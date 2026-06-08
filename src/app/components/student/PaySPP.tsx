@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { ArrowLeft, CheckCircle, Download, ChevronRight, Building2, Smartphone, Store, Loader2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { Database, Bill } from "../../data/database";
 import { supabase } from "../../lib/supabase";
 
 function formatRupiah(n: number) {
@@ -79,7 +78,7 @@ type PendingOrder = {
 export function PaySPP() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [bills, setBills] = useState<Bill[]>([]);
+  const [bills, setBills] = useState<any[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [step, setStep] = useState<Step>("list");
   const [cicilanOption, setCicilanOption] = useState<CicilanOption>("penuh");
@@ -210,25 +209,7 @@ export function PaySPP() {
           }
         }
 
-        // ── LAPIS 2: Fallback ke localStorage ──
-        const localStudents = Database.getStudents();
-        const localStudent = localStudents.find(
-          s => s.userId === user.id || s.nisn === user.nisn || s.name === user.name
-        );
-
-        if (localStudent) {
-          setStudentId(localStudent.id);
-          const amount = localStudent.sppAmount || 750000;
-          setSppAmount(amount);
-          const localBills = Database.getSPPBills().filter(b => b.studentId === localStudent.id);
-          if (localBills.length > 0) {
-            setBills(localBills);
-            const firstUnpaid = localBills.find(b => b.status === "Tertunggak");
-            if (firstUnpaid) setSelected([firstUnpaid.id]);
-            setLoadingBills(false);
-            return;
-          }
-        }
+        // ── LAPIS 2: (dihapus karena tidak pakai Database mock lagi) ──
 
         // ── LAPIS 3: Generate tagihan default (untuk akun demo / data baru) ──
         const defaultAmount = sppAmount || 750000;
@@ -243,7 +224,7 @@ export function PaySPP() {
           const dueDate = new Date(year, d.getMonth() + 1, 10).toISOString();
           generatedBills.push({
             id: `demo-bill-${year}-${d.getMonth()}`,
-            studentId: localStudent?.id || `student-${user.id}`,
+            studentId: studentData?.id || `student-${user.id}`,
             month: monthName,
             year,
             dueDate,

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { ArrowLeft, Search, Heart, School, MapPin } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { Database, Campaign } from "../../data/database";
+import { supabase } from "../../lib/supabase";
 
 function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
@@ -13,15 +13,31 @@ const CATEGORIES = ["Semua", "Beasiswa", "Fasilitas", "Perlengkapan", "Ujian"];
 export function FundraisingPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("Semua");
 
   useEffect(() => {
     async function loadData() {
-      const data = await Database.fetchCampaignsSupabase();
-      const active = data.filter((c: any) => c.status === "active");
-      setCampaigns(active);
+      const { data } = await supabase.from('campaigns').select('*').eq('status', 'active');
+      if (data) {
+        setCampaigns(data.map(c => ({
+          id: c.id,
+          title: c.title,
+          school: "SDN 3 Malang",
+          schoolId: c.school_id,
+          studentId: c.student_id,
+          category: c.category,
+          target: c.target_amount,
+          collected: c.collected_amount,
+          donors: c.donors_count,
+          endDate: c.end_date,
+          image: c.image_url,
+          status: c.status,
+          urgent: c.is_urgent,
+          location: "Malang",
+        })));
+      }
     }
     loadData();
   }, []);

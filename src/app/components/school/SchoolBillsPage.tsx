@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Search, Plus, Edit, Trash2, X, CheckCircle, Clock, AlertCircle, FileText, Loader2 } from "lucide-react";
 import { SchoolDesktopLayout } from "./SchoolDesktopLayout";
-import { Database, Student } from "../../data/database";
+import { Student } from "../../data/database";
+import { supabase } from "../../lib/supabase";
+import { useAuth } from "../../context/AuthContext";
 
 function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
@@ -33,6 +35,7 @@ interface PaymentRow {
 }
 
 export function SchoolBillsPage() {
+  const { user } = useAuth();
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,21 +62,62 @@ export function SchoolBillsPage() {
 
   const loadData = async () => {
     setIsLoading(true);
-    // Fetch students for the dropdown
-    const allStudents = await Database.fetchStudentsSupabase();
-    setStudents(allStudents);
+    if (!user?.id) return;
+
+    // Ambil school_id
+    const { data: adminData } = await supabase.from("school_admins").select("school_id").eq("user_id", user.id).single();
+    if (!adminData?.school_id) {
+      setIsLoading(false);
+      return;
+    }
+    const schoolId = adminData.school_id;
+
+    // Fetch students
+    const { data: allStudentsData } = await supabase.from("students").select("*").eq("school_id", schoolId).order("name", { ascending: true });
     
-    if (allStudents.length > 0 && !fStudentId) {
-      setFStudentId(allStudents[0].id);
+    if (allStudentsData) {
+      const activeStudents = allStudentsData.filter((d: any) => d.status === "active").map((d: any) => ({
+        id: d.id,
+        nisn: d.nisn,
+        name: d.name,
+        class: d.class,
+        sppAmount: d.spp_amount || 725000,
+        status: d.status
+      })) as Student[];
+      setStudents(activeStudents);
+      
+      if (activeStudents.length > 0 && !fStudentId) {
+        setFStudentId(activeStudents[0].id);
+      }
     }
     
-    // Fetch payments
-    const rows = await Database.fetchPaymentsSupabase();
-    setPayments(rows);
+    // Fetch payments (bills)
+    const { data: bData } = await supabase
+      .from("bills")
+      .select("*, students!inner(id, name, class, nisn)")
+      .eq("school_id", schoolId)
+      .order("created_at", { ascending: false });
+
+    if (bData) {
+      const rows: PaymentRow[] = bData.map((d: any) => ({
+        id: d.id,
+        studentId: d.student_id,
+        studentName: d.students?.name || "Unknown",
+        studentClass: d.students?.class || "-",
+        studentNisn: d.students?.nisn || "-",
+        month: d.month,
+        year: d.year,
+        amount: d.amount,
+        method: d.payment_method || "Manual Cash",
+        status: d.status === "lunas" ? "completed" : "pending",
+        paidAt: d.paid_at || d.created_at
+      }));
+      setPayments(rows);
+    }
     setIsLoading(false);
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [user]);
 
   const filtered = payments.filter((p) => {
     const ms = (p.studentName + p.studentNisn).toLowerCase().includes(search.toLowerCase());
@@ -119,12 +163,12 @@ export function SchoolBillsPage() {
     // Ambil siswa aktif
     const activeStudents = students.filter(s => s.status === 'active');
 
-    // Cek tagihan yang sudah ada bulan ini
+    // Cek tagihan yang sudah ada bulan ini (bills)
     const { data: existing } = await supabase
-      .from('payments')
+      .from('bills')
       .select('student_id')
-      .eq('month_paid', genMonth)
-      .eq('year_paid', genYear);
+      .eq('month', genMonth)
+      .eq('year', genYear);
 
     const existingIds = new Set((existing || []).map((e: any) => e.student_id));
 
@@ -133,15 +177,21 @@ export function SchoolBillsPage() {
     const skipped = activeStudents.length - toCreate.length;
 
     if (toCreate.length > 0) {
-      const inserts = toCreate.map(s => ({
-        student_id: s.id,
-        month_paid: genMonth,
-        year_paid: genYear,
-        amount: s.sppAmount,
-        payment_method: 'Belum Dibayar',
-        status: 'pending'
-      }));
-      await supabase.from('payments').insert(inserts);
+      const { data: adminData } = await supabase.from("school_admins").select("school_id").eq("user_id", user?.id).single();
+      const schoolId = adminData?.school_id;
+
+      if (schoolId) {
+        const inserts = toCreate.map(s => ({
+          school_id: schoolId,
+          student_id: s.id,
+          month: genMonth,
+          year: genYear,
+          amount: s.sppAmount,
+          payment_method: 'Belum Dibayar',
+          status: 'belum bayar'
+        }));
+        await supabase.from('bills').insert(inserts);
+      }
     }
 
     setGenResult({ created: toCreate.length, skipped });
@@ -150,16 +200,16 @@ export function SchoolBillsPage() {
   };
 
   const handleConfirmPayment = async (paymentId: string) => {
-    const { supabase } = await import('../../lib/supabase');
-    await supabase.from('payments').update({ 
-      status: 'completed',
-      payment_method: 'Manual Cash'
+    await supabase.from('bills').update({ 
+      status: 'lunas',
+      payment_method: 'Manual Cash',
+      paid_at: new Date().toISOString()
     }).eq('id', paymentId);
     await loadData();
   };
 
   const handleDelete = async (id: string) => {
-    await Database.deletePaymentSupabase(id);
+    await supabase.from("bills").delete().eq("id", id);
     await loadData();
     setDeleteConfirm(null);
   };
@@ -169,19 +219,25 @@ export function SchoolBillsPage() {
     setIsSaving(true);
     
     const paymentData = {
-      id: editingPayment?.id,
-      studentId: fStudentId,
+      student_id: fStudentId,
       month: fMonth,
       year: fYear,
       amount: fAmount,
-      method: fMethod,
-      status: fStatus
+      payment_method: fMethod,
+      status: fStatus === "completed" ? "lunas" : "belum bayar",
+      paid_at: fStatus === "completed" ? new Date().toISOString() : null
     };
     
     if (editingPayment) {
-      await Database.updatePaymentSupabase(paymentData);
+      await supabase.from("bills").update(paymentData).eq("id", editingPayment.id);
     } else {
-      await Database.insertPaymentSupabase(paymentData);
+      const { data: adminData } = await supabase.from("school_admins").select("school_id").eq("user_id", user?.id).single();
+      if (adminData?.school_id) {
+        await supabase.from("bills").insert([{
+          ...paymentData,
+          school_id: adminData.school_id
+        }]);
+      }
     }
     
     await loadData();

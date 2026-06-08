@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { CheckCircle } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { Database, Donation } from "../../data/database";
+import { supabase } from "../../lib/supabase";
 
 function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
@@ -9,18 +9,28 @@ function formatRupiah(n: number) {
 
 export function DonorHistoryPage() {
   const { user } = useAuth();
-  const [donations, setDonations] = useState<Donation[]>([]);
+  const [donations, setDonations] = useState<any[]>([]);
 
   useEffect(() => {
-    if (!user) return;
-    const data = Database.getDonationsByDonorId(user.id).filter((d) => d.status === "success");
-    // Urutkan terbaru dulu
-    setDonations([...data].sort((a, b) => b.donatedAt.localeCompare(a.donatedAt)));
+    async function loadHistory() {
+      if (!user?.id) return;
+      const { data: dons } = await supabase.from('donations').select('*, campaigns(title)').eq('donor_id', user.id).eq('status', 'success').order('created_at', { ascending: false });
+      if (dons) {
+        setDonations(dons.map((d: any) => ({
+          id: d.id,
+          campaignId: d.campaign_id,
+          donorId: d.donor_id,
+          amount: d.amount,
+          method: d.method || "Transfer",
+          isAnonymous: d.is_anonymous || false,
+          donatedAt: d.created_at,
+          status: d.status,
+          campaignTitle: d.campaigns?.title || "Kampanye"
+        })));
+      }
+    }
+    loadHistory();
   }, [user]);
-
-  // Ambil judul kampanye dari DB
-  const campaignTitles: Record<string, string> = {};
-  Database.getCampaigns().forEach((c) => { campaignTitles[c.id] = c.title; });
 
   const totalDonasi = donations.reduce((a, b) => a + b.amount, 0);
 
@@ -48,7 +58,7 @@ export function DonorHistoryPage() {
           </div>
         )}
         {donations.map((item) => {
-          const campaignTitle = campaignTitles[item.campaignId] ?? "Kampanye";
+          const campaignTitle = item.campaignTitle;
           const dateFormatted = new Date(item.donatedAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
           return (
             <div key={item.id} className="bg-white rounded-2xl p-4 flex items-center gap-3"

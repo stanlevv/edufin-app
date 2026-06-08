@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Search, Plus, Edit, Trash2, X, CheckCircle, XCircle, Megaphone } from "lucide-react";
 import { SchoolDesktopLayout } from "./SchoolDesktopLayout";
-import { Database, Campaign } from "../../data/database";
+import { Campaign } from "../../data/database";
+import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
 
 function formatRupiah(n: number) {
@@ -52,12 +53,38 @@ export function SchoolCampaignsPage() {
 
   const loadData = async () => {
     setIsLoading(true);
-    const data = await Database.fetchCampaignsSupabase();
-    setCampaigns(data);
+    if (!user?.id) return;
+    const { data: adminData } = await supabase.from("school_admins").select("school_id").eq("user_id", user.id).single();
+    if (!adminData?.school_id) {
+      setIsLoading(false);
+      return;
+    }
+
+    const { data: cData } = await supabase.from("campaigns").select("*").eq("school_id", adminData.school_id).order("created_at", { ascending: false });
+    if (cData) {
+      setCampaigns(cData.map((d: any) => ({
+        id: d.id,
+        title: d.title,
+        school: "", // Can add school name if needed
+        location: d.location || "",
+        description: d.description || "",
+        story: d.story || "",
+        category: d.category,
+        target: d.target_amount,
+        collected: d.collected_amount,
+        donors: d.donors_count || 0,
+        status: d.status,
+        verified: d.status !== 'pending_approval',
+        startDate: d.start_date,
+        endDate: d.end_date,
+        image: d.image_url,
+        updates: d.updates || []
+      })) as Campaign[]);
+    }
     setIsLoading(false);
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [user]);
 
   const filtered = campaigns.filter((c) => {
     const ms = c.title.toLowerCase().includes(search.toLowerCase()) || c.school.toLowerCase().includes(search.toLowerCase());
@@ -87,26 +114,44 @@ export function SchoolCampaignsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    await Database.deleteCampaignSupabase(id);
+    await supabase.from("campaigns").delete().eq("id", id);
     await loadData();
     setDeleteConfirm(null);
   };
 
   const handleToggleVerify = async (c: Campaign) => {
-    // Verified flag is just status 'active' in DB for simplicity right now
-    await Database.updateCampaignSupabase({ ...c, verified: !c.verified });
+    const newStatus = c.verified ? 'pending_approval' : 'active';
+    await supabase.from("campaigns").update({ status: newStatus }).eq("id", c.id);
     await loadData();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const payload = {
+      title: formData.title,
+      description: formData.description,
+      story: formData.story,
+      category: formData.category,
+      target_amount: formData.target,
+      collected_amount: formData.collected,
+      status: formData.verified ? "active" : "pending_approval",
+      start_date: formData.startDate,
+      end_date: formData.endDate,
+      image_url: formData.image,
+      location: formData.location
+    };
+
     if (editingCampaign) {
-      await Database.updateCampaignSupabase({
-        ...editingCampaign,
-        ...formData
-      } as Campaign);
+      await supabase.from("campaigns").update(payload).eq("id", editingCampaign.id);
     } else {
-      await Database.insertCampaignSupabase(formData, user?.id || "");
+      const { data: adminData } = await supabase.from("school_admins").select("school_id").eq("user_id", user?.id).single();
+      if (adminData?.school_id) {
+        await supabase.from("campaigns").insert([{
+          ...payload,
+          school_id: adminData.school_id,
+          created_by: user?.id
+        }]);
+      }
     }
     await loadData();
     setShowModal(false);

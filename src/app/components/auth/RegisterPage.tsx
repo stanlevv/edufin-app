@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
-import { Database } from "../../data/database";
+import { supabase } from "../../lib/supabase";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Role = "siswa" | "donatur";
@@ -133,12 +133,33 @@ export function RegisterPage() {
     if (clean.length < 10) { setNisnError("NISN harus 10 digit."); return; }
     setNisnLoading(true);
     setNisnError("");
-    const data = await Database.findStudentByNISN(clean);
+    
+    const { data: dbData, error } = await supabase
+      .from('students')
+      .select('*')
+      .eq('nisn', clean)
+      .single();
+      
     setNisnLoading(false);
-    if (!data) {
+    
+    if (error || !dbData) {
       setNisnError("NISN tidak ditemukan. Hubungi admin sekolah Anda.");
       return;
     }
+    
+    const data = {
+      id: dbData.id,
+      nisn: dbData.nisn,
+      name: dbData.name,
+      class: dbData.class,
+      parentName: dbData.parent_name,
+      school: "SDN 3 Malang", // Fallback or could fetch from school_id
+      address: dbData.address,
+      sppAmount: dbData.spp_amount,
+      registrationStatus: dbData.registration_status || 'data_only',
+      userId: dbData.user_id,
+    };
+
     if (data.registrationStatus === 'pending') {
       setNisnError("NISN ini sudah terdaftar dan sedang menunggu konfirmasi admin.");
       return;
@@ -167,10 +188,20 @@ export function RegisterPage() {
     setSubmitLoading(true);
 
     // 1. Generate email edufin.app unik
-    const edufinEmail = await Database.generateUniqueEdufinEmail(
-      studentData!.name,
-      studentData!.nisn
-    );
+    const baseEmail = studentData!.name
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z\s]/g, '')
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .join('.') + '@edufin.app';
+      
+    const { data: existingEmail } = await supabase.from('students').select('edufin_email').eq('edufin_email', baseEmail);
+    const edufinEmail = (existingEmail && existingEmail.length > 0) 
+      ? baseEmail.replace('@', `.${studentData!.nisn.slice(-4)}@`) 
+      : baseEmail;
+      
     setEdufinEmailPreview(edufinEmail);
 
     // 2. Buat akun Supabase Auth dengan email edufin.app
@@ -192,18 +223,19 @@ export function RegisterPage() {
     }
 
     // 3. Dapatkan user ID
-    const { supabase } = await import('../../lib/supabase');
     const { data: authData } = await supabase.auth.getUser();
     const userId = authData?.user?.id;
 
     if (userId && studentData?.id) {
       // 4. Link siswa dengan user_id, simpan personal_email + edufin_email
-      await Database.applyStudentRegistration(
-        studentData.id,
-        userId,
-        personalEmail,
-        edufinEmail
-      );
+      await supabase.from('students').update({
+        user_id: userId,
+        email: edufinEmail,
+        personal_email: personalEmail,
+        edufin_email: edufinEmail,
+        registration_status: 'pending',
+        registered_at: new Date().toISOString(),
+      }).eq('id', studentData.id);
     }
 
     setSubmitLoading(false);
@@ -758,7 +790,16 @@ export function RegisterPage() {
               style={{ background: "#EEF4FF", border: "1.5px solid #C5D8FF" }}>
               <p style={{ fontSize: "0.7rem", color: "#4A6FA5", marginBottom: "4px", fontWeight: 600 }}>🎓 Akun Login EDUFIN Anda (otomatis)</p>
               <p style={{ fontSize: "0.9rem", fontWeight: 800, color: "#1677FF" }}>
-                {Database.generateEdufinEmail(studentData?.name || "", studentData?.nisn || "")} 
+                {studentData ? (
+                  studentData.name
+                    .toLowerCase()
+                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^a-z\s]/g, '')
+                    .trim()
+                    .split(/\s+/)
+                    .slice(0, 2)
+                    .join('.') + '@edufin.app'
+                ) : ""}
               </p>
               <p style={{ fontSize: "0.68rem", color: "#8C8C8C", marginTop: "2px" }}>Email ini digunakan untuk login ke EDUFIN setelah dikonfirmasi admin</p>
             </div>

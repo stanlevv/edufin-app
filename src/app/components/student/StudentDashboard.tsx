@@ -8,7 +8,7 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { CampaignSubmissionForm } from "../shared/CampaignSubmissionForm";
 import { NotificationDropdown } from "../shared/NotificationDropdown";
-import { Database } from "../../data/database";
+
 import { supabase } from "../../lib/supabase";
 import heroImg from "figma:asset/c8cddcb48410b814bd5d05fb077ab775500e3bac.png";
 
@@ -286,23 +286,27 @@ export function StudentDashboard() {
 
         // Scholarship
         if (studentData) {
-          const schRecipients = await Database.fetchScholarshipRecipientsSupabase(undefined);
-          const myRecipient = schRecipients.find((r: any) => r.studentId === studentData.id && r.status === "active");
-          if (myRecipient) {
-            const scholarships = await Database.fetchScholarshipsSupabase();
-            const sch = scholarships.find((s: any) => s.id === myRecipient.scholarshipId);
-            if (sch) setActiveScholarship({ name: sch.name, amount: myRecipient.amountPerMonth, endDate: myRecipient.endDate });
+          const { data: recs } = await supabase.from('scholarship_recipients').select('*').eq('student_id', studentData.id).eq('status', 'active').maybeSingle();
+          if (recs) {
+            const { data: sch } = await supabase.from('scholarships').select('*').eq('id', recs.scholarship_id).maybeSingle();
+            if (sch) setActiveScholarship({ name: sch.name, amount: recs.amount_per_month, endDate: recs.end_date });
           }
         }
 
-        const allCampaigns = await Database.fetchCampaignsSupabase();
-        setCampaigns(allCampaigns.slice(0, 2).map((c: any) => {
-          const daysLeft = Math.ceil((new Date(c.endDate).getTime() - Date.now()) / 86400000);
-          return { ...c, daysLeft: Math.max(0, daysLeft) };
-        }));
+        const { data: camps } = await supabase.from('campaigns').select('*').eq('status', 'active').limit(2);
+        if (camps) {
+          setCampaigns(camps.map(c => {
+            const daysLeft = Math.ceil((new Date(c.end_date).getTime() - Date.now()) / 86400000);
+            return {
+              id: c.id, title: c.title, target: c.target_amount, collected: c.collected_amount, endDate: c.end_date, school: 'SDN 3 Malang', image: c.image_url, daysLeft: Math.max(0, daysLeft)
+            };
+          }));
+        }
 
-        const allNotifs = await Database.fetchNotificationsSupabase();
-        setNotifications(allNotifs.slice(0, 2).map((n: any) => ({ id: n.id, text: n.title, time: "Baru saja", unread: false })));
+        const { data: notifs } = await supabase.from('notifications').select('*').eq('user_id', user.id).limit(2);
+        if (notifs) {
+          setNotifications(notifs.map(n => ({ id: n.id, text: n.title, time: "Baru saja", unread: !n.read })));
+        }
 
       } catch (err) {
         console.error('[Dashboard] Error:', err);

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { ArrowDownLeft, Filter, Receipt, Wallet } from "lucide-react";
 import { SchoolDesktopLayout } from "./SchoolDesktopLayout";
-import { Database, Transaction } from "../../data/database";
+import { Transaction } from "../../data/database";
+import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
 
 function formatRupiah(n: number) {
@@ -17,26 +18,39 @@ function formatDate(iso: string) {
 const CATS = ["Semua", "SPP", "Donasi"];
 
 export function SchoolHistoryPage() {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const { user } = useAuth();
+  const [transactions, setTransactions] = useState<any[]>([]);
   const [activeCat, setActiveCat] = useState("Semua");
 
   useEffect(() => {
     async function loadData() {
-      const all = await Database.fetchTransactionsSupabase();
-      const schoolTxns = all.filter((t: any) => t.type === "in");
-      // Supabase created_at is named created_at instead of date
-      setTransactions(schoolTxns.map((t: any) => ({
-        id: t.id,
-        userId: t.user_id,
-        type: t.type,
-        category: t.category,
-        amount: t.amount,
-        description: t.description,
-        date: t.created_at
-      })).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+      if (!user?.id) return;
+      const { data: adminData } = await supabase.from("school_admins").select("school_id").eq("user_id", user.id).single();
+      if (!adminData?.school_id) return;
+
+      const { data } = await supabase
+        .from("vw_transactions")
+        .select("*")
+        .eq("school_id", adminData.school_id)
+        .order("created_at", { ascending: false });
+        
+      if (data) {
+        const schoolTxns = data.filter((t: any) => t.type === "in");
+        setTransactions(schoolTxns.map((t: any) => ({
+          id: t.id,
+          userId: t.user_id,
+          type: t.type,
+          category: t.category,
+          amount: t.amount,
+          description: t.description,
+          date: t.created_at,
+          title: t.category === "SPP" ? `Pembayaran SPP` : `Donasi Kampanye`,
+          status: "Berhasil"
+        })));
+      }
     }
     loadData();
-  }, []);
+  }, [user]);
 
   const filtered = transactions.filter((h) => activeCat === "Semua" || h.category === activeCat);
   const totalIn = filtered.reduce((s, h) => s + h.amount, 0);

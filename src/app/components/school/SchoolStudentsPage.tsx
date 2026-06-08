@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Search, Plus, Edit, Trash2, X, Users, CheckCircle, XCircle, BookOpen, Loader2, Clock, UserCheck, UserX } from "lucide-react";
 import { SchoolDesktopLayout } from "./SchoolDesktopLayout";
-import { Database, Student } from "../../data/database";
+import { Student } from "../../data/database";
+import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
 
 function formatRupiah(n: number) {
@@ -36,10 +37,53 @@ export function SchoolStudentsPage() {
 
   const loadData = async () => {
     setIsLoading(true);
-    const data = await Database.fetchStudentsSupabase();
-    setStudents(data);
-    const pending = await Database.fetchPendingStudentsSupabase();
-    setPendingStudents(pending);
+    if (!user?.id) return;
+
+    // Ambil school_id
+    const { data: adminData } = await supabase.from("school_admins").select("school_id").eq("user_id", user.id).single();
+    if (!adminData?.school_id) {
+      setIsLoading(false);
+      return;
+    }
+    const schoolId = adminData.school_id;
+
+    // Fetch students
+    const { data: allData } = await supabase.from("students").select("*").eq("school_id", schoolId).order("name", { ascending: true });
+    
+    if (allData) {
+      const active = allData.filter((d: any) => d.registration_status !== "pending").map((d: any) => ({
+        id: d.id,
+        userId: d.user_id || "",
+        nisn: d.nisn,
+        name: d.name,
+        email: d.edufin_email || d.email || "",
+        school: "",
+        class: d.class,
+        parentName: d.parent_name,
+        sppAmount: d.spp_amount,
+        status: d.status,
+        registrationStatus: d.registration_status || "data_only",
+        verified: d.registration_status === "active",
+      }));
+      setStudents(active as Student[]);
+
+      const pending = allData.filter((d: any) => d.registration_status === "pending").map((d: any) => ({
+        id: d.id,
+        userId: d.user_id || "",
+        nisn: d.nisn,
+        name: d.name,
+        email: d.edufin_email || d.email || "",
+        personalEmail: d.personal_email || "",
+        edufinEmail: d.edufin_email || "",
+        class: d.class,
+        parentName: d.parent_name,
+        sppAmount: d.spp_amount,
+        status: d.status,
+        registrationStatus: d.registration_status,
+        registeredAt: d.registered_at,
+      }));
+      setPendingStudents(pending);
+    }
     setIsLoading(false);
   };
 
@@ -69,18 +113,21 @@ export function SchoolStudentsPage() {
 
   const handleDelete = async (id: string) => {
     setIsLoading(true);
-    await Database.deleteStudentSupabase(id);
+    await supabase.from("students").delete().eq("id", id);
     await loadData();
     setDeleteConfirm(null);
   };
 
   const handleConfirm = async (studentId: string) => {
-    await Database.confirmStudentRegistration(studentId);
+    await supabase.from("students").update({ registration_status: "active", status: "active" }).eq("id", studentId);
     await loadData();
   };
 
   const handleReject = async (studentId: string) => {
-    await Database.rejectStudentRegistration(studentId);
+    await supabase.from("students").update({ 
+      registration_status: "data_only", 
+      user_id: null, email: null, personal_email: null, edufin_email: null, registered_at: null 
+    }).eq("id", studentId);
     await loadData();
   };
 
@@ -89,12 +136,17 @@ export function SchoolStudentsPage() {
     setIsSaving(true);
 
     if (editingStudent) {
-      await Database.updateStudentSupabase({
-        ...editingStudent,
-        ...formData
-      } as Student);
+      await supabase.from("students").update({
+        nisn: formData.nisn,
+        name: formData.name,
+        class: formData.class,
+        parent_name: formData.parentName,
+        spp_amount: formData.sppAmount,
+        status: formData.status
+      }).eq("id", editingStudent.id);
     } else {
-      // 1. Buat akun Supabase Auth
+      let createdUserId = null;
+      // 1. Buat akun Supabase Auth (simulasi pendaftaran)
       if (formData.email && password) {
         const regRes = await register({
           email: formData.email,
@@ -112,8 +164,21 @@ export function SchoolStudentsPage() {
           return;
         }
       }
-      // 2. Insert data siswa (tanpa phone/address - tidak ada di tabel)
-      await Database.insertStudentSupabase(formData, user?.id || "");
+      // 2. Insert data siswa
+      const { data: adminData } = await supabase.from("school_admins").select("school_id").eq("user_id", user?.id).single();
+      if (adminData?.school_id) {
+        await supabase.from("students").insert([{
+          school_id: adminData.school_id,
+          nisn: formData.nisn,
+          name: formData.name,
+          class: formData.class,
+          parent_name: formData.parentName,
+          spp_amount: formData.sppAmount || 725000,
+          status: formData.status || "active",
+          registration_status: formData.email ? "active" : "data_only",
+          created_by: user?.id
+        }]);
+      }
     }
 
     await loadData();

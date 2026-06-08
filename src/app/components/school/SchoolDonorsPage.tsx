@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Search, Trash2, Heart, TrendingUp, Users, DollarSign, X } from "lucide-react";
 import { SchoolDesktopLayout } from "./SchoolDesktopLayout";
-import { Database, Donation, Campaign } from "../../data/database";
+import { Campaign } from "../../data/database";
+import { supabase } from "../../lib/supabase";
+import { useAuth } from "../../context/AuthContext";
 
 function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
@@ -20,11 +22,22 @@ const METHOD_CFG: Record<string, { color: string; bg: string }> = {
   "Virtual Account BCA": { color: "#52C41A", bg: "#F6FFED" },
 };
 
-interface DonationRow extends Donation {
+interface DonationRow {
+  id: string;
+  campaignId: string;
+  donorId: string;
+  donorName: string;
+  amount: number;
+  method: string;
+  status: "success" | "pending" | "failed";
+  donatedAt: string;
+  isAnonymous?: boolean;
+  message?: string;
   campaignTitle: string;
 }
 
 export function SchoolDonorsPage() {
+  const { user } = useAuth();
   const [donations, setDonations] = useState<DonationRow[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [search, setSearch] = useState("");
@@ -33,14 +46,57 @@ export function SchoolDonorsPage() {
   const [detailDonation, setDetailDonation] = useState<DonationRow | null>(null);
 
   const load = async () => {
-    const allCampaigns = await Database.fetchCampaignsSupabase();
-    setCampaigns(allCampaigns);
-    const allDonations = await Database.fetchDonationsSupabase();
-    allDonations.sort((a: any, b: any) => new Date(b.donatedAt).getTime() - new Date(a.donatedAt).getTime());
-    setDonations(allDonations);
+    if (!user?.id) return;
+    const { data: adminData } = await supabase.from("school_admins").select("school_id").eq("user_id", user.id).single();
+    if (!adminData?.school_id) return;
+    const schoolId = adminData.school_id;
+
+    // Fetch campaigns for this school
+    const { data: cData } = await supabase.from("campaigns").select("*").eq("school_id", schoolId);
+    let allCampaigns: Campaign[] = [];
+    if (cData) {
+      allCampaigns = cData.map((d: any) => ({
+        id: d.id,
+        title: d.title,
+        target: d.target_amount,
+        collected: d.collected_amount,
+        category: d.category,
+        verified: d.status !== 'pending_approval',
+        status: d.status,
+        school: ""
+      }));
+      setCampaigns(allCampaigns);
+    }
+
+    // Fetch donations for these campaigns
+    if (cData && cData.length > 0) {
+      const campaignIds = cData.map((c: any) => c.id);
+      const { data: dData } = await supabase
+        .from("donations")
+        .select("*, campaigns!inner(title)")
+        .in("campaign_id", campaignIds)
+        .order("created_at", { ascending: false });
+
+      if (dData) {
+        const rows: DonationRow[] = dData.map((d: any) => ({
+          id: d.id,
+          campaignId: d.campaign_id,
+          campaignTitle: d.campaigns?.title || "Unknown Campaign",
+          donorId: d.user_id, // assuming donorId is mapped to user_id
+          donorName: d.donor_name || d.user_id, // If donor_name exists use it
+          amount: d.amount,
+          method: "Transfer Bank", // Adjust if method stored
+          status: d.status,
+          donatedAt: d.created_at,
+          isAnonymous: d.is_anonymous,
+          message: d.message
+        }));
+        setDonations(rows);
+      }
+    }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [user]);
 
   const filtered = donations.filter((d) => {
     const ms = d.donorName.toLowerCase().includes(search.toLowerCase()) ||

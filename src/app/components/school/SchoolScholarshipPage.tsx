@@ -4,7 +4,9 @@ import {
   XCircle, Search, ChevronRight, Award, Calendar, DollarSign, BookOpen
 } from "lucide-react";
 import { SchoolDesktopLayout } from "./SchoolDesktopLayout";
-import { Database, Scholarship, ScholarshipRecipient, Student } from "../../data/database";
+import { Scholarship, ScholarshipRecipient, Student } from "../../data/database";
+import { supabase } from "../../lib/supabase";
+import { useAuth } from "../../context/AuthContext";
 
 function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
@@ -131,15 +133,16 @@ function ScholarshipModal({
 
 // ─── Recipient Form ────────────────────────────────────────────────────────────
 function RecipientModal({
-  scholarshipId, defaultAmount, existingIds, onClose, onSave,
+  scholarshipId, defaultAmount, existingIds, allStudents, onClose, onSave,
 }: {
   scholarshipId: string;
   defaultAmount: number;
   existingIds: string[];
+  allStudents: Student[];
   onClose: () => void;
   onSave: (r: ScholarshipRecipient) => void;
 }) {
-  const students = Database.getStudents().filter((s) => !existingIds.includes(s.id) && s.status === "active");
+  const students = allStudents.filter((s) => !existingIds.includes(s.id) && s.status === "active");
   const [studentId, setStudentId] = useState(students[0]?.id ?? "");
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [endDate, setEndDate] = useState("");
@@ -221,6 +224,7 @@ function RecipientModal({
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export function SchoolScholarshipPage() {
+  const { user } = useAuth();
   const [scholarships, setScholarships] = useState<Scholarship[]>([]);
   const [recipients, setRecipients] = useState<ScholarshipRecipient[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
@@ -236,17 +240,63 @@ export function SchoolScholarshipPage() {
   const [editingRecipient, setEditingRecipient] = useState<ScholarshipRecipient | null>(null);
 
   const load = async () => {
-    const allS = await Database.fetchScholarshipsSupabase();
-    setScholarships(allS);
-    setStudents(await Database.fetchStudentsSupabase());
-    if (allS.length > 0 && !selected) setSelected(allS[0]);
+    if (!user?.id) return;
+    const { data: adminData } = await supabase.from("school_admins").select("school_id").eq("user_id", user.id).single();
+    if (!adminData?.school_id) return;
+    const schoolId = adminData.school_id;
+
+    // Fetch scholarships
+    const { data: sData } = await supabase.from("scholarships").select("*").eq("school_id", schoolId).order("created_at", { ascending: false });
+    if (sData) {
+      const allS = sData.map((d: any) => ({
+        id: d.id,
+        name: d.name,
+        description: d.description || "",
+        amountPerMonth: d.amount_per_month,
+        totalMonths: d.total_months,
+        startDate: d.start_date,
+        endDate: d.end_date || "",
+        source: d.source || "Dana BOS",
+        status: d.status,
+        maxRecipients: d.max_recipients,
+        createdAt: d.created_at
+      }));
+      setScholarships(allS);
+      if (allS.length > 0 && !selected) setSelected(allS[0]);
+    }
+
+    // Fetch students
+    const { data: stData } = await supabase.from("students").select("*").eq("school_id", schoolId);
+    if (stData) {
+      setStudents(stData.map((d: any) => ({
+        id: d.id,
+        name: d.name,
+        class: d.class,
+        status: d.status,
+        nisn: d.nisn
+      })) as Student[]);
+    }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [user]);
 
   useEffect(() => {
     if (selected) {
-      Database.fetchScholarshipRecipientsSupabase(selected.id).then(setRecipients);
+      supabase.from("scholarship_recipients").select("*").eq("scholarship_id", selected.id).then(({ data }) => {
+        if (data) {
+          setRecipients(data.map((d: any) => ({
+            id: d.id,
+            scholarshipId: d.scholarship_id,
+            studentId: d.student_id,
+            startDate: d.start_date,
+            endDate: d.end_date || "",
+            amountPerMonth: d.amount_per_month,
+            status: d.status,
+            notes: d.notes || "",
+            assignedAt: d.assigned_at
+          })));
+        }
+      });
     }
   }, [selected]);
 
@@ -264,36 +314,76 @@ export function SchoolScholarshipPage() {
   const totalCoverage = activeRecipients.reduce((sum, r) => sum + r.amountPerMonth, 0);
 
   const handleSaveScholarship = async (s: any) => {
-    // Only insert new scholarship (edit not fully supported yet in this migration script)
-    await Database.insertScholarshipSupabase(s, user?.id || "");
+    if (!user?.id) return;
+    const { data: adminData } = await supabase.from("school_admins").select("school_id").eq("user_id", user.id).single();
+    if (!adminData?.school_id) return;
+
+    const payload = {
+      school_id: adminData.school_id,
+      name: s.name,
+      description: s.description,
+      amount_per_month: s.amountPerMonth,
+      total_months: s.totalMonths,
+      start_date: s.startDate,
+      end_date: s.endDate || null,
+      source: s.source,
+      status: s.status,
+      max_recipients: s.maxRecipients
+    };
+
+    if (editingScholarship) {
+      await supabase.from("scholarships").update(payload).eq("id", editingScholarship.id);
+    } else {
+      await supabase.from("scholarships").insert([payload]);
+    }
     load();
     setShowScholarshipModal(false);
   };
 
   const handleDeleteScholarship = async (id: string) => {
-    // Database.deleteScholarship(id); (Need API if we want full CRUD)
-    alert("Delete not implemented for Supabase yet");
+    await supabase.from("scholarships").delete().eq("id", id);
+    load();
     setDeleteScholarshipId(null);
   };
 
   const handleSaveRecipient = async (r: any) => {
-    await Database.insertScholarshipRecipientSupabase(r.scholarshipId, r.studentId);
-    Database.fetchScholarshipRecipientsSupabase(selected?.id).then(setRecipients);
+    await supabase.from("scholarship_recipients").insert([{
+      scholarship_id: r.scholarshipId,
+      student_id: r.studentId,
+      start_date: r.startDate,
+      end_date: r.endDate || null,
+      amount_per_month: r.amountPerMonth,
+      status: r.status,
+      notes: r.notes
+    }]);
+    
+    // Refresh recipients
+    const { data } = await supabase.from("scholarship_recipients").select("*").eq("scholarship_id", selected?.id);
+    if (data) setRecipients(data.map((d: any) => ({
+      id: d.id, scholarshipId: d.scholarship_id, studentId: d.student_id, startDate: d.start_date, endDate: d.end_date, amountPerMonth: d.amount_per_month, status: d.status, notes: d.notes, assignedAt: d.assigned_at
+    })));
     setShowRecipientModal(false);
   };
 
   const handleDeleteRecipient = async (id: string) => {
-    await Database.deleteScholarshipRecipientSupabase(id);
-    Database.fetchScholarshipRecipientsSupabase(selected?.id).then(setRecipients);
+    await supabase.from("scholarship_recipients").delete().eq("id", id);
+    const { data } = await supabase.from("scholarship_recipients").select("*").eq("scholarship_id", selected?.id);
+    if (data) setRecipients(data.map((d: any) => ({
+      id: d.id, scholarshipId: d.scholarship_id, studentId: d.student_id, startDate: d.start_date, endDate: d.end_date, amountPerMonth: d.amount_per_month, status: d.status, notes: d.notes, assignedAt: d.assigned_at
+    })));
     setDeleteRecipientId(null);
   };
 
-  const handleTerminate = (r: any) => {
-    alert("Update status not implemented in this migration yet");
+  const handleTerminate = async (r: any) => {
+    await supabase.from("scholarship_recipients").update({ status: 'terminated' }).eq("id", r.id);
+    const { data } = await supabase.from("scholarship_recipients").select("*").eq("scholarship_id", selected?.id);
+    if (data) setRecipients(data.map((d: any) => ({ id: d.id, scholarshipId: d.scholarship_id, studentId: d.student_id, startDate: d.start_date, endDate: d.end_date, amountPerMonth: d.amount_per_month, status: d.status, notes: d.notes, assignedAt: d.assigned_at })));
   };
 
-  const handleReactivate = (r: any) => {
-    alert("Update status not implemented in this migration yet");
+  const handleReactivate = async (r: any) => {
+    await supabase.from("scholarship_recipients").update({ status: 'active' }).eq("id", r.id);
+    const { data } = await supabase.from("scholarship_recipients").select("*").eq("scholarship_id", selected?.id);
+    if (data) setRecipients(data.map((d: any) => ({ id: d.id, scholarshipId: d.scholarship_id, studentId: d.student_id, startDate: d.start_date, endDate: d.end_date, amountPerMonth: d.amount_per_month, status: d.status, notes: d.notes, assignedAt: d.assigned_at })));
   };
 
   return (
@@ -536,6 +626,7 @@ export function SchoolScholarshipPage() {
           scholarshipId={selected.id}
           defaultAmount={selected.amountPerMonth}
           existingIds={recipients.filter((r) => r.scholarshipId === selected.id && r.status === "active").map((r) => r.studentId)}
+          allStudents={students}
           onClose={() => setShowRecipientModal(false)}
           onSave={handleSaveRecipient}
         />

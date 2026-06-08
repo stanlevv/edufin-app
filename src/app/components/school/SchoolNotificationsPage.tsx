@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Plus, X, Bell, Trash2, Edit, Send, Users, CheckCircle } from "lucide-react";
 import { SchoolDesktopLayout } from "./SchoolDesktopLayout";
-import { Database } from "../../data/database";
+import { supabase } from "../../lib/supabase";
+import { useAuth } from "../../context/AuthContext";
 
 interface Notification {
   id: number;
@@ -41,6 +42,7 @@ function saveNotifs(notifs: Notification[]) {
 }
 
 export function SchoolNotificationsPage() {
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>(loadNotifs);
   const [showModal, setShowModal] = useState(false);
   const [editingNotif, setEditingNotif] = useState<Notification | null>(null);
@@ -69,7 +71,7 @@ export function SchoolNotificationsPage() {
     setDeleteConfirm(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const now = new Date().toISOString().slice(0, 16).replace("T", " ");
 
@@ -80,37 +82,45 @@ export function SchoolNotificationsPage() {
         id: Math.max(...notifications.map((n) => n.id), 0) + 1,
         ...formData as Notification,
         createdAt: now,
-        sentBy: "Admin SDN 3 Malang",
+        sentBy: "Admin Sekolah",
         read: 0,
         total: formData.target === "all" ? 50 : formData.target === "class" ? 15 : 1,
       };
       updateState([newNotif, ...notifications]);
 
       // ─── Relay ke Database siswa ───────────────────────────────────
-      // Ambil semua siswa, filter berdasarkan target
-      const allStudents = Database.getStudents();
-      const targetStudents = allStudents.filter((s) => {
-        if (formData.target === "all") return true;
-        if (formData.target === "class") return s.class?.includes(formData.targetValue ?? "");
-        if (formData.target === "student") return s.nisn === formData.targetValue;
-        return false;
-      });
+      if (user?.id) {
+        const { data: adminData } = await supabase.from("school_admins").select("school_id").eq("user_id", user.id).single();
+        if (adminData?.school_id) {
+          const { data: allStudents } = await supabase.from("students").select("*").eq("school_id", adminData.school_id);
+          
+          if (allStudents) {
+            const targetStudents = allStudents.filter((s: any) => {
+              if (formData.target === "all") return true;
+              if (formData.target === "class") return s.class?.includes(formData.targetValue ?? "");
+              if (formData.target === "student") return s.nisn === formData.targetValue;
+              return false;
+            });
 
-      // Map tipe notifikasi sekolah ke tipe Database
-      const dbType = formData.type === "urgent" || formData.type === "warning" ? "reminder" :
-                     formData.type === "success" ? "payment" : "system";
+            const dbType = formData.type === "urgent" || formData.type === "warning" ? "reminder" :
+                           formData.type === "success" ? "payment" : "system";
 
-      targetStudents.forEach((student) => {
-        Database.saveNotification({
-          id: `school-notif-${Date.now()}-${student.id}`,
-          userId: student.userId,
-          title: formData.title ?? "Notifikasi Sekolah",
-          message: formData.message ?? "",
-          type: dbType,
-          read: false,
-          createdAt: new Date().toISOString(),
-        });
-      });
+            if (targetStudents.length > 0) {
+              const notifsToInsert = targetStudents.map((student: any) => ({
+                user_id: student.user_id, // ensure user_id exists
+                title: formData.title ?? "Notifikasi Sekolah",
+                message: formData.message ?? "",
+                type: dbType,
+                read: false
+              })).filter((n: any) => n.user_id); // Filter out students without user_id
+
+              if (notifsToInsert.length > 0) {
+                await supabase.from("notifications").insert(notifsToInsert);
+              }
+            }
+          }
+        }
+      }
       // ──────────────────────────────────────────────────────────────
     }
     setShowModal(false);

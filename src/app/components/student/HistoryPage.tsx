@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { ArrowUpRight, Receipt, CreditCard, Heart } from "lucide-react";
 import { formatRupiah, STUDENT_STYLES } from "../../styles/studentStyles";
 import { useAuth } from "../../context/AuthContext";
-import { Database, Transaction } from "../../data/database";
+import { supabase } from "../../lib/supabase";
 
 
 
@@ -12,16 +12,15 @@ const CATS = ["Semua", "SPP", "Cicilan", "Donasi"];
 export function HistoryPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
   const [activeCat, setActiveCat] = useState("Semua");
 
   useEffect(() => {
     async function loadData() {
-      if (!user) return;
-      const data = await Database.fetchTransactionsSupabase();
-      const userTxns = data
-        .filter((t: any) => t.user_id === user.id)
-        .map((t: any) => ({
+      if (!user?.id) return;
+      const { data } = await supabase.from('transactions').select('*').eq('user_id', user.id);
+      if (data) {
+        const userTxns = data.map((t: any) => ({
           id: t.id,
           title: t.category === "Donasi" ? "Donasi Kampanye" : "Pembayaran SPP",
           description: t.description || `Transaksi ${t.category}`,
@@ -31,7 +30,8 @@ export function HistoryPage() {
           category: t.category,
           status: t.status === "completed" ? "Berhasil" : "Pending"
         }));
-      setTransactions([...userTxns].sort((a, b) => b.date.localeCompare(a.date)));
+        setTransactions([...userTxns].sort((a, b) => b.date.localeCompare(a.date)));
+      }
     }
     loadData();
   }, [user]);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Search, ChevronRight, CheckCircle, School } from "lucide-react";
-import { Database, Campaign } from "../../data/database";
+import { supabase } from "../../lib/supabase";
 
 function formatK(n: number) {
   if (n >= 1000000) return `${(n / 1000000).toFixed(1)}jt`;
@@ -12,14 +12,31 @@ type CategoryType = "Semua" | "Beasiswa" | "Fasilitas" | "Perlengkapan" | "Ujian
 
 export function DonorCampaignsPage() {
   const navigate = useNavigate();
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<CategoryType>("Semua");
 
   useEffect(() => {
-    // Load kampanye aktif dari Database
-    const active = Database.getCampaigns().filter((c) => c.status === "active");
-    setCampaigns(active);
+    async function loadCampaigns() {
+      const { data } = await supabase.from('campaigns').select('*').eq('status', 'active');
+      if (data) {
+        setCampaigns(data.map(c => ({
+          id: c.id,
+          title: c.title,
+          school: "SDN 3 Malang", // Fallback
+          category: c.category,
+          target: c.target_amount,
+          collected: c.collected_amount,
+          donors: c.donors_count,
+          endDate: c.end_date,
+          image: c.image_url,
+          status: c.status,
+          urgent: c.is_urgent,
+          verified: true
+        })));
+      }
+    }
+    loadCampaigns();
   }, []);
 
   const filtered = campaigns.filter((c) => {
@@ -71,7 +88,7 @@ export function DonorCampaignsPage() {
         )}
         {filtered.map((c) => {
           const pct = Math.round((c.collected / c.target) * 100);
-          const endDate = new Date(c.endDate);
+          const endDate = new Date(c.endDate || new Date());
           const daysLeft = Math.max(0, Math.ceil((endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
           return (
             <div key={c.id} className="bg-white rounded-2xl overflow-hidden cursor-pointer active:scale-98 transition-all"

@@ -144,7 +144,7 @@ function AppLayoutInner() {
     >
       {/* Phone container */}
       <div
-        className="w-full max-w-[480px] min-h-[100dvh] relative flex flex-col bg-white shadow-2xl"
+        className="w-full max-w-[480px] min-h-[100dvh] relative flex flex-col bg-white shadow-2xl phone-scroll-container"
         style={{
           borderLeft: "1px solid #E8E8E8",
           borderRight: "1px solid #E8E8E8",

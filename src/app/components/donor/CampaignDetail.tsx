@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { ArrowLeft, Heart, Share2, CheckCircle, Users, Sparkles, Lightbulb, School, MapPin, Clock, Smartphone, Building2, CreditCard, Check } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { Database } from "../../data/database";
+import { supabase } from "../../lib/supabase";
 import { FeedUpdateForm } from "../shared/FeedUpdateForm";
 
 function formatRupiah(n: number) {
@@ -15,8 +15,44 @@ export function CampaignDetail() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
-  // Ambil kampanye dari Database bukan dari hardcoded Record
-  const campaign = Database.getCampaignById(id ?? "");
+  const [campaign, setCampaign] = useState<any>(null);
+  const [studentData, setStudentData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadCampaign() {
+      if (!id) return;
+      const { data } = await supabase.from('campaigns').select('*').eq('id', id).single();
+      if (data) {
+        setCampaign({
+          id: data.id,
+          title: data.title,
+          school: "SDN 3 Malang",
+          schoolId: data.school_id,
+          studentId: data.student_id,
+          category: data.category,
+          target: data.target_amount,
+          collected: data.collected_amount,
+          donors: data.donors_count,
+          endDate: data.end_date,
+          image: data.image_url,
+          status: data.status,
+          urgent: data.is_urgent,
+          story: data.story || "",
+          updates: data.updates || [],
+          location: "Malang",
+          verified: true
+        });
+      }
+
+      if (user?.id && user.role === "siswa") {
+        const { data: sData } = await supabase.from("students").select("id").eq("user_id", user.id).single();
+        setStudentData(sData);
+      }
+      setLoading(false);
+    }
+    loadCampaign();
+  }, [id, user]);
 
   // Hitung days left dari endDate
   const daysLeft = campaign?.endDate
@@ -30,8 +66,11 @@ export function CampaignDetail() {
   const [showUpdateForm, setShowUpdateForm] = useState(false);
 
   // Cek apakah user adalah pembuat kampanye ini
-  const studentData = user?.role === "student" ? Database.getStudentByUserId(user.id) : null;
-  const isOwner = (user?.role === "school") || (user?.role === "student" && studentData?.id === campaign?.studentId);
+  const isOwner = (user?.role === "sekolah") || (user?.role === "siswa" && studentData?.id === campaign?.studentId);
+
+  if (loading) {
+    return <div className="flex flex-col min-h-screen items-center justify-center"><p>Loading...</p></div>;
+  }
 
   if (!campaign) {
     return (
@@ -200,24 +239,24 @@ export function CampaignDetail() {
 
         <div className="px-6 pt-4 pb-20" style={{ boxShadow: "0 -4px 20px rgba(0,0,0,0.06)" }}>
           <button
-            onClick={() => {
+            onClick={async () => {
               if (!donationAmount || parseInt(donationAmount) < 10000 || !paymentMethod) return;
-              // Simpan donasi ke database
               const amount = parseInt(donationAmount);
-              Database.saveDonation({
-                id: `donation-${Date.now()}`,
-                campaignId: campaign.id,
-                donorId: user?.id ?? "guest",
-                donorName: user?.name ?? "Donatur",
-                amount,
-                isAnonymous: false,
-                method: paymentMethod,
-                donatedAt: new Date().toISOString(),
+              
+              await supabase.from("donations").insert({
+                campaign_id: campaign.id,
+                donor_id: user?.id || null,
+                amount: amount,
                 status: "success",
+                method: paymentMethod,
+                is_anonymous: false
               });
-              // Update jumlah collected & donors di kampanye
-              const updated = { ...campaign, collected: campaign.collected + amount, donors: campaign.donors + 1 };
-              Database.saveCampaign(updated);
+              
+              await supabase.from("campaigns").update({
+                collected_amount: campaign.collected + amount,
+                donors_count: campaign.donors + 1
+              }).eq("id", campaign.id);
+
               setStep("success");
             }}
             disabled={!donationAmount || parseInt(donationAmount) < 10000 || !paymentMethod}
@@ -374,29 +413,26 @@ export function CampaignDetail() {
         <FeedUpdateForm
           campaignId={campaign.id}
           onClose={() => setShowUpdateForm(false)}
-          onSuccess={(newUpdate) => {
-            const updated = { ...campaign, updates: [newUpdate, ...campaign.updates] };
-            Database.saveCampaign(updated);
+          onSuccess={async (newUpdate) => {
+            const updatedUpdates = [newUpdate, ...(campaign.updates || [])];
+            await supabase.from("campaigns").update({ updates: updatedUpdates }).eq("id", campaign.id);
 
-            // Task V2-09: Notify all donors
-            const donors = Database.getDonationsByCampaignId(campaign.id);
-            const uniqueDonorIds = Array.from(new Set(donors.map(d => d.donorId)));
-            uniqueDonorIds.forEach(donorId => {
-              // Jika user bukan guest
-              if (donorId !== "guest") {
-                Database.saveNotification({
-                  id: `notif-${Date.now()}-${donorId}`,
-                  userId: donorId,
-                  title: `Update Kampanye: ${campaign.title}`,
-                  message: newUpdate.text.substring(0, 50) + "...",
-                  type: "campaign",
-                  read: false,
-                  createdAt: new Date().toISOString(),
-                });
+            const { data: donors } = await supabase.from("donations").select("donor_id").eq("campaign_id", campaign.id);
+            if (donors) {
+              const uniqueDonorIds = Array.from(new Set(donors.map(d => d.donor_id).filter(id => id)));
+              const notifsToInsert = uniqueDonorIds.map(donorId => ({
+                user_id: donorId,
+                title: `Update Kampanye: ${campaign.title}`,
+                message: newUpdate.text.substring(0, 50) + "...",
+                type: "campaign",
+                read: false
+              }));
+
+              if (notifsToInsert.length > 0) {
+                await supabase.from("notifications").insert(notifsToInsert);
               }
-            });
+            }
 
-            // Trigger re-render
             window.location.reload(); 
           }}
         />

@@ -4,7 +4,8 @@ import { Users, CheckCircle, XCircle, Plus, TrendingUp, AlertCircle, FileText, M
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts";
 import { useAuth } from "../../context/AuthContext";
 import { SchoolDesktopLayout } from "./SchoolDesktopLayout";
-import { Database, Student, Campaign } from "../../data/database";
+import { supabase } from "../../lib/supabase";
+import { Student, Campaign } from "../../data/database";
 
 function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
@@ -24,17 +25,82 @@ export function SchoolDashboard() {
 
   useEffect(() => {
     async function loadData() {
-      const s = await Database.fetchStudentsSupabase();
-      setStudents(s);
-      const p = await Database.fetchPaymentsSupabase();
-      setPayments(p);
-      const c = await Database.fetchCampaignsSupabase();
-      setCampaigns(c);
-      const d = await Database.fetchDonationsSupabase();
-      setDonations(d);
+      if (!user?.id) return;
+      
+      // Ambil school_id untuk admin saat ini
+      const { data: adminData } = await supabase
+        .from("school_admins")
+        .select("school_id")
+        .eq("user_id", user.id)
+        .single();
+        
+      if (!adminData?.school_id) return;
+      const schoolId = adminData.school_id;
+
+      // Ambil siswa untuk sekolah ini
+      const { data: s } = await supabase
+        .from("students")
+        .select("*")
+        .eq("school_id", schoolId);
+      
+      if (s) {
+        setStudents(s.map((d: any) => ({
+          id: d.id,
+          name: d.name,
+          class: d.class,
+          status: d.status,
+        })) as any[]);
+      }
+
+      // Ambil tagihan/pembayaran (bills) yang lunas bulan ini
+      const { data: b } = await supabase
+        .from("bills")
+        .select("*")
+        .eq("school_id", schoolId);
+        
+      if (b) {
+        setPayments(b.map((d: any) => ({
+          studentId: d.student_id,
+          month: d.month,
+          year: d.year,
+          amount: d.amount,
+          status: d.status === "lunas" ? "completed" : "pending",
+          paidAt: d.paid_at
+        })) as any[]);
+      }
+
+      // Ambil campaigns untuk sekolah ini
+      const { data: c } = await supabase
+        .from("campaigns")
+        .select("*")
+        .eq("school_id", schoolId);
+        
+      if (c) {
+        setCampaigns(c.map((d: any) => ({
+          id: d.id,
+          title: d.title,
+          target: d.target_amount || 0,
+          collected: d.collected_amount || 0,
+          category: d.category || "Fasilitas",
+          verified: d.status !== 'pending_approval',
+          status: d.status,
+          school: "Sekolah" // Or get school name
+        })) as any[]);
+        
+        // Ambil donasi dari campaigns milik sekolah ini
+        if (c.length > 0) {
+          const campaignIds = c.map((camp: any) => camp.id);
+          const { data: dData } = await supabase
+            .from("donations")
+            .select("*")
+            .in("campaign_id", campaignIds);
+          
+          if (dData) setDonations(dData as any[]);
+        }
+      }
     }
     loadData();
-  }, []);
+  }, [user]);
 
   // Stats
   const totalStudents = students.filter((s) => s.status !== "inactive").length;
@@ -67,17 +133,21 @@ export function SchoolDashboard() {
   const pendingCampaigns = campaigns.filter((c) => !c.verified && c.status === "active");
 
   const handleApproveCampaign = async (id: string) => {
-    const c = campaigns.find(x => x.id === id);
-    if (c) { 
-      await Database.updateCampaignSupabase({ ...c, verified: true }); 
-      setCampaigns(await Database.fetchCampaignsSupabase()); 
+    await supabase.from("campaigns").update({ status: "active" }).eq("id", id);
+    // Reload campaigns
+    const { data: adminData } = await supabase.from("school_admins").select("school_id").eq("user_id", user?.id).single();
+    if (adminData) {
+      const { data: c } = await supabase.from("campaigns").select("*").eq("school_id", adminData.school_id);
+      if (c) setCampaigns(c.map((d: any) => ({ ...d, verified: d.status !== 'pending_approval' })) as any[]);
     }
   };
   const handleRejectCampaign = async (id: string) => {
-    const c = campaigns.find(x => x.id === id);
-    if (c) { 
-      await Database.updateCampaignSupabase({ ...c, verified: false, status: "cancelled" }); 
-      setCampaigns(await Database.fetchCampaignsSupabase()); 
+    await supabase.from("campaigns").update({ status: "cancelled" }).eq("id", id);
+    // Reload campaigns
+    const { data: adminData } = await supabase.from("school_admins").select("school_id").eq("user_id", user?.id).single();
+    if (adminData) {
+      const { data: c } = await supabase.from("campaigns").select("*").eq("school_id", adminData.school_id);
+      if (c) setCampaigns(c.map((d: any) => ({ ...d, verified: d.status !== 'pending_approval' })) as any[]);
     }
   };
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Search, Bell, Heart, Star, TrendingUp, ChevronRight, Flame, CheckCircle, School, MapPin, Clock, HandHeart, Receipt } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { Database, Campaign, Notification } from "../../data/database";
+import { supabase } from "../../lib/supabase";
 import { NotificationDropdown } from "../shared/NotificationDropdown";
 
 function formatRupiah(n: number) {
@@ -16,22 +16,67 @@ const CATEGORIES = ["Semua", "Beasiswa", "Fasilitas", "Perlengkapan", "Ujian"];
 export function DonorDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [myDonations, setMyDonations] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("Semua");
 
   useEffect(() => {
-    // Load kampanye aktif dari DB
-    setCampaigns(Database.getCampaigns().filter((c) => c.status === "active"));
-    // Load notifikasi donatur dari DB
-    if (user) {
-      setNotifications(Database.getNotificationsByUserId(user.id));
+    async function loadData() {
+      // 1. Load active campaigns
+      const { data: camps } = await supabase.from("campaigns").select("*").eq("status", "active");
+      if (camps) {
+        setCampaigns(camps.map(c => ({
+          id: c.id,
+          title: c.title,
+          school: "SDN 3 Malang", // Fallback for UI
+          schoolId: c.school_id,
+          category: c.category,
+          target: c.target_amount,
+          collected: c.collected_amount,
+          donors: c.donors_count,
+          endDate: c.end_date,
+          image: c.image_url,
+          status: c.status,
+          urgent: c.is_urgent,
+          location: "Malang",
+        })));
+      }
+
+      if (user?.id) {
+        // 2. Load notifications
+        const { data: notifs } = await supabase.from("notifications").select("*").eq("user_id", user.id).order('created_at', { ascending: false });
+        if (notifs) {
+          setNotifications(notifs.map(n => ({
+            id: n.id,
+            userId: n.user_id,
+            title: n.title,
+            message: n.message,
+            type: n.type,
+            read: n.read,
+            createdAt: n.created_at
+          })));
+        }
+
+        // 3. Load donations
+        const { data: dons } = await supabase.from("donations").select("*").eq("donor_id", user.id);
+        if (dons) {
+          setMyDonations(dons.map(d => ({
+            id: d.id,
+            donorId: d.donor_id,
+            campaignId: d.campaign_id,
+            amount: d.amount,
+            status: d.status,
+            date: d.created_at
+          })));
+        }
+      }
     }
+    loadData();
   }, [user]);
 
   // Hitung statistik dari donasi di DB
-  const myDonations = user ? Database.getDonationsByDonorId(user.id) : [];
   const totalDonated = myDonations.filter((d) => d.status === "success").reduce((s, d) => s + d.amount, 0);
   const campaignsSupported = new Set(myDonations.filter((d) => d.status === "success").map((d) => d.campaignId)).size;
 
@@ -66,9 +111,22 @@ export function DonorDashboard() {
           <NotificationDropdown
             notifications={notifications.map((n) => ({ id: n.id, text: n.message, time: new Date(n.createdAt).toLocaleDateString("id-ID"), unread: !n.read }))}
             unreadCount={notifications.filter((n) => !n.read).length}
-            onNotificationClick={(id) => {
-              Database.markNotificationAsRead(String(id));
-              setNotifications(Database.getNotificationsByUserId(user?.id ?? ""));
+            onNotificationClick={async (id) => {
+              await supabase.from("notifications").update({ read: true }).eq('id', id);
+              if (user?.id) {
+                const { data: notifs } = await supabase.from("notifications").select("*").eq("user_id", user.id).order('created_at', { ascending: false });
+                if (notifs) {
+                  setNotifications(notifs.map(n => ({
+                    id: n.id,
+                    userId: n.user_id,
+                    title: n.title,
+                    message: n.message,
+                    type: n.type,
+                    read: n.read,
+                    createdAt: n.created_at
+                  })));
+                }
+              }
             }}
           />
         </div>

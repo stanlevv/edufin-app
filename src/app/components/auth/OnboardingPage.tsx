@@ -358,7 +358,8 @@ export function OnboardingPage() {
       <div
         className="relative flex-shrink-0 overflow-hidden"
         style={{
-          height: "58vh",
+          minHeight: "58vh",
+          paddingTop: "env(safe-area-inset-top)",
           background: `linear-gradient(160deg, ${slide.gradient[0]} 0%, ${slide.gradient[1]} 50%, ${slide.gradient[2]} 100%)`,
           transition: "background 0.5s ease",
         }}
@@ -377,8 +378,9 @@ export function OnboardingPage() {
         {/* Skip button */}
         <button
           onClick={() => navigate("/login")}
-          className="absolute top-12 right-6 z-20 px-4 py-1.5 rounded-full transition-all active:scale-95"
+          className="absolute right-6 z-20 px-4 py-1.5 rounded-full transition-all active:scale-95"
           style={{
+            top: "calc(env(safe-area-inset-top) + 1.5rem)",
             background: "rgba(255,255,255,0.2)",
             backdropFilter: "blur(10px)",
             color: "white",
@@ -391,7 +393,7 @@ export function OnboardingPage() {
         </button>
 
         {/* Slide number */}
-        <div className="absolute top-12 left-6 z-20 flex items-center gap-2">
+        <div className="absolute left-6 z-20 flex items-center gap-2" style={{ top: "calc(env(safe-area-inset-top) + 1.5rem)" }}>
           <div className="w-8 h-8 rounded-xl flex items-center justify-center"
             style={{ background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)" }}>
             <span style={{ color: "white", fontSize: "0.7rem", fontWeight: 800 }}>
@@ -401,7 +403,7 @@ export function OnboardingPage() {
         </div>
 
         {/* Badge */}
-        <div className="absolute top-14 left-1/2 z-20 -translate-x-1/2">
+        <div className="absolute left-1/2 z-20 -translate-x-1/2" style={{ top: "calc(env(safe-area-inset-top) + 2rem)" }}>
           <div
             className="px-4 py-1.5 rounded-full"
             style={{
@@ -450,7 +452,7 @@ export function OnboardingPage() {
       {/* ── BOTTOM: Content Area ────────────────────────────── */}
       <div
         className="flex-1 bg-white flex flex-col px-7 pt-4 pb-6"
-        style={{ minHeight: "42vh" }}
+        style={{ minHeight: "42vh", paddingBottom: "calc(env(safe-area-inset-bottom) + 1.5rem)" }}
       >
         {/* Dot indicators */}
         <div className="flex items-center justify-center gap-2 mb-5">
